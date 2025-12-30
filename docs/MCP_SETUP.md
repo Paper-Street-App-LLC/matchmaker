@@ -26,7 +26,34 @@ This creates a production-ready bundle at `dist/index.js`.
 
 The MCP server requires a JWT token to authenticate with the backend API. Choose the approach that fits your use case:
 
-### Option A: Development (Service Role Key)
+### Option A: Dev Script (Easiest - Recommended)
+
+For quick local testing, use the included JWT dev tool:
+
+1. **Ensure backend .env is configured** with your Supabase credentials
+
+2. **Run the dev script**:
+   ```bash
+   bun run get-jwt
+   ```
+
+   This creates a test user (`test@matchmaker.dev`) and outputs a valid JWT token.
+
+3. **Copy the JWT token** from the output, or update your MCP config automatically:
+   ```bash
+   bun run get-jwt --update-config
+   ```
+
+**Advanced usage**:
+```bash
+# Use custom email/password
+bun run get-jwt --email me@example.com --password mypass123 --name "My Name"
+
+# Get JWT for existing user (skip creation)
+bun run get-jwt --existing --email me@example.com --password mypass123
+```
+
+### Option B: Development (Service Role Key)
 
 For local development, you can use the Supabase service role key:
 
@@ -46,7 +73,7 @@ For local development, you can use the Supabase service role key:
 
 **Important**: The service role key bypasses Row Level Security (RLS) policies. Only use this in local development environments. Never commit or expose this key.
 
-### Option B: Production (User JWT Token)
+### Option C: Production (User JWT Token)
 
 For production or when you want to test with proper authentication:
 
