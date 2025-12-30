@@ -40,7 +40,7 @@ describe('Config', () => {
 		await writeFile(configPath, JSON.stringify(validConfig))
 
 		// Act: Call loadConfig()
-		let result = await loadConfig()
+		let result = await loadConfig(configPath)
 
 		// Assert: Returns valid config object
 		expect(result).toEqual(validConfig)
@@ -57,7 +57,7 @@ describe('Config', () => {
 		await writeFile(configPath, JSON.stringify(invalidConfig))
 
 		// Act & Assert: Throws validation error
-		await expect(loadConfig()).rejects.toThrow()
+		await expect(loadConfig(configPath)).rejects.toThrow()
 	})
 
 	test('validates required field: auth_token', async () => {
@@ -69,7 +69,7 @@ describe('Config', () => {
 		await writeFile(configPath, JSON.stringify(invalidConfig))
 
 		// Act & Assert: Throws validation error
-		await expect(loadConfig()).rejects.toThrow()
+		await expect(loadConfig(configPath)).rejects.toThrow()
 	})
 
 	test('validates api_base_url is a valid URL', async () => {
@@ -82,7 +82,7 @@ describe('Config', () => {
 		await writeFile(configPath, JSON.stringify(invalidConfig))
 
 		// Act & Assert: Throws validation error
-		await expect(loadConfig()).rejects.toThrow()
+		await expect(loadConfig(configPath)).rejects.toThrow()
 	})
 
 	test('validates auth_token is not empty', async () => {
@@ -95,14 +95,15 @@ describe('Config', () => {
 		await writeFile(configPath, JSON.stringify(invalidConfig))
 
 		// Act & Assert: Throws validation error
-		await expect(loadConfig()).rejects.toThrow()
+		await expect(loadConfig(configPath)).rejects.toThrow()
 	})
 
 	test('throws error if config file missing', async () => {
 		// Config file doesn't exist in temp directory
+		let configPath = join(tempDir, '.config', 'matchmaker-mcp', 'missing.json')
 
 		// Act & Assert: Clear error message
-		await expect(loadConfig()).rejects.toThrow()
+		await expect(loadConfig(configPath)).rejects.toThrow()
 	})
 
 	test('throws error if config JSON is invalid', async () => {
@@ -111,6 +112,6 @@ describe('Config', () => {
 		await writeFile(configPath, '{ invalid json }')
 
 		// Act & Assert: Parse error thrown
-		await expect(loadConfig()).rejects.toThrow()
+		await expect(loadConfig(configPath)).rejects.toThrow()
 	})
 })
