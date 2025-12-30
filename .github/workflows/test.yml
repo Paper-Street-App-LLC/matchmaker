@@ -34,4 +34,4 @@ jobs:
 
       - name: Run MCP server tests
         working-directory: ./mcp-server
-        run: bun test
+        run: bun run test
