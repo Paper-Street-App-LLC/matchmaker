@@ -40,8 +40,11 @@ describe('ApiClient', () => {
 
 		expect(Array.isArray(result)).toBe(true)
 		expect(result.length).toBe(1)
-		expect(result[0].name).toBe('Alice')
-		expect(result[0].id).toBe('person-1')
+
+		let firstPerson = result[0]
+		expect(firstPerson).toBeDefined()
+		expect(firstPerson?.name).toBe('Alice')
+		expect(firstPerson?.id).toBe('person-1')
 	})
 
 	test('listPeople() returns empty array when no people exist', async () => {
