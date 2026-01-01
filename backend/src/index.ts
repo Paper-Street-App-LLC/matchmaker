@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { createSupabaseClient } from './lib/supabase'
 import { createAuthMiddleware } from './middleware/auth'
 import { createPeopleRoutes } from './routes/people'
+import { createIntroductionsRoutes } from './routes/introductions'
 
 let app = new Hono()
 
@@ -30,6 +31,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 	// Protected API routes
 	app.use('/api/*', createAuthMiddleware(supabaseClient))
 	app.route('/api/people', createPeopleRoutes(supabaseClient))
+	app.route('/api/introductions', createIntroductionsRoutes(supabaseClient))
 }
 
 // Export for Bun server
