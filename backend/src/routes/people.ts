@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import type { SupabaseClient } from '../lib/supabase'
-import { createPersonSchema } from '../schemas/people'
+import { createPersonSchema, updatePersonSchema } from '../schemas/people'
 
 type Variables = {
 	userId: string
@@ -45,6 +45,75 @@ export let createPeopleRoutes = (
 		}
 
 		return c.json(people || [], 200)
+	})
+
+	app.get('/:id', async c => {
+		let userId = c.get('userId')
+		let personId = c.req.param('id')
+
+		let { data: person, error } = await supabaseClient
+			.from('people')
+			.select('*')
+			.eq('id', personId)
+			.eq('matchmaker_id', userId)
+			.maybeSingle()
+
+		if (error) {
+			return c.json({ error: error.message }, 500)
+		}
+
+		if (!person) {
+			return c.json({ error: 'Person not found' }, 404)
+		}
+
+		return c.json(person, 200)
+	})
+
+	app.put('/:id', zValidator('json', updatePersonSchema), async c => {
+		let userId = c.get('userId')
+		let personId = c.req.param('id')
+		let data = c.req.valid('json')
+
+		let { data: person, error } = await supabaseClient
+			.from('people')
+			.update(data)
+			.eq('id', personId)
+			.eq('matchmaker_id', userId)
+			.select()
+			.maybeSingle()
+
+		if (error) {
+			return c.json({ error: error.message }, 500)
+		}
+
+		if (!person) {
+			return c.json({ error: 'Person not found' }, 404)
+		}
+
+		return c.json(person, 200)
+	})
+
+	app.delete('/:id', async c => {
+		let userId = c.get('userId')
+		let personId = c.req.param('id')
+
+		let { data: person, error } = await supabaseClient
+			.from('people')
+			.update({ active: false })
+			.eq('id', personId)
+			.eq('matchmaker_id', userId)
+			.select()
+			.maybeSingle()
+
+		if (error) {
+			return c.json({ error: error.message }, 500)
+		}
+
+		if (!person) {
+			return c.json({ error: 'Person not found' }, 404)
+		}
+
+		return c.json(person, 200)
 	})
 
 	return app

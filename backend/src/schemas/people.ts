@@ -10,6 +10,16 @@ export let createPersonSchema = z.object({
 	notes: z.string().optional(),
 })
 
+export let updatePersonSchema = z.object({
+	name: z.string().min(1).optional(),
+	age: z.number().int().positive().optional(),
+	location: z.string().optional(),
+	gender: z.string().optional(),
+	preferences: z.record(z.unknown()).optional(),
+	personality: z.record(z.unknown()).optional(),
+	notes: z.string().optional(),
+})
+
 export let personResponseSchema = z.object({
 	id: z.string().uuid(),
 	matchmaker_id: z.string().uuid(),
