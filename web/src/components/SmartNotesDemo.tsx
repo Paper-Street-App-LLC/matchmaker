@@ -2,13 +2,10 @@ import { Terminal } from "lucide-react";
 
 export function SmartNotesDemo() {
 	return (
-		<section className="relative bg-gradient-to-b from-gray-50 to-white py-24 dark:from-gray-900 dark:to-gray-950 sm:py-32">
+		<section className="relative bg-gradient-to-b from-gray-50 to-white py-24 sm:py-32 dark:from-gray-900 dark:to-gray-950">
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-2xl text-center">
-					<div className="mb-4 inline-flex items-center rounded-full bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
-						Works everywhere you do
-					</div>
-					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
+					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl dark:text-gray-100">
 						Natural conversation,
 						<br />
 						<span className="text-sky-600 dark:text-sky-400">
@@ -82,16 +79,6 @@ export function SmartNotesDemo() {
 									<span className="ml-2 animate-pulse text-gray-300">▊</span>
 								</div>
 							</div>
-						</div>
-					</div>
-
-					{/* Emphasis message */}
-					<div className="mt-10 text-center">
-						<div className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-sky-50 to-indigo-50 px-6 py-3 dark:from-sky-900/20 dark:to-indigo-900/20">
-							<div className="h-2 w-2 animate-pulse rounded-full bg-sky-500" />
-							<p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-								You're in control. AI assists, you decide.
-							</p>
 						</div>
 					</div>
 

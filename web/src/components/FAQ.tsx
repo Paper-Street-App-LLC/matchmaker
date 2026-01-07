@@ -48,15 +48,12 @@ export function FAQ() {
 	};
 
 	return (
-		<section className="relative overflow-hidden bg-white py-24 dark:bg-gray-950 sm:py-32">
+		<section className="relative overflow-hidden bg-white py-24 sm:py-32 dark:bg-gray-950">
 			<div className="container mx-auto px-4">
 				<div className="mx-auto max-w-3xl">
 					{/* Header */}
 					<div className="text-center">
-						<div className="mb-6 inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-sm font-semibold text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
-							Got questions?
-						</div>
-						<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
+						<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl dark:text-gray-100">
 							Frequently Asked{" "}
 							<span className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent dark:from-sky-400 dark:to-indigo-400">
 								Questions

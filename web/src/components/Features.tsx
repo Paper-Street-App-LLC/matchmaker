@@ -44,13 +44,10 @@ let features = [
 
 export function Features() {
 	return (
-		<section className="relative overflow-hidden bg-white py-24 dark:bg-gray-950 sm:py-32">
+		<section className="relative overflow-hidden bg-white py-24 sm:py-32 dark:bg-gray-950">
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-2xl text-center">
-					<div className="mb-4 inline-flex items-center rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
-						Powerful features
-					</div>
-					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
+					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl dark:text-gray-100">
 						Everything you need to be a{" "}
 						<span className="text-indigo-600 dark:text-indigo-400">
 							great matchmaker
