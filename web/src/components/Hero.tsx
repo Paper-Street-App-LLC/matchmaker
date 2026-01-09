@@ -55,7 +55,7 @@ export function Hero() {
 						Intelligence, meet your
 						<br />
 						<span className="text-sky-600 dark:text-sky-400">
-							Matchmaker.
+							Matchmaker
 						</span>
 					</h1>
 
