@@ -63,7 +63,7 @@ export function Features() {
 						{features.map((feature) => (
 							<div
 								key={feature.name}
-								className="group relative rounded-2xl border border-gray-200 bg-white p-8 transition-all duration-300 hover:border-sky-300 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 dark:hover:border-sky-700"
+								className="group relative rounded-2xl p-8 transition-all duration-300 hover:bg-white dark:hover:bg-gray-800/50"
 							>
 								<dt className="flex items-center gap-4 text-lg font-bold leading-7 text-gray-900 dark:text-gray-100">
 									<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 shadow-md transition-transform duration-300 group-hover:scale-110">
