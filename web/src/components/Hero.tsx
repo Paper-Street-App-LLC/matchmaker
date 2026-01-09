@@ -51,9 +51,12 @@ export function Hero() {
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-3xl text-center">
 					{/* Main Headline */}
-					<h1 className="text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl dark:text-gray-100">
-						<span className="text-sky-600 dark:text-sky-400">Intelligence</span>{" "}
-						meets matchmaking
+					<h1 className="text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl dark:text-gray-100 leading-tight">
+						Intelligence, meet your
+						<br />
+						<span className="text-sky-600 dark:text-sky-400">
+							Matchmaker
+						</span>
 					</h1>
 
 					{/* Subheadline */}
