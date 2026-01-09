@@ -81,6 +81,14 @@ export function createServer(apiClient: ApiClient) {
 					required: ['person_a_id', 'person_b_id'],
 				},
 			},
+			{
+				name: 'list_introductions',
+				description: 'List all introductions for the matchmaker',
+				inputSchema: {
+					type: 'object',
+					properties: {},
+				},
+			},
 		],
 	}))
 
@@ -180,6 +188,18 @@ export function createServer(apiClient: ApiClient) {
 					notes?: string
 				}
 				let result = await apiClient.createIntroduction(person_a_id, person_b_id, notes)
+				return {
+					content: [
+						{
+							type: 'text',
+							text: JSON.stringify(result, null, 2),
+						},
+					],
+				}
+			}
+
+			if (name === 'list_introductions') {
+				let result = await apiClient.listIntroductions()
 				return {
 					content: [
 						{

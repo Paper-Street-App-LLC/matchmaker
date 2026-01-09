@@ -69,6 +69,7 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 				updated_at: new Date().toISOString(),
 			})
 		),
+		listIntroductions: mock(async (): Promise<Introduction[]> => []),
 		...overrides,
 	} as unknown as ApiClient
 }
@@ -292,5 +293,54 @@ describe('MCP Server', () => {
 		expect(result.person_b_id).toBe('person-b-uuid')
 		expect(result.status).toBe('pending')
 		expect(result.notes).toBe('They both love hiking')
+	})
+
+	test('API client handles list_introductions correctly (unit test)', async () => {
+		let mockListIntroductions = mock(
+			async (): Promise<Introduction[]> => [
+				{
+					id: 'intro-1',
+					matchmaker_id: 'user-id',
+					person_a_id: 'person-a-uuid',
+					person_b_id: 'person-b-uuid',
+					status: 'pending',
+					notes: 'Both enjoy hiking',
+					created_at: new Date().toISOString(),
+					updated_at: new Date().toISOString(),
+				},
+				{
+					id: 'intro-2',
+					matchmaker_id: 'user-id',
+					person_a_id: 'person-c-uuid',
+					person_b_id: 'person-d-uuid',
+					status: 'accepted',
+					notes: null,
+					created_at: new Date().toISOString(),
+					updated_at: new Date().toISOString(),
+				},
+			]
+		)
+
+		let mockApiClient = createMockApiClient({
+			listIntroductions: mockListIntroductions,
+		})
+
+		let result = await mockApiClient.listIntroductions()
+
+		expect(mockListIntroductions).toHaveBeenCalled()
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(2)
+
+		let firstIntro = result[0]
+		expect(firstIntro).toBeDefined()
+		expect(firstIntro?.id).toBe('intro-1')
+		expect(firstIntro?.status).toBe('pending')
+		expect(firstIntro?.notes).toBe('Both enjoy hiking')
+
+		let secondIntro = result[1]
+		expect(secondIntro).toBeDefined()
+		expect(secondIntro?.id).toBe('intro-2')
+		expect(secondIntro?.status).toBe('accepted')
+		expect(secondIntro?.notes).toBeNull()
 	})
 })

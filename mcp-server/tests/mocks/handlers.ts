@@ -131,4 +131,34 @@ export let handlers = [
 			{ status: 201 }
 		)
 	}),
+
+	// GET /api/introductions - Success
+	http.get(`${BASE_URL}/api/introductions`, ({ request }) => {
+		let auth = request.headers.get('Authorization')
+		if (auth !== 'Bearer valid-token') {
+			return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+		return HttpResponse.json([
+			{
+				id: '770e8400-e29b-41d4-a716-446655440000',
+				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				person_a_id: '550e8400-e29b-41d4-a716-446655440001',
+				person_b_id: '550e8400-e29b-41d4-a716-446655440002',
+				status: 'pending',
+				notes: 'Both enjoy hiking',
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			},
+			{
+				id: '770e8400-e29b-41d4-a716-446655440001',
+				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				person_a_id: '550e8400-e29b-41d4-a716-446655440003',
+				person_b_id: '550e8400-e29b-41d4-a716-446655440004',
+				status: 'accepted',
+				notes: null,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			},
+		])
+	}),
 ]

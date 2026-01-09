@@ -4,6 +4,7 @@ import {
 	personResponseSchema,
 	peopleListResponseSchema,
 	introductionResponseSchema,
+	introductionsListResponseSchema,
 } from './schemas'
 
 let addPersonInputSchema = z.object({
@@ -192,5 +193,20 @@ export class ApiClient {
 		}
 
 		return this.parseResponse(response, introductionResponseSchema)
+	}
+
+	async listIntroductions(): Promise<Introduction[]> {
+		let response = await fetch(`${this.config.api_base_url}/api/introductions`, {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${this.config.auth_token}`,
+			},
+		})
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, introductionsListResponseSchema)
 	}
 }

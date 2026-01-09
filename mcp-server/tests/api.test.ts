@@ -185,4 +185,41 @@ describe('ApiClient', () => {
 			)
 		).rejects.toThrow()
 	})
+
+	test('listIntroductions() makes GET with Bearer token', async () => {
+		let client = new ApiClient(config)
+		let result = await client.listIntroductions()
+
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(2)
+
+		let firstIntro = result[0]
+		expect(firstIntro).toBeDefined()
+		expect(firstIntro?.id).toBe('770e8400-e29b-41d4-a716-446655440000')
+		expect(firstIntro?.person_a_id).toBe('550e8400-e29b-41d4-a716-446655440001')
+		expect(firstIntro?.person_b_id).toBe('550e8400-e29b-41d4-a716-446655440002')
+		expect(firstIntro?.status).toBe('pending')
+		expect(firstIntro?.notes).toBe('Both enjoy hiking')
+	})
+
+	test('listIntroductions() returns array with multiple introductions', async () => {
+		let client = new ApiClient(config)
+		let result = await client.listIntroductions()
+
+		expect(result.length).toBe(2)
+
+		let secondIntro = result[1]
+		expect(secondIntro).toBeDefined()
+		expect(secondIntro?.id).toBe('770e8400-e29b-41d4-a716-446655440001')
+		expect(secondIntro?.status).toBe('accepted')
+		expect(secondIntro?.notes).toBeNull()
+	})
+
+	test('listIntroductions() throws on 401 unauthorized', async () => {
+		let invalidClient = new ApiClient({
+			...config,
+			auth_token: 'invalid-token',
+		})
+		await expect(invalidClient.listIntroductions()).rejects.toThrow()
+	})
 })
