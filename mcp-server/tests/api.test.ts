@@ -428,4 +428,77 @@ describe('ApiClient', () => {
 			)
 		).rejects.toThrow()
 	})
+
+	test('listFeedback(introduction_id) makes GET with Bearer token', async () => {
+		let client = new ApiClient(config)
+		let result = await client.listFeedback('770e8400-e29b-41d4-a716-446655440000')
+
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(2)
+
+		let firstFeedback = result[0]
+		expect(firstFeedback).toBeDefined()
+		expect(firstFeedback?.id).toBe('880e8400-e29b-41d4-a716-446655440000')
+		expect(firstFeedback?.introduction_id).toBe('770e8400-e29b-41d4-a716-446655440000')
+		expect(firstFeedback?.from_person_id).toBe('550e8400-e29b-41d4-a716-446655440001')
+		expect(firstFeedback?.content).toBe('Great match! We had a wonderful time.')
+		expect(firstFeedback?.sentiment).toBe('positive')
+	})
+
+	test('listFeedback(introduction_id) returns array with multiple feedback items', async () => {
+		let client = new ApiClient(config)
+		let result = await client.listFeedback('770e8400-e29b-41d4-a716-446655440000')
+
+		expect(result.length).toBe(2)
+
+		let secondFeedback = result[1]
+		expect(secondFeedback).toBeDefined()
+		expect(secondFeedback?.id).toBe('880e8400-e29b-41d4-a716-446655440001')
+		expect(secondFeedback?.content).toBe('Nice person, but not my type.')
+		expect(secondFeedback?.sentiment).toBe('neutral')
+	})
+
+	test('listFeedback(introduction_id) validates introduction_id is not empty', async () => {
+		let client = new ApiClient(config)
+		await expect(client.listFeedback('')).rejects.toThrow('Introduction ID is required')
+	})
+
+	test('listFeedback(introduction_id) throws on 401 unauthorized', async () => {
+		let invalidClient = new ApiClient({
+			...config,
+			auth_token: 'invalid-token',
+		})
+		await expect(
+			invalidClient.listFeedback('770e8400-e29b-41d4-a716-446655440000')
+		).rejects.toThrow()
+	})
+
+	test('getFeedback(id) makes GET with Bearer token', async () => {
+		let client = new ApiClient(config)
+		let result = await client.getFeedback('880e8400-e29b-41d4-a716-446655440000')
+
+		expect(result.id).toBe('880e8400-e29b-41d4-a716-446655440000')
+		expect(result.introduction_id).toBe('770e8400-e29b-41d4-a716-446655440000')
+		expect(result.from_person_id).toBe('550e8400-e29b-41d4-a716-446655440001')
+		expect(result.content).toBe('Great match! We had a wonderful time.')
+		expect(result.sentiment).toBe('positive')
+	})
+
+	test('getFeedback(id) validates id is not empty', async () => {
+		let client = new ApiClient(config)
+		await expect(client.getFeedback('')).rejects.toThrow('ID is required')
+	})
+
+	test('getFeedback(id) throws on 401 unauthorized', async () => {
+		let invalidClient = new ApiClient({
+			...config,
+			auth_token: 'invalid-token',
+		})
+		await expect(invalidClient.getFeedback('test-id')).rejects.toThrow()
+	})
+
+	test('getFeedback(id) throws on 404 not found', async () => {
+		let client = new ApiClient(config)
+		await expect(client.getFeedback('not-found-id')).rejects.toThrow('HTTP 404')
+	})
 })

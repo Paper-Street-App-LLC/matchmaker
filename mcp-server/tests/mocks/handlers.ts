@@ -273,4 +273,55 @@ export let handlers = [
 			{ status: 201 }
 		)
 	}),
+
+	// GET /api/feedback/:id - Success (get single feedback)
+	http.get(`${BASE_URL}/api/feedback/:id`, ({ request, params }) => {
+		let auth = request.headers.get('Authorization')
+		if (auth !== 'Bearer valid-token') {
+			return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+		let { id } = params
+		if (id === 'not-found-id') {
+			return HttpResponse.json({ error: 'Feedback not found' }, { status: 404 })
+		}
+		return HttpResponse.json({
+			id: id,
+			introduction_id: '770e8400-e29b-41d4-a716-446655440000',
+			from_person_id: '550e8400-e29b-41d4-a716-446655440001',
+			content: 'Great match! We had a wonderful time.',
+			sentiment: 'positive',
+			created_at: new Date().toISOString(),
+		})
+	}),
+
+	// GET /api/feedback - Success (list feedback for an introduction)
+	http.get(`${BASE_URL}/api/feedback`, ({ request }) => {
+		let auth = request.headers.get('Authorization')
+		if (auth !== 'Bearer valid-token') {
+			return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+		let url = new URL(request.url)
+		let introductionId = url.searchParams.get('introductionId')
+		if (!introductionId) {
+			return HttpResponse.json({ error: 'introductionId is required' }, { status: 400 })
+		}
+		return HttpResponse.json([
+			{
+				id: '880e8400-e29b-41d4-a716-446655440000',
+				introduction_id: introductionId,
+				from_person_id: '550e8400-e29b-41d4-a716-446655440001',
+				content: 'Great match! We had a wonderful time.',
+				sentiment: 'positive',
+				created_at: new Date().toISOString(),
+			},
+			{
+				id: '880e8400-e29b-41d4-a716-446655440001',
+				introduction_id: introductionId,
+				from_person_id: '550e8400-e29b-41d4-a716-446655440002',
+				content: 'Nice person, but not my type.',
+				sentiment: 'neutral',
+				created_at: new Date().toISOString(),
+			},
+		])
+	}),
 ]

@@ -7,6 +7,7 @@ import {
 	introductionsListResponseSchema,
 	matchesListResponseSchema,
 	feedbackResponseSchema,
+	feedbackListResponseSchema,
 } from './schemas'
 
 let addPersonInputSchema = z.object({
@@ -57,6 +58,14 @@ let submitFeedbackInputSchema = z.object({
 	from_person_id: z.string().uuid('from_person_id must be a valid UUID'),
 	content: z.string().min(1, 'Content is required'),
 	sentiment: z.string().optional(),
+})
+
+let listFeedbackInputSchema = z.object({
+	introduction_id: z.string().min(1, 'Introduction ID is required'),
+})
+
+let getFeedbackInputSchema = z.object({
+	id: z.string().min(1, 'ID is required'),
 })
 
 export interface Person {
@@ -367,6 +376,45 @@ export class ApiClient {
 				Authorization: `Bearer ${this.config.auth_token}`,
 			},
 			body: JSON.stringify(body),
+		})
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, feedbackResponseSchema)
+	}
+
+	async listFeedback(introduction_id: string): Promise<Feedback[]> {
+		// Validate input
+		listFeedbackInputSchema.parse({ introduction_id })
+
+		let response = await fetch(
+			`${this.config.api_base_url}/api/feedback?introductionId=${encodeURIComponent(introduction_id)}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${this.config.auth_token}`,
+				},
+			}
+		)
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, feedbackListResponseSchema)
+	}
+
+	async getFeedback(id: string): Promise<Feedback> {
+		// Validate input
+		getFeedbackInputSchema.parse({ id })
+
+		let response = await fetch(`${this.config.api_base_url}/api/feedback/${id}`, {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${this.config.auth_token}`,
+			},
 		})
 
 		if (!response.ok) {

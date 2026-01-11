@@ -159,6 +159,28 @@ export function createServer(apiClient: ApiClient) {
 					required: ['introduction_id', 'from_person_id', 'content'],
 				},
 			},
+			{
+				name: 'list_feedback',
+				description: 'Get all feedback for a specific introduction',
+				inputSchema: {
+					type: 'object',
+					properties: {
+						introduction_id: { type: 'string', description: 'Introduction ID (UUID)' },
+					},
+					required: ['introduction_id'],
+				},
+			},
+			{
+				name: 'get_feedback',
+				description: 'Get a specific feedback record',
+				inputSchema: {
+					type: 'object',
+					properties: {
+						id: { type: 'string', description: 'Feedback ID (UUID)' },
+					},
+					required: ['id'],
+				},
+			},
 		],
 	}))
 
@@ -377,6 +399,41 @@ export function createServer(apiClient: ApiClient) {
 					content,
 					sentiment
 				)
+				return {
+					content: [
+						{
+							type: 'text',
+							text: JSON.stringify(result, null, 2),
+						},
+					],
+				}
+			}
+
+			if (name === 'list_feedback') {
+				if (
+					!args ||
+					typeof args !== 'object' ||
+					!('introduction_id' in args) ||
+					typeof args.introduction_id !== 'string'
+				) {
+					throw new Error('Invalid arguments: introduction_id is required and must be a string')
+				}
+				let result = await apiClient.listFeedback(args.introduction_id)
+				return {
+					content: [
+						{
+							type: 'text',
+							text: JSON.stringify(result, null, 2),
+						},
+					],
+				}
+			}
+
+			if (name === 'get_feedback') {
+				if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
+					throw new Error('Invalid arguments: id is required and must be a string')
+				}
+				let result = await apiClient.getFeedback(args.id)
 				return {
 					content: [
 						{

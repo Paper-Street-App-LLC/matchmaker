@@ -128,6 +128,17 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 				created_at: new Date().toISOString(),
 			})
 		),
+		listFeedback: mock(async (_introduction_id: string): Promise<Feedback[]> => []),
+		getFeedback: mock(
+			async (_id: string): Promise<Feedback> => ({
+				id: _id,
+				introduction_id: 'intro-uuid',
+				from_person_id: 'person-uuid',
+				content: 'Great match!',
+				sentiment: 'positive',
+				created_at: new Date().toISOString(),
+			})
+		),
 		...overrides,
 	} as unknown as ApiClient
 }
@@ -545,6 +556,78 @@ describe('MCP Server', () => {
 			'positive'
 		)
 		expect(result.id).toBe('feedback-id')
+		expect(result.introduction_id).toBe('intro-uuid')
+		expect(result.from_person_id).toBe('person-uuid')
+		expect(result.content).toBe('Great match! We had a wonderful time.')
+		expect(result.sentiment).toBe('positive')
+	})
+
+	test('API client handles list_feedback correctly (unit test)', async () => {
+		let mockListFeedback = mock(
+			async (_introduction_id: string): Promise<Feedback[]> => [
+				{
+					id: 'feedback-1',
+					introduction_id: _introduction_id,
+					from_person_id: 'person-a-uuid',
+					content: 'Great match!',
+					sentiment: 'positive',
+					created_at: new Date().toISOString(),
+				},
+				{
+					id: 'feedback-2',
+					introduction_id: _introduction_id,
+					from_person_id: 'person-b-uuid',
+					content: 'Nice person, but not my type.',
+					sentiment: 'neutral',
+					created_at: new Date().toISOString(),
+				},
+			]
+		)
+
+		let mockApiClient = createMockApiClient({
+			listFeedback: mockListFeedback,
+		})
+
+		let result = await mockApiClient.listFeedback('intro-uuid')
+
+		expect(mockListFeedback).toHaveBeenCalledWith('intro-uuid')
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(2)
+
+		let firstFeedback = result[0]
+		expect(firstFeedback).toBeDefined()
+		expect(firstFeedback?.id).toBe('feedback-1')
+		expect(firstFeedback?.introduction_id).toBe('intro-uuid')
+		expect(firstFeedback?.content).toBe('Great match!')
+		expect(firstFeedback?.sentiment).toBe('positive')
+
+		let secondFeedback = result[1]
+		expect(secondFeedback).toBeDefined()
+		expect(secondFeedback?.id).toBe('feedback-2')
+		expect(secondFeedback?.content).toBe('Nice person, but not my type.')
+		expect(secondFeedback?.sentiment).toBe('neutral')
+	})
+
+	test('API client handles get_feedback correctly (unit test)', async () => {
+		let mockGetFeedback = mock(
+			async (_id: string): Promise<Feedback> => ({
+				id: _id,
+				introduction_id: 'intro-uuid',
+				from_person_id: 'person-uuid',
+				content: 'Great match! We had a wonderful time.',
+				sentiment: 'positive',
+				created_at: new Date().toISOString(),
+			})
+		)
+
+		let mockApiClient = createMockApiClient({
+			getFeedback: mockGetFeedback,
+		})
+
+		let result = await mockApiClient.getFeedback('feedback-uuid')
+
+		expect(mockGetFeedback).toHaveBeenCalledWith('feedback-uuid')
+		expect(result.id).toBe('feedback-uuid')
 		expect(result.introduction_id).toBe('intro-uuid')
 		expect(result.from_person_id).toBe('person-uuid')
 		expect(result.content).toBe('Great match! We had a wonderful time.')
