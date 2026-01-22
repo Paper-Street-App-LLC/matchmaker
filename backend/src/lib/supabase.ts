@@ -6,6 +6,11 @@ let configSchema = z.object({
 	serviceRoleKey: z.string().min(1),
 })
 
+let anonConfigSchema = z.object({
+	url: z.string().url().min(1),
+	anonKey: z.string().min(1),
+})
+
 export let createSupabaseClient = (config: {
 	url: string
 	serviceRoleKey: string
@@ -13,6 +18,20 @@ export let createSupabaseClient = (config: {
 	let validated = configSchema.parse(config)
 
 	return createClient(validated.url, validated.serviceRoleKey, {
+		auth: {
+			persistSession: false,
+			autoRefreshToken: false,
+		},
+	})
+}
+
+export let createSupabaseAnonClient = (config: {
+	url: string
+	anonKey: string
+}): SupabaseClient => {
+	let validated = anonConfigSchema.parse(config)
+
+	return createClient(validated.url, validated.anonKey, {
 		auth: {
 			persistSession: false,
 			autoRefreshToken: false,
