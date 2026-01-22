@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { storeAuthorizationCode } from '../lib/authCodeStore'
 
 let oauthParamsSchema = z.object({
 	client_id: z.string().min(1),
@@ -22,12 +23,6 @@ let loginFormSchema = z.object({
 	code_challenge: z.string().min(43),
 	code_challenge_method: z.literal('S256'),
 })
-
-function generateAuthorizationCode(): string {
-	let array = new Uint8Array(32)
-	crypto.getRandomValues(array)
-	return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
-}
 
 function renderLoginPage(params: {
 	client_id: string
@@ -298,10 +293,16 @@ export let createLoginRoutes = (supabaseClient: SupabaseClient): Hono => {
 			)
 		}
 
-		// Generate authorization code
-		// In a production system, this code would be stored with the PKCE challenge
-		// and exchanged for tokens via the /oauth/token endpoint
-		let authorizationCode = generateAuthorizationCode()
+		// Generate and store authorization code with session tokens and PKCE challenge
+		let session = authResult.data.session
+		let authorizationCode = storeAuthorizationCode({
+			userId: authResult.data.user!.id,
+			clientId: client_id,
+			redirectUri: redirect_uri,
+			codeChallenge: code_challenge,
+			accessToken: session?.access_token || '',
+			refreshToken: session?.refresh_token || '',
+		})
 
 		// Build redirect URL with authorization code
 		let redirectUrl = new URL(redirect_uri)

@@ -26,15 +26,19 @@ app.get('/health', c => {
 })
 
 // OAuth routes (public, no authentication required)
-app.route('/oauth', createOAuthRoutes())
+// Note: OAuth routes will be mounted with Supabase client below if available
 
-// Login routes (public, for OAuth authentication flow)
+// Login and OAuth routes (public, for OAuth authentication flow)
 if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
 	let supabaseAnonClient = createSupabaseAnonClient({
 		url: process.env.SUPABASE_URL,
 		anonKey: process.env.SUPABASE_ANON_KEY,
 	})
 	app.route('/login', createLoginRoutes(supabaseAnonClient))
+	app.route('/oauth', createOAuthRoutes(supabaseAnonClient))
+} else {
+	// Mount OAuth routes without Supabase client (refresh token will not work)
+	app.route('/oauth', createOAuthRoutes())
 }
 
 // Initialize Supabase client and protected routes only if env vars are set

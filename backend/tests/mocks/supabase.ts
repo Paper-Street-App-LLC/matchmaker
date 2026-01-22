@@ -15,6 +15,10 @@ type MockOverrides = {
 			data: { user: { id: string; email: string } | null; session: any }
 			error: { message: string } | null
 		}>
+		refreshSession?: (params: { refresh_token: string }) => Promise<{
+			data: { user: { id: string; email: string } | null; session: any }
+			error: { message: string } | null
+		}>
 	}
 	from?: (table: string) => any
 }
@@ -36,6 +40,13 @@ export let createMockSupabaseClient = (overrides: MockOverrides = {}): SupabaseC
 			data: {
 				user: { id: 'new-user-id', email: credentials.email },
 				session: { access_token: 'new-token' },
+			},
+			error: null,
+		})),
+		refreshSession: mock(async (params: { refresh_token: string }) => ({
+			data: {
+				user: { id: 'test-user-id', email: 'test@example.com' },
+				session: { access_token: 'refreshed-token', refresh_token: 'new-refresh-token' },
 			},
 			error: null,
 		})),
