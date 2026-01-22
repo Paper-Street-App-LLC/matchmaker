@@ -6,13 +6,7 @@ export let waitlistSchema = z.object({
 	organization: z.string().optional(),
 	phone: z.string().optional(),
 	how_heard: z
-		.enum([
-			"search",
-			"social_media",
-			"friend_referral",
-			"blog_article",
-			"other",
-		])
+		.enum(["search", "social_media", "friend_referral", "blog_article", "other"])
 		.optional(),
 	message: z.string().optional(),
 });

@@ -14,10 +14,7 @@ let Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 		return (
 			<div className="w-full">
 				{label && (
-					<label
-						htmlFor={textareaId}
-						className="mb-2 block text-sm font-medium text-slate-700"
-					>
+					<label htmlFor={textareaId} className="mb-2 block text-sm font-medium text-slate-700">
 						{label}
 						{props.required && <span className="ml-1 text-red-500">*</span>}
 					</label>
@@ -32,11 +29,7 @@ let Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 					ref={ref}
 					aria-invalid={error ? "true" : "false"}
 					aria-describedby={
-						error
-							? `${textareaId}-error`
-							: helperText
-								? `${textareaId}-helper`
-								: undefined
+						error ? `${textareaId}-error` : helperText ? `${textareaId}-helper` : undefined
 					}
 					{...props}
 				/>
@@ -46,10 +39,7 @@ let Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 					</p>
 				)}
 				{!error && helperText && (
-					<p
-						id={`${textareaId}-helper`}
-						className="mt-1 text-sm text-slate-500"
-					>
+					<p id={`${textareaId}-helper`} className="mt-1 text-sm text-slate-500">
 						{helperText}
 					</p>
 				)}

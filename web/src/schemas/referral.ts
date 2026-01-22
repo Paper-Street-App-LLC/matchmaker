@@ -11,9 +11,7 @@ let referralSchema = z.object({
 
 	// Matchmaker being referred
 	matchmaker_name: z.string().optional(),
-	matchmaker_email: z
-		.string()
-		.email("Please enter a valid matchmaker email address"),
+	matchmaker_email: z.string().email("Please enter a valid matchmaker email address"),
 
 	// Optional message
 	message: z.string().optional(),

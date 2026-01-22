@@ -5,13 +5,13 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({
 	subsets: ["latin"],
-	variable: "--font-inter"
+	variable: "--font-inter",
 });
 
 const dmSans = DM_Sans({
 	subsets: ["latin"],
 	weight: ["300", "400", "500"],
-	variable: "--font-dm-sans"
+	variable: "--font-dm-sans",
 });
 
 export const metadata: Metadata = {
@@ -36,8 +36,7 @@ export const metadata: Metadata = {
 	twitter: {
 		card: "summary_large_image",
 		title: "The Introduction | Smart Notes for Matchmakers",
-		description:
-			"AI-assisted matchmaking tool that empowers you to connect friends and family.",
+		description: "AI-assisted matchmaking tool that empowers you to connect friends and family.",
 	},
 };
 

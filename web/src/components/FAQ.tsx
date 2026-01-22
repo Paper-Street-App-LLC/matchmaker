@@ -48,18 +48,18 @@ export function FAQ() {
 	};
 
 	return (
-		<section className="relative overflow-hidden bg-gray-100 py-24 sm:py-32 dark:bg-gray-900/95">
+		<section className="relative overflow-hidden bg-gray-100 py-24 dark:bg-gray-900/95 sm:py-32">
 			<div className="container mx-auto px-4">
 				<div className="mx-auto max-w-3xl">
 					{/* Header */}
 					<div className="text-center">
-						<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl dark:text-gray-100">
+						<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
 							Frequently Asked{" "}
 							<span className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent dark:from-sky-400 dark:to-indigo-400">
 								Questions
 							</span>
 						</h2>
-						<p className="mt-6 font-display font-light text-lg text-gray-600 dark:text-gray-400">
+						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
 							Everything you need to know about The Introduction
 						</p>
 					</div>
@@ -117,7 +117,7 @@ export function FAQ() {
 
 					{/* Contact CTA */}
 					<div className="mt-16 text-center">
-						<p className="font-display font-normal text-base text-gray-600 dark:text-gray-400">
+						<p className="font-display text-base font-normal text-gray-600 dark:text-gray-400">
 							Still have questions?{" "}
 							<a
 								href="mailto:hello@theintro.xyz"

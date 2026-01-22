@@ -1,23 +1,14 @@
-import {
-	UserCircle,
-	BookOpen,
-	FolderKanban,
-	Shield,
-	Globe,
-	TrendingUp,
-} from "lucide-react";
+import { UserCircle, BookOpen, FolderKanban, Shield, Globe, TrendingUp } from "lucide-react";
 
 let features = [
 	{
 		name: "You're in the Driver's Seat",
-		description:
-			"AI assists your matchmaking decisions, never makes them for you",
+		description: "AI assists your matchmaking decisions, never makes them for you",
 		icon: UserCircle,
 	},
 	{
 		name: "Smart Note-Taking",
-		description:
-			"Keep track of friends, family, preferences, and personalities",
+		description: "Keep track of friends, family, preferences, and personalities",
 		icon: BookOpen,
 	},
 	{
@@ -44,37 +35,32 @@ let features = [
 
 export function Features() {
 	return (
-		<section className="relative overflow-hidden bg-gray-50 py-24 sm:py-32 dark:bg-gray-900">
+		<section className="relative overflow-hidden bg-gray-50 py-24 dark:bg-gray-900 sm:py-32">
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-2xl text-center">
-					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl dark:text-gray-100">
+					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
 						Everything you need to be a{" "}
-						<span className="text-indigo-600 dark:text-indigo-400">
-							great matchmaker
-						</span>
+						<span className="text-indigo-600 dark:text-indigo-400">great matchmaker</span>
 					</h2>
-					<p className="mt-6 font-display font-light text-lg leading-8 text-gray-600 dark:text-gray-400">
-						AI-assisted tools that help you make meaningful connections while
-						keeping you in complete control.
+					<p className="mt-6 font-display text-lg font-light leading-8 text-gray-600 dark:text-gray-400">
+						AI-assisted tools that help you make meaningful connections while keeping you in
+						complete control.
 					</p>
 				</div>
 				<div className="mx-auto mt-16 max-w-7xl sm:mt-20 lg:mt-24">
 					<dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-2 lg:gap-x-12 lg:gap-y-12">
-						{features.map((feature) => (
+						{features.map(feature => (
 							<div
 								key={feature.name}
 								className="group relative rounded-2xl p-8 transition-all duration-300 hover:bg-white dark:hover:bg-gray-800/50"
 							>
 								<dt className="flex items-center gap-4 text-lg font-bold leading-7 text-gray-900 dark:text-gray-100">
 									<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 shadow-md transition-transform duration-300 group-hover:scale-110">
-										<feature.icon
-											className="h-6 w-6 text-white"
-											aria-hidden="true"
-										/>
+										<feature.icon className="h-6 w-6 text-white" aria-hidden="true" />
 									</div>
 									{feature.name}
 								</dt>
-								<dd className="mt-4 font-display font-normal text-base leading-7 text-gray-600 dark:text-gray-400">
+								<dd className="mt-4 font-display text-base font-normal leading-7 text-gray-600 dark:text-gray-400">
 									{feature.description}
 								</dd>
 							</div>

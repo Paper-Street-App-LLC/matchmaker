@@ -44,8 +44,7 @@ export async function POST(request: Request) {
 				// PostgreSQL unique violation code
 				return NextResponse.json(
 					{
-						error:
-							"You have already referred this matchmaker. Thank you for your enthusiasm!",
+						error: "You have already referred this matchmaker. Thank you for your enthusiasm!",
 					},
 					{ status: 409 }
 				);

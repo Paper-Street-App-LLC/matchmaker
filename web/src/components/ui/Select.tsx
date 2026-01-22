@@ -14,10 +14,7 @@ let Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 		return (
 			<div className="w-full">
 				{label && (
-					<label
-						htmlFor={selectId}
-						className="mb-2 block text-sm font-medium text-slate-700"
-					>
+					<label htmlFor={selectId} className="mb-2 block text-sm font-medium text-slate-700">
 						{label}
 						{props.required && <span className="ml-1 text-red-500">*</span>}
 					</label>
@@ -32,11 +29,7 @@ let Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 					ref={ref}
 					aria-invalid={error ? "true" : "false"}
 					aria-describedby={
-						error
-							? `${selectId}-error`
-							: helperText
-								? `${selectId}-helper`
-								: undefined
+						error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined
 					}
 					{...props}
 				>

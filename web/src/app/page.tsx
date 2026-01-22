@@ -9,9 +9,7 @@ import { ReferralForm } from "@/components/ReferralForm";
 import { Card } from "@/components/ui";
 
 export default function Home() {
-	let [activeForm, setActiveForm] = useState<"matchmaker" | "single">(
-		"matchmaker"
-	);
+	let [activeForm, setActiveForm] = useState<"matchmaker" | "single">("matchmaker");
 
 	return (
 		<main className="flex min-h-screen flex-col">
@@ -31,7 +29,7 @@ export default function Home() {
 						<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
 							Ready to get started?
 						</h2>
-						<p className="mt-6 font-display font-light text-lg text-gray-600 dark:text-gray-400">
+						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
 							Join the waitlist and be the first to know when we launch
 						</p>
 					</div>
@@ -97,8 +95,7 @@ export default function Home() {
 												Refer a Matchmaker
 											</h2>
 											<p className="mt-3 font-display font-normal text-gray-600 dark:text-gray-400">
-												Know someone who loves playing matchmaker? Send them an
-												invite!
+												Know someone who loves playing matchmaker? Send them an invite!
 											</p>
 										</div>
 										<div className="mt-8">
@@ -142,27 +139,26 @@ export default function Home() {
 							<h3 className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-3xl font-bold text-transparent dark:from-sky-400 dark:to-indigo-400">
 								The Introduction
 							</h3>
-							<p className="mt-3 font-display font-normal text-lg text-gray-600 dark:text-gray-400">
+							<p className="mt-3 font-display text-lg font-normal text-gray-600 dark:text-gray-400">
 								Empowering matchmakers with AI-assisted tools
 							</p>
 						</div>
 						<div className="flex space-x-8 text-sm font-medium text-gray-500 dark:text-gray-400">
 							<a
 								href="#"
-								className="relative transition-colors hover:text-sky-600 dark:hover:text-sky-400 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-sky-600 after:transition-all hover:after:w-full dark:after:bg-sky-400"
+								className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-sky-600 after:transition-all hover:text-sky-600 hover:after:w-full dark:after:bg-sky-400 dark:hover:text-sky-400"
 							>
 								Privacy Policy
 							</a>
 							<a
 								href="#"
-								className="relative transition-colors hover:text-sky-600 dark:hover:text-sky-400 after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-sky-600 after:transition-all hover:after:w-full dark:after:bg-sky-400"
+								className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-sky-600 after:transition-all hover:text-sky-600 hover:after:w-full dark:after:bg-sky-400 dark:hover:text-sky-400"
 							>
 								Terms
 							</a>
 						</div>
 						<p className="text-sm text-gray-400 dark:text-gray-500">
-							© {new Date().getFullYear()} The Introduction. All rights
-							reserved.
+							© {new Date().getFullYear()} The Introduction. All rights reserved.
 						</p>
 					</div>
 				</div>
