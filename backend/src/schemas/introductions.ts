@@ -7,9 +7,7 @@ export let createIntroductionSchema = z.object({
 })
 
 export let updateIntroductionSchema = z.object({
-	status: z
-		.enum(['pending', 'accepted', 'declined', 'dating', 'ended'])
-		.optional(),
+	status: z.enum(['pending', 'accepted', 'declined', 'dating', 'ended']).optional(),
 	notes: z.string().optional(),
 })
 
@@ -24,12 +22,6 @@ export let introductionResponseSchema = z.object({
 	updated_at: z.string(),
 })
 
-export type CreateIntroductionInput = z.infer<
-	typeof createIntroductionSchema
->
-export type UpdateIntroductionInput = z.infer<
-	typeof updateIntroductionSchema
->
-export type IntroductionResponse = z.infer<
-	typeof introductionResponseSchema
->
+export type CreateIntroductionInput = z.infer<typeof createIntroductionSchema>
+export type UpdateIntroductionInput = z.infer<typeof updateIntroductionSchema>
+export type IntroductionResponse = z.infer<typeof introductionResponseSchema>

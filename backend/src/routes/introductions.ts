@@ -1,10 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import type { SupabaseClient } from '../lib/supabase'
-import {
-	createIntroductionSchema,
-	updateIntroductionSchema,
-} from '../schemas/introductions'
+import { createIntroductionSchema, updateIntroductionSchema } from '../schemas/introductions'
 
 type Variables = {
 	userId: string

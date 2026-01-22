@@ -124,9 +124,7 @@ describe('GET /api/feedback', () => {
 		})
 		app.route('/', createFeedbackRoutes(mockClient))
 
-		let req = new Request(
-			`http://localhost/?introductionId=${mockIntroductionId}`
-		)
+		let req = new Request(`http://localhost/?introductionId=${mockIntroductionId}`)
 
 		let res = await app.fetch(req)
 		let json = (await res.json()) as typeof mockFeedback

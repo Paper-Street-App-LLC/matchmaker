@@ -41,7 +41,6 @@ describe('API Application', () => {
 		})
 	})
 
-
 	describe('Middleware', () => {
 		test('should have CORS enabled', async () => {
 			let req = new Request('http://localhost/', {
