@@ -78,7 +78,17 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				status: 401,
 				message: 'Missing Authorization header',
 			})
-			throw new HTTPException(401, { message: 'Unauthorized' })
+			let url = new URL(c.req.url)
+			let baseUrl = `${url.protocol}//${url.host}`
+			throw new HTTPException(401, {
+				message: 'Unauthorized',
+				res: new Response('Unauthorized', {
+					status: 401,
+					headers: {
+						'WWW-Authenticate': `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+					},
+				}),
+			})
 		}
 
 		let token = authHeader.replace('Bearer ', '')
@@ -91,7 +101,17 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				status: 401,
 				message: 'Invalid Authorization header format',
 			})
-			throw new HTTPException(401, { message: 'Unauthorized' })
+			let url = new URL(c.req.url)
+			let baseUrl = `${url.protocol}//${url.host}`
+			throw new HTTPException(401, {
+				message: 'Unauthorized',
+				res: new Response('Unauthorized', {
+					status: 401,
+					headers: {
+						'WWW-Authenticate': `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+					},
+				}),
+			})
 		}
 
 		let { data, error } = await supabaseClient.auth.getUser(token)
@@ -104,7 +124,17 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				status: 401,
 				message: error?.message || 'Invalid token',
 			})
-			throw new HTTPException(401, { message: 'Unauthorized' })
+			let url = new URL(c.req.url)
+			let baseUrl = `${url.protocol}//${url.host}`
+			throw new HTTPException(401, {
+				message: 'Unauthorized',
+				res: new Response('Unauthorized', {
+					status: 401,
+					headers: {
+						'WWW-Authenticate': `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+					},
+				}),
+			})
 		}
 
 		// Check for required scope

@@ -22,7 +22,7 @@ describe('MCP Routes', () => {
 	})
 
 	describe('POST /mcp', () => {
-		test('returns 401 when Authorization header is missing', async () => {
+		test('returns 401 with WWW-Authenticate header when Authorization header is missing', async () => {
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
 				headers: {
@@ -42,6 +42,10 @@ describe('MCP Routes', () => {
 
 			let res = await app.fetch(req)
 			expect(res.status).toBe(401)
+			let wwwAuth = res.headers.get('WWW-Authenticate')
+			expect(wwwAuth).toContain('Bearer')
+			expect(wwwAuth).toContain('resource_metadata=')
+			expect(wwwAuth).toContain('/.well-known/oauth-protected-resource')
 		})
 
 		test('returns 401 when Bearer token is invalid', async () => {
