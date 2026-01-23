@@ -40,20 +40,20 @@ function CheckIcon({ className }: { className?: string }) {
 export default function SetupPage() {
 	let [copied, setCopied] = useState(false);
 
-	let serverUrl =
+	let mcpEndpoint =
 		typeof window !== "undefined"
-			? `${window.location.protocol}//${window.location.host}`
-			: "https://your-server-url.com";
+			? `${window.location.protocol}//${window.location.host}/mcp`
+			: "https://your-server-url.com/mcp";
 
 	async function handleCopy() {
 		try {
-			await navigator.clipboard.writeText(serverUrl);
+			await navigator.clipboard.writeText(mcpEndpoint);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
 			// Fallback for browsers that don't support clipboard API
 			let textArea = document.createElement("textarea");
-			textArea.value = serverUrl;
+			textArea.value = mcpEndpoint;
 			document.body.appendChild(textArea);
 			textArea.select();
 			document.execCommand("copy");
@@ -112,14 +112,14 @@ export default function SetupPage() {
 								</p>
 							</section>
 
-							{/* Server URL */}
+							{/* MCP Endpoint URL */}
 							<section>
 								<h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-									Server URL
+									MCP Endpoint URL
 								</h2>
 								<div className="flex items-center gap-2">
 									<code className="flex-1 rounded-md border border-gray-200 bg-gray-100 px-4 py-3 font-mono text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-										{serverUrl}
+										{mcpEndpoint}
 									</code>
 									<button
 										onClick={handleCopy}
@@ -129,7 +129,7 @@ export default function SetupPage() {
 												? "border-green-500 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"
 												: "border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-sky-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-sky-400"
 										)}
-										aria-label={copied ? "Copied!" : "Copy server URL"}
+										aria-label={copied ? "Copied!" : "Copy MCP endpoint URL"}
 									>
 										{copied ? <CheckIcon className="h-5 w-5" /> : <CopyIcon className="h-5 w-5" />}
 									</button>
@@ -144,7 +144,7 @@ export default function SetupPage() {
 							{/* Setup Instructions */}
 							<section>
 								<h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-									Setup Instructions
+									Claude.ai Connection Instructions
 								</h2>
 								<ol className="space-y-4">
 									<li className="flex gap-4">
@@ -153,10 +153,19 @@ export default function SetupPage() {
 										</span>
 										<div>
 											<p className="font-medium text-gray-900 dark:text-gray-100">
-												Open your MCP client settings
+												Open Claude.ai Settings
 											</p>
 											<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-												In Claude Desktop, go to Settings → Developer → MCP Servers
+												Go to{" "}
+												<a
+													href="https://claude.ai"
+													target="_blank"
+													rel="noopener noreferrer"
+													className="text-sky-600 underline hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+												>
+													claude.ai
+												</a>{" "}
+												and click on your profile icon, then select "Settings"
 											</p>
 										</div>
 									</li>
@@ -166,10 +175,10 @@ export default function SetupPage() {
 										</span>
 										<div>
 											<p className="font-medium text-gray-900 dark:text-gray-100">
-												Add a new MCP server
+												Navigate to Integrations
 											</p>
 											<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-												Click "Add Server" and enter a name like "The Introduction"
+												In the settings menu, find the "Integrations" or "MCP Servers" section
 											</p>
 										</div>
 									</li>
@@ -179,10 +188,11 @@ export default function SetupPage() {
 										</span>
 										<div>
 											<p className="font-medium text-gray-900 dark:text-gray-100">
-												Paste the server URL
+												Add a new MCP server
 											</p>
 											<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-												Copy the URL above and paste it into the server URL field
+												Click "Add Integration" or "Add MCP Server" and enter a name like "The
+												Introduction"
 											</p>
 										</div>
 									</li>
@@ -192,10 +202,10 @@ export default function SetupPage() {
 										</span>
 										<div>
 											<p className="font-medium text-gray-900 dark:text-gray-100">
-												Complete authentication
+												Paste the MCP endpoint URL
 											</p>
 											<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-												Follow the OAuth prompts to authorize your AI assistant
+												Copy the URL above and paste it into the server URL field
 											</p>
 										</div>
 									</li>
@@ -205,14 +215,123 @@ export default function SetupPage() {
 										</span>
 										<div>
 											<p className="font-medium text-gray-900 dark:text-gray-100">
-												Start matchmaking!
+												Save and connect
 											</p>
 											<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-												Once connected, ask your AI assistant to help manage your introductions
+												Save your settings. Claude will attempt to connect to the MCP server
 											</p>
 										</div>
 									</li>
 								</ol>
+							</section>
+
+							{/* OAuth Authentication Flow */}
+							<section>
+								<h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+									OAuth Authentication Flow
+								</h2>
+								<p className="mb-4 text-gray-600 dark:text-gray-400">
+									When connecting for the first time, you'll be guided through a secure OAuth
+									authentication process:
+								</p>
+								<ol className="space-y-3">
+									<li className="flex gap-3">
+										<span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+											1
+										</span>
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											<strong className="text-gray-900 dark:text-gray-100">
+												Authorization redirect:
+											</strong>{" "}
+											Claude will redirect you to our login page
+										</p>
+									</li>
+									<li className="flex gap-3">
+										<span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+											2
+										</span>
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											<strong className="text-gray-900 dark:text-gray-100">Sign in:</strong> Log in
+											with your existing account or create a new one
+										</p>
+									</li>
+									<li className="flex gap-3">
+										<span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+											3
+										</span>
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											<strong className="text-gray-900 dark:text-gray-100">
+												Grant permission:
+											</strong>{" "}
+											Review and approve the permissions Claude needs to access your data
+										</p>
+									</li>
+									<li className="flex gap-3">
+										<span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+											4
+										</span>
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											<strong className="text-gray-900 dark:text-gray-100">
+												Connection complete:
+											</strong>{" "}
+											You'll be redirected back to Claude with access granted
+										</p>
+									</li>
+								</ol>
+								<p className="mt-4 text-sm text-gray-500 dark:text-gray-500">
+									Your access token is securely stored and will be used for all future requests.
+									You can revoke access at any time from your account settings.
+								</p>
+							</section>
+
+							{/* Troubleshooting */}
+							<section>
+								<h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+									Troubleshooting
+								</h2>
+								<div className="space-y-4">
+									<div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+										<h3 className="font-medium text-gray-900 dark:text-gray-100">
+											Connection failed or timed out
+										</h3>
+										<ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+											<li>Verify the MCP endpoint URL is correct and includes "/mcp"</li>
+											<li>Check that you have a stable internet connection</li>
+											<li>Try refreshing the page and reconnecting</li>
+										</ul>
+									</div>
+									<div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+										<h3 className="font-medium text-gray-900 dark:text-gray-100">
+											Authentication errors
+										</h3>
+										<ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+											<li>Ensure you're logged in to your account</li>
+											<li>Check that your account has MCP access enabled</li>
+											<li>Try disconnecting and reconnecting the integration</li>
+											<li>Clear your browser cookies and try again</li>
+										</ul>
+									</div>
+									<div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+										<h3 className="font-medium text-gray-900 dark:text-gray-100">
+											Tools not appearing in Claude
+										</h3>
+										<ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+											<li>Verify the MCP server shows as "Connected" in settings</li>
+											<li>Start a new conversation after connecting</li>
+											<li>Check that you granted all required permissions during OAuth</li>
+										</ul>
+									</div>
+									<div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+										<h3 className="font-medium text-gray-900 dark:text-gray-100">
+											Permission denied errors
+										</h3>
+										<ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+											<li>Your account may not have the required "mcp:access" scope</li>
+											<li>Contact support to enable MCP access for your account</li>
+											<li>Re-authenticate to refresh your access token</li>
+										</ul>
+									</div>
+								</div>
 							</section>
 						</CardContent>
 					</Card>
