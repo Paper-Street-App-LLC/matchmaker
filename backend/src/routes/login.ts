@@ -214,6 +214,16 @@ function escapeHtml(str: string): string {
 		.replace(/'/g, '&#039;')
 }
 
+function getUserFriendlyErrorMessage(error: string): string {
+	if (error.toLowerCase().includes('user already registered')) {
+		return 'An account with this email already exists. Please sign in instead.'
+	}
+	if (error.toLowerCase().includes('invalid login credentials')) {
+		return 'Invalid email or password. Please check your credentials and try again.'
+	}
+	return error
+}
+
 export let createLoginRoutes = (supabaseClient: SupabaseClient): Hono => {
 	let app = new Hono()
 
@@ -287,7 +297,7 @@ export let createLoginRoutes = (supabaseClient: SupabaseClient): Hono => {
 					state,
 					code_challenge,
 					code_challenge_method,
-					error: authResult.error.message,
+					error: getUserFriendlyErrorMessage(authResult.error.message),
 					mode,
 				})
 			)

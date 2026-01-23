@@ -153,7 +153,8 @@ describe('POST /login (Sign In)', () => {
 
 		expect(res.status).toBe(200)
 		let html = await res.text()
-		expect(html).toContain('Invalid login credentials')
+		expect(html).toContain('Invalid email or password')
+		expect(html).toContain('try again')
 	})
 })
 
@@ -210,7 +211,7 @@ describe('POST /login (Sign Up)', () => {
 		expect(location).toContain('state=xyz789')
 	})
 
-	test('should return error when email already exists', async () => {
+	test('should return user-friendly error when email already exists and suggest signing in', async () => {
 		let mockClient = createMockSupabaseClient({
 			auth: {
 				getUser: mock(async () => ({
@@ -252,6 +253,7 @@ describe('POST /login (Sign Up)', () => {
 
 		expect(res.status).toBe(200)
 		let html = await res.text()
-		expect(html).toContain('User already registered')
+		expect(html).toContain('An account with this email already exists')
+		expect(html).toContain('sign in')
 	})
 })
