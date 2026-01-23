@@ -1,15 +1,16 @@
 {
-  "name": "MCP OAuth Discovery Endpoints",
-  "branchName": "feature/mcp-oauth-discovery-endpoints",
+  "name": "MCP Streamable HTTP Transport Layer",
+  "branchName": "feature/mcp-streamable-http-transport",
   "userStories": [
     {
       "id": "US-001",
-      "title": "OAuth Server Discovery",
-      "description": "As an MCP client, I want to discover the OAuth server metadata at a well-known endpoint so that I can programmatically find the authorization and token endpoints without hardcoding them.",
+      "title": "Remote MCP Connection",
+      "description": "As a Claude.ai user, I want to connect to the MCP server from Claude.ai so that I can access its tools and resources without running anything locally.",
       "acceptanceCriteria": [
-        "GET /.well-known/oauth-authorization-server returns 200 with valid JSON",
-        "Response includes authorization_endpoint, token_endpoint, and registration_endpoint",
-        "Response content-type is application/json"
+        "POST /mcp endpoint accepts MCP JSON-RPC requests",
+        "Endpoint supports Streamable HTTP transport (latest MCP spec)",
+        "Response streams via text/event-stream content type",
+        "Stateless request handling (no session persistence required)"
       ],
       "priority": 1,
       "passes": true,
@@ -18,44 +19,100 @@
     },
     {
       "id": "US-002",
-      "title": "Protected Resource Discovery",
-      "description": "As an MCP client, I want to discover which authorization server protects the MCP resource so that I know where to authenticate before accessing the API.",
+      "title": "OAuth Authentication for MCP",
+      "description": "As a Claude.ai user, I want to authenticate securely via OAuth so that my connection is protected and I control access to my account.",
       "acceptanceCriteria": [
-        "GET /.well-known/oauth-protected-resource returns 200 with valid JSON",
-        "Response includes authorization_servers array pointing to the issuer",
-        "Response content-type is application/json"
+        "All /mcp requests require valid OAuth 2.0 Bearer token",
+        "Token validation uses existing OAuth implementation",
+        "401 Unauthorized returned for missing/invalid tokens",
+        "403 Forbidden returned for insufficient scopes"
       ],
       "priority": 2,
       "passes": true,
-      "dependsOn": [],
+      "dependsOn": [
+        "US-001"
+      ],
       "completionNotes": "Completed by agent"
     },
     {
       "id": "US-003",
-      "title": "Dynamic Client Registration",
-      "description": "As an MCP client, I want to register myself as an OAuth client at runtime so that I can obtain a client_id without manual configuration.",
+      "title": "CORS for Claude.ai",
+      "description": "As an administrator, I want CORS restricted to Claude.ai so that only authorized clients can connect.",
       "acceptanceCriteria": [
-        "POST /register accepts JSON with client_name and redirect_uris",
-        "Response includes generated client_id",
-        "Registered client can be used in subsequent OAuth flows",
-        "Invalid requests return appropriate error responses"
+        "CORS allows origin https://claude.ai",
+        "OPTIONS /mcp preflight requests handled correctly",
+        "Allowed headers include Authorization, Content-Type, Accept",
+        "CORS configuration is easily extensible for future origins"
       ],
       "priority": 3,
       "passes": true,
-      "dependsOn": [],
+      "dependsOn": [
+        "US-001"
+      ],
       "completionNotes": "Completed by agent"
     },
     {
       "id": "US-004",
-      "title": "End-to-End OAuth Flow",
-      "description": "As an MCP client, I want to complete the full OAuth authentication flow so that I can access protected MCP resources over HTTP.",
+      "title": "Basic Error Logging",
+      "description": "As a developer, I want basic error logging so that I can diagnose connection issues when they occur.",
       "acceptanceCriteria": [
-        "Client can discover endpoints via well-known URLs",
-        "Client can register dynamically",
-        "Client can complete authorization code flow",
-        "Client receives valid access token"
+        "Failed requests are logged with timestamp",
+        "Logs include error type, request path, and response status",
+        "MCP error responses follow specification format"
       ],
       "priority": 4,
+      "passes": true,
+      "dependsOn": [
+        "US-001"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-005",
+      "title": "Setup Page MCP Endpoint Display",
+      "description": "As a Claude.ai user, I want clear setup instructions so that I can connect to the MCP server without technical difficulty.",
+      "acceptanceCriteria": [
+        "Setup page displays public MCP endpoint URL",
+        "URL has copy-to-clipboard functionality",
+        "Step-by-step Claude.ai connection instructions provided",
+        "OAuth authentication flow walkthrough included",
+        "Troubleshooting tips available"
+      ],
+      "priority": 5,
+      "passes": true,
+      "dependsOn": [
+        "US-001"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-006",
+      "title": "Connection Health Indicator",
+      "description": "As a Claude.ai user, I want to see my connection status so that I know if my MCP server is properly connected.",
+      "acceptanceCriteria": [
+        "Health check endpoint available (GET /mcp or /health)",
+        "Setup page displays connection status indicator",
+        "Visual feedback shows if MCP server is reachable"
+      ],
+      "priority": 6,
+      "passes": true,
+      "dependsOn": [
+        "US-001",
+        "US-005"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-007",
+      "title": "Railway Deployment",
+      "description": "As an administrator, I want to deploy the HTTP-enabled MCP server to Railway so that it's accessible to Claude.ai users.",
+      "acceptanceCriteria": [
+        "Application deploys successfully on Railway",
+        "Railway TLS termination handles HTTPS",
+        "MCP endpoint accessible via Railway public URL",
+        "End-to-end OAuth + MCP flow works with Claude.ai"
+      ],
+      "priority": 7,
       "passes": true,
       "dependsOn": [
         "US-001",
@@ -63,25 +120,9 @@
         "US-003"
       ],
       "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-005",
-      "title": "MCP Setup Instructions Page",
-      "description": "As a user setting up an MCP client, I want to visit a page with clear setup instructions and easy URL copying so that I can quickly configure my MCP client without hunting for documentation.",
-      "acceptanceCriteria": [
-        "Hidden route at /setup accessible via direct URL",
-        "Not linked from main navigation",
-        "Clean, minimal UI with brief explanation of MCP, server URL with Copy button, and step-by-step instructions",
-        "Copy button provides visual feedback",
-        "Mobile-friendly layout"
-      ],
-      "priority": 5,
-      "passes": true,
-      "dependsOn": [],
-      "completionNotes": "Completed by agent"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-23T03:49:37.675Z"
+    "updatedAt": "2026-01-23T04:42:06.473Z"
   }
 }
