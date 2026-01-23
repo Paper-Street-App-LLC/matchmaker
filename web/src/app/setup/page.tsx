@@ -85,10 +85,7 @@ export default function SetupPage() {
 	let [copied, setCopied] = useState(false);
 	let [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("checking");
 
-	let mcpEndpoint =
-		typeof window !== "undefined"
-			? `${window.location.protocol}//${window.location.host}/mcp`
-			: "https://your-server-url.com/mcp";
+	let mcpEndpoint = "https://matchmaker-production.up.railway.app/mcp";
 
 	let healthEndpoint =
 		typeof window !== "undefined"
@@ -193,7 +190,7 @@ export default function SetupPage() {
 								</h2>
 								<div className="flex items-center gap-2">
 									<code className="flex-1 rounded-md border border-gray-200 bg-gray-100 px-4 py-3 font-mono text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-										{`https://matchmaker-production.up.railway.app/mcp`}
+										{`${mcpEndpoint.slice(0, 4)}...`}
 									</code>
 									<button
 										onClick={handleCopy}
