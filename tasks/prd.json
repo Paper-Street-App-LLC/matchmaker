@@ -1,172 +1,75 @@
 {
-  "name": "OAuth 2.0 Authentication for MCP Server",
-  "branchName": "feature/oauth-authentication",
-  "userStories": [
-    {
-      "id": "US-001",
-      "title": "Add OAuth authorization endpoint",
-      "description": "As a developer, I want to create the /oauth/authorize endpoint so that Claude Mac App can initiate the OAuth 2.0 flow",
-      "acceptanceCriteria": [
-        "Create /oauth/authorize route",
-        "Accept client_id, redirect_uri, response_type, state, code_challenge, code_challenge_method parameters",
-        "Validate OAuth parameters",
-        "Redirect to login page with state preserved"
-      ],
-      "priority": 1,
-      "passes": true,
-      "dependsOn": [],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-002",
-      "title": "Add minimal login page",
-      "description": "As a user, I want a simple login page so that I can authenticate with email and password during the OAuth flow",
-      "acceptanceCriteria": [
-        "Create simple HTML form for email/password",
-        "Toggle between Sign In and Create Account modes",
-        "Handle sign-in flow via Supabase Auth",
-        "Handle sign-up flow via Supabase Auth",
-        "Display clear error messages for invalid credentials",
-        "Display clear error message when email already exists",
-        "Redirect with authorization code on success"
-      ],
-      "priority": 2,
-      "passes": true,
-      "dependsOn": [
-        "US-001"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-003",
-      "title": "Add OAuth token endpoint",
-      "description": "As a developer, I want to create the /oauth/token endpoint so that Claude can exchange authorization codes for access tokens",
-      "acceptanceCriteria": [
-        "Create /oauth/token route",
-        "Support grant_type=authorization_code",
-        "Exchange authorization code for Supabase session",
-        "Return OAuth-compliant token response",
-        "Set access token lifetime to 1 year (31536000 seconds)",
-        "Support refresh token flow"
-      ],
-      "priority": 3,
-      "passes": true,
-      "dependsOn": [
-        "US-001",
-        "US-002"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-004",
-      "title": "Add PKCE support",
-      "description": "As a developer, I want to implement PKCE (Proof Key for Code Exchange) so that the OAuth flow is secure against authorization code interception attacks",
-      "acceptanceCriteria": [
-        "Implement code challenge verification",
-        "Store code verifier during authorization",
-        "Validate code verifier during token exchange"
-      ],
-      "priority": 4,
-      "passes": true,
-      "dependsOn": [
-        "US-001",
-        "US-003"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-005",
-      "title": "New user connects via Claude Mac App",
-      "description": "As a new user, I want to connect my Claude Mac App to the MCP server so that I can use the matchmaker tools",
-      "acceptanceCriteria": [
-        "Click Connect in Claude Mac App and enter the server URL",
-        "Browser opens with a simple login page",
-        "Can create an account with email and password",
-        "After account creation, redirected back to Claude",
-        "Claude shows the connection as successful",
-        "Can immediately use MCP tools"
-      ],
-      "priority": 5,
-      "passes": true,
-      "dependsOn": [
-        "US-001",
-        "US-002",
-        "US-003",
-        "US-004"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-006",
-      "title": "Existing user reconnects",
-      "description": "As an existing user, I want to reconnect my Claude Mac App after signing out or switching devices so that I can continue using the MCP tools",
-      "acceptanceCriteria": [
-        "Click Connect in Claude Mac App",
-        "Browser opens with the login page",
-        "Sign in with existing email and password",
-        "Redirected back to Claude with successful connection",
-        "Previous session/data is accessible"
-      ],
-      "priority": 6,
-      "passes": true,
-      "dependsOn": [
-        "US-005"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-007",
-      "title": "User session persistence",
-      "description": "As a user, I want my connection to remain active for a long time so that I don't have to re-authenticate frequently",
-      "acceptanceCriteria": [
-        "After authenticating, token remains valid for 1 year",
-        "No need to re-authenticate during normal usage",
-        "Claude Mac App maintains the connection across app restarts"
-      ],
-      "priority": 7,
-      "passes": true,
-      "dependsOn": [
-        "US-003"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-008",
-      "title": "Authentication error handling",
-      "description": "As a user, I want clear feedback when authentication fails so that I can correct issues and connect successfully",
-      "acceptanceCriteria": [
-        "If wrong credentials entered, see a clear error message",
-        "If trying to create account with existing email, told to sign in instead",
-        "If OAuth flow fails, can retry without confusion"
-      ],
-      "priority": 8,
-      "passes": true,
-      "dependsOn": [
-        "US-002"
-      ],
-      "completionNotes": "Completed by agent"
-    },
-    {
-      "id": "US-009",
-      "title": "Verify Claude Mac App connection end-to-end",
-      "description": "As a developer, I want to verify the complete OAuth flow works with Claude Mac App so that users can successfully authenticate",
-      "acceptanceCriteria": [
-        "End-to-end test of OAuth flow completes successfully",
-        "MCP tools work with OAuth token",
-        "Existing static token authentication continues to work unchanged"
-      ],
-      "priority": 9,
-      "passes": true,
-      "dependsOn": [
-        "US-005",
-        "US-006",
-        "US-007",
-        "US-008"
-      ],
-      "completionNotes": "Completed by agent"
-    }
-  ],
-  "metadata": {
-    "updatedAt": "2026-01-23T01:49:33.718Z"
-  }
+	"name": "MCP OAuth Discovery Endpoints",
+	"branchName": "feature/mcp-oauth-discovery-endpoints",
+	"userStories": [
+		{
+			"id": "US-001",
+			"title": "OAuth Server Discovery",
+			"description": "As an MCP client, I want to discover the OAuth server metadata at a well-known endpoint so that I can programmatically find the authorization and token endpoints without hardcoding them.",
+			"acceptanceCriteria": [
+				"GET /.well-known/oauth-authorization-server returns 200 with valid JSON",
+				"Response includes authorization_endpoint, token_endpoint, and registration_endpoint",
+				"Response content-type is application/json"
+			],
+			"priority": 1,
+			"passes": false,
+			"dependsOn": []
+		},
+		{
+			"id": "US-002",
+			"title": "Protected Resource Discovery",
+			"description": "As an MCP client, I want to discover which authorization server protects the MCP resource so that I know where to authenticate before accessing the API.",
+			"acceptanceCriteria": [
+				"GET /.well-known/oauth-protected-resource returns 200 with valid JSON",
+				"Response includes authorization_servers array pointing to the issuer",
+				"Response content-type is application/json"
+			],
+			"priority": 2,
+			"passes": false,
+			"dependsOn": []
+		},
+		{
+			"id": "US-003",
+			"title": "Dynamic Client Registration",
+			"description": "As an MCP client, I want to register myself as an OAuth client at runtime so that I can obtain a client_id without manual configuration.",
+			"acceptanceCriteria": [
+				"POST /register accepts JSON with client_name and redirect_uris",
+				"Response includes generated client_id",
+				"Registered client can be used in subsequent OAuth flows",
+				"Invalid requests return appropriate error responses"
+			],
+			"priority": 3,
+			"passes": false,
+			"dependsOn": []
+		},
+		{
+			"id": "US-004",
+			"title": "End-to-End OAuth Flow",
+			"description": "As an MCP client, I want to complete the full OAuth authentication flow so that I can access protected MCP resources over HTTP.",
+			"acceptanceCriteria": [
+				"Client can discover endpoints via well-known URLs",
+				"Client can register dynamically",
+				"Client can complete authorization code flow",
+				"Client receives valid access token"
+			],
+			"priority": 4,
+			"passes": false,
+			"dependsOn": ["US-001", "US-002", "US-003"]
+		},
+		{
+			"id": "US-005",
+			"title": "MCP Setup Instructions Page",
+			"description": "As a user setting up an MCP client, I want to visit a page with clear setup instructions and easy URL copying so that I can quickly configure my MCP client without hunting for documentation.",
+			"acceptanceCriteria": [
+				"Hidden route at /setup accessible via direct URL",
+				"Not linked from main navigation",
+				"Clean, minimal UI with brief explanation of MCP, server URL with Copy button, and step-by-step instructions",
+				"Copy button provides visual feedback",
+				"Mobile-friendly layout"
+			],
+			"priority": 5,
+			"passes": false,
+			"dependsOn": []
+		}
+	]
 }
