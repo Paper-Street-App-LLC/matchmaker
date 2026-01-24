@@ -16,13 +16,7 @@ export default function Home() {
 			{/* Hero Section */}
 			<Hero />
 
-			{/* Features Section */}
-			<Features />
-
-			{/* FAQ Section */}
-			<FAQ />
-
-			{/* Waitlist Section */}
+			{/* Waitlist Section - immediately after demo */}
 			<section className="relative overflow-hidden bg-gray-50 py-24 dark:bg-gray-900 sm:py-32">
 				<div className="container mx-auto px-4">
 					<div className="mx-auto max-w-2xl text-center">
@@ -130,6 +124,12 @@ export default function Home() {
 					/>
 				</div>
 			</section>
+
+			{/* Features Section */}
+			<Features />
+
+			{/* FAQ Section */}
+			<FAQ />
 
 			{/* Footer */}
 			<footer className="border-t border-gray-200 bg-gray-100 py-20 dark:border-gray-800 dark:bg-gray-900/95">
