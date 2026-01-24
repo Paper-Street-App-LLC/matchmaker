@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 		"smart notes",
 		"MCP",
 		"connect friends",
-		"The Introduction",
+		"Matchmaker",
 	],
 	icons: {
 		icon: "/favicon.ico",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 		description:
 			"AI-assisted matchmaking tool that empowers you to connect friends and family. Works in Claude, ChatGPT, or mobile app.",
 		type: "website",
-		siteName: "Matchmaker by The Introduction",
+		siteName: "Matchmaker",
 		images: [
 			{
 				url: "/og-image.png",

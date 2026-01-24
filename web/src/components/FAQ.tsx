@@ -9,9 +9,9 @@ interface FAQItem {
 
 let faqs: FAQItem[] = [
 	{
-		question: "What is The Introduction?",
+		question: "What is Matchmaker?",
 		answer:
-			"The Introduction is an AI-powered platform designed to help matchmakers connect their friends and family. We make it easy to keep track of your single friends, remember important details, and find great matches—all with the help of smart notes and intelligent suggestions.",
+			"Matchmaker is an AI-powered platform designed to help you connect friends and family. We make it easy to keep track of your single friends, remember important details, and find great matches—all with the help of smart notes and intelligent suggestions.",
 	},
 	{
 		question: "How does the AI help with matchmaking?",
@@ -26,7 +26,7 @@ let faqs: FAQItem[] = [
 	{
 		question: "Can I use this if I'm not a professional matchmaker?",
 		answer:
-			"Yes! The Introduction is perfect for anyone who enjoys playing matchmaker—whether you're setting up friends, helping family members find love, or just love the thrill of making great connections. No professional experience required.",
+			"Yes! Matchmaker is perfect for anyone who enjoys playing matchmaker—whether you're setting up friends, helping family members find love, or just love the thrill of making great connections. No professional experience required.",
 	},
 	{
 		question: "How much does it cost?",
@@ -34,7 +34,7 @@ let faqs: FAQItem[] = [
 			"We're currently in development and building our waitlist. Pricing details will be announced before launch, but we're committed to keeping it affordable and accessible for everyone who wants to spread a little love.",
 	},
 	{
-		question: "When will The Introduction be available?",
+		question: "When will Matchmaker be available?",
 		answer:
 			"We're working hard to launch soon! Join our waitlist to be among the first to know when we go live. Waitlist members will get early access and exclusive benefits.",
 	},
@@ -60,7 +60,7 @@ export function FAQ() {
 							</span>
 						</h2>
 						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
-							Everything you need to know about The Introduction
+							Everything you need to know about Matchmaker
 						</p>
 					</div>
 

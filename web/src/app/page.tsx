@@ -137,7 +137,7 @@ export default function Home() {
 					<div className="flex flex-col items-center space-y-8">
 						<div className="text-center">
 							<h3 className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-3xl font-bold text-transparent dark:from-sky-400 dark:to-indigo-400">
-								The Introduction
+								Matchmaker
 							</h3>
 							<p className="mt-3 font-display text-lg font-normal text-gray-600 dark:text-gray-400">
 								Empowering matchmakers with AI-assisted tools
@@ -158,7 +158,7 @@ export default function Home() {
 							</a>
 						</div>
 						<p className="text-sm text-gray-400 dark:text-gray-500">
-							© {new Date().getFullYear()} The Introduction. All rights reserved.
+							© {new Date().getFullYear()} Matchmaker. All rights reserved.
 						</p>
 					</div>
 				</div>

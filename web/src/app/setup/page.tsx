@@ -165,8 +165,7 @@ export default function SetupPage() {
 								MCP Setup
 							</CardTitle>
 							<CardDescription className="mt-2 text-base">
-								Connect your AI assistant to The Introduction using the Model Context Protocol
-								(MCP).
+								Connect your AI assistant to Matchmaker using the Model Context Protocol (MCP).
 							</CardDescription>
 						</CardHeader>
 
