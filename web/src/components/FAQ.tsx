@@ -11,32 +11,32 @@ let faqs: FAQItem[] = [
 	{
 		question: "What is Matchmaker?",
 		answer:
-			"Matchmaker is an AI-powered platform designed to help you connect friends and family. We make it easy to keep track of your single friends, remember important details, and find great matches—all with the help of smart notes and intelligent suggestions.",
+			"Matchmaker is intelligent matchmaking software that transforms how you connect people. Keep detailed notes on everyone you know, and let AI surface the perfect matches you might have missed. Simple, powerful, and designed for anyone who loves bringing people together.",
 	},
 	{
-		question: "How does the AI help with matchmaking?",
+		question: "What's the relationship between Matchmaker and The Introduction?",
 		answer:
-			"Our AI analyzes your notes about each person to identify compatibility factors, suggest potential matches, and help you remember key details. It's like having a personal assistant that never forgets a birthday, a hobby, or that someone is looking for a partner who loves hiking.",
+			"Matchmaker powers The Introduction's matchmaking operations. The Introduction is a professional matchmaking service that uses Matchmaker as its core technology. We built Matchmaker to solve our own challenges, and now we're making it available to everyone—from casual connectors to professional matchmakers.",
+	},
+	{
+		question: "How does the AI work?",
+		answer:
+			"Matchmaker's AI reads your notes about each person and identifies compatibility signals you might overlook. It remembers every detail—interests, values, deal-breakers—and suggests matches based on genuine alignment. Think of it as a second brain that never forgets.",
 	},
 	{
 		question: "Is my data private and secure?",
 		answer:
-			"Absolutely. Your notes and all personal information are encrypted and stored securely. We never share your data with third parties, and you maintain full control over who sees what. Privacy is a core value—we're here to help you connect people, not exploit their data.",
+			"Privacy is foundational to Matchmaker. All data is encrypted, never shared with third parties, and you control access completely. We built this to connect people, not to monetize their information.",
 	},
 	{
-		question: "Can I use this if I'm not a professional matchmaker?",
+		question: "Who is Matchmaker for?",
 		answer:
-			"Yes! Matchmaker is perfect for anyone who enjoys playing matchmaker—whether you're setting up friends, helping family members find love, or just love the thrill of making great connections. No professional experience required.",
+			"Anyone who connects people. Whether you're a professional matchmaker running a business, a social connector who loves setting up friends, or someone who just notices when two people would be perfect together—Matchmaker gives you the tools to do it well.",
 	},
 	{
-		question: "How much does it cost?",
+		question: "When can I start using Matchmaker?",
 		answer:
-			"We're currently in development and building our waitlist. Pricing details will be announced before launch, but we're committed to keeping it affordable and accessible for everyone who wants to spread a little love.",
-	},
-	{
-		question: "When will Matchmaker be available?",
-		answer:
-			"We're working hard to launch soon! Join our waitlist to be among the first to know when we go live. Waitlist members will get early access and exclusive benefits.",
+			"We're launching soon. Join the waitlist to get early access and be part of shaping what Matchmaker becomes. Waitlist members will be the first to experience everything we're building.",
 	},
 ];
 
