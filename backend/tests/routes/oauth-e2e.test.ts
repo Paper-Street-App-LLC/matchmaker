@@ -46,6 +46,24 @@ async function generateCodeChallenge(codeVerifier: string): Promise<string> {
 	return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+// Helper to safely extract URL from Location header with proper null check
+function getLocationUrl(response: Response): URL {
+	let location = response.headers.get('Location')
+	if (!location) {
+		throw new Error('Expected Location header to be present')
+	}
+	return new URL(location)
+}
+
+// Helper to safely extract authorization code from callback URL
+function getAuthorizationCode(callbackUrl: URL): string {
+	let code = callbackUrl.searchParams.get('code')
+	if (!code) {
+		throw new Error('Expected authorization code to be present in callback URL')
+	}
+	return code
+}
+
 describe('End-to-End OAuth Flow', () => {
 	let app: Hono
 	let mockSupabaseClient: ReturnType<typeof createMockSupabaseClient>
@@ -177,18 +195,17 @@ describe('End-to-End OAuth Flow', () => {
 		expect(callbackLocation).toContain(`state=${state}`)
 
 		// Step 7: Extract authorization code from redirect URL
-		let callbackUrl = new URL(callbackLocation!)
-		let authorizationCode = callbackUrl.searchParams.get('code')
+		let callbackUrl = getLocationUrl(loginRes)
+		let authorizationCode = getAuthorizationCode(callbackUrl)
 		let returnedState = callbackUrl.searchParams.get('state')
 
-		expect(authorizationCode).toBeDefined()
-		expect(authorizationCode!.length).toBeGreaterThan(0)
+		expect(authorizationCode.length).toBeGreaterThan(0)
 		expect(returnedState).toBe(state)
 
 		// Step 8: Exchange authorization code for tokens
 		let tokenFormData = new URLSearchParams({
 			grant_type: 'authorization_code',
-			code: authorizationCode!,
+			code: authorizationCode,
 			redirect_uri: 'http://localhost:8080/callback',
 			client_id: clientData.client_id,
 			code_verifier: codeVerifier,
@@ -285,19 +302,17 @@ describe('End-to-End OAuth Flow', () => {
 		let loginRes = await app.fetch(loginReq)
 
 		expect(loginRes.status).toBe(302)
-		let callbackLocation = loginRes.headers.get('Location')!
 
 		// Extract authorization code
-		let callbackUrl = new URL(callbackLocation)
-		let authorizationCode = callbackUrl.searchParams.get('code')
+		let callbackUrl = getLocationUrl(loginRes)
+		let authorizationCode = getAuthorizationCode(callbackUrl)
 
-		expect(authorizationCode).toBeDefined()
-		expect(authorizationCode!.length).toBeGreaterThan(0)
+		expect(authorizationCode.length).toBeGreaterThan(0)
 
 		// Exchange code for tokens
 		let tokenFormData = new URLSearchParams({
 			grant_type: 'authorization_code',
-			code: authorizationCode!,
+			code: authorizationCode,
 			redirect_uri: 'http://localhost:8080/callback',
 			client_id: clientData.clientId,
 			code_verifier: codeVerifier,
@@ -342,8 +357,8 @@ describe('End-to-End OAuth Flow', () => {
 		})
 		let loginRes = await app.fetch(loginReq)
 
-		let callbackUrl = new URL(loginRes.headers.get('Location')!)
-		let authorizationCode = callbackUrl.searchParams.get('code')!
+		let callbackUrl = getLocationUrl(loginRes)
+		let authorizationCode = getAuthorizationCode(callbackUrl)
 
 		// Exchange code for tokens
 		let tokenFormData = new URLSearchParams({
@@ -409,8 +424,8 @@ describe('End-to-End OAuth Flow', () => {
 		})
 		let loginRes = await app.fetch(loginReq)
 
-		let callbackUrl = new URL(loginRes.headers.get('Location')!)
-		let authorizationCode = callbackUrl.searchParams.get('code')!
+		let callbackUrl = getLocationUrl(loginRes)
+		let authorizationCode = getAuthorizationCode(callbackUrl)
 
 		// First token exchange should succeed
 		let tokenFormData = new URLSearchParams({

@@ -63,6 +63,7 @@ describe('POST /login (Sign In)', () => {
 		let mockSession = {
 			user: { id: 'user-123', email: 'test@example.com' },
 			access_token: 'access-token-123',
+			refresh_token: 'refresh-token-123',
 		}
 
 		let mockClient = createMockSupabaseClient({
@@ -163,6 +164,7 @@ describe('POST /login (Sign Up)', () => {
 		let mockSession = {
 			user: { id: 'new-user-123', email: 'new@example.com' },
 			access_token: 'new-access-token',
+			refresh_token: 'new-refresh-token',
 		}
 
 		let mockClient = createMockSupabaseClient({

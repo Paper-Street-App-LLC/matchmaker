@@ -3,8 +3,17 @@ import type { Context } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { zValidator } from '@hono/zod-validator'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { authorizeQuerySchema } from '../schemas/oauth'
+import {
+	authorizeQuerySchema,
+	authorizationCodeGrantSchema,
+	refreshTokenGrantSchema,
+} from '../schemas/oauth'
 import { getAndRemoveAuthorizationCode, verifyCodeChallenge } from '../lib/authCodeStore'
+
+// Runtime type guard for checking if a value is a non-empty string
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === 'string' && value.length > 0
+}
 
 // OAuth 2.0 error response helper
 function oauthError(c: Context, error: string, description?: string, status: ContentfulStatusCode = 400) {
@@ -43,10 +52,10 @@ export let createOAuthRoutes = (supabaseClient?: SupabaseClient): Hono => {
 
 	app.post('/token', async c => {
 		let body = await c.req.parseBody()
-		let grantType = body.grant_type as string | undefined
+		let grantType = body.grant_type
 
-		// Validate grant_type
-		if (!grantType) {
+		// Validate grant_type using type guard
+		if (!isNonEmptyString(grantType)) {
 			return oauthError(c, 'invalid_request', 'grant_type is required')
 		}
 
@@ -62,25 +71,19 @@ export let createOAuthRoutes = (supabaseClient?: SupabaseClient): Hono => {
 	return app
 }
 
-async function handleAuthorizationCodeGrant(c: Context, body: Record<string, unknown>) {
-	let code = body.code as string | undefined
-	let redirectUri = body.redirect_uri as string | undefined
-	let clientId = body.client_id as string | undefined
-	let codeVerifier = body.code_verifier as string | undefined
+async function handleAuthorizationCodeGrant(
+	c: Context,
+	body: Record<string, string | File>
+) {
+	// Validate request body using Zod schema
+	let parseResult = authorizationCodeGrantSchema.safeParse(body)
+	if (!parseResult.success) {
+		let firstError = parseResult.error.errors[0]
+		return oauthError(c, 'invalid_request', firstError?.message || 'Invalid request')
+	}
 
-	// Validate required parameters
-	if (!code) {
-		return oauthError(c, 'invalid_request', 'code is required')
-	}
-	if (!redirectUri) {
-		return oauthError(c, 'invalid_request', 'redirect_uri is required')
-	}
-	if (!clientId) {
-		return oauthError(c, 'invalid_request', 'client_id is required')
-	}
-	if (!codeVerifier) {
-		return oauthError(c, 'invalid_request', 'code_verifier is required')
-	}
+	let { code, redirect_uri: redirectUri, client_id: clientId, code_verifier: codeVerifier } =
+		parseResult.data
 
 	// Retrieve and remove authorization code (single use)
 	let codeData = getAndRemoveAuthorizationCode(code)
@@ -115,14 +118,17 @@ async function handleAuthorizationCodeGrant(c: Context, body: Record<string, unk
 
 async function handleRefreshTokenGrant(
 	c: Context,
-	body: Record<string, unknown>,
+	body: Record<string, string | File>,
 	supabaseClient?: SupabaseClient
 ) {
-	let refreshToken = body.refresh_token as string | undefined
-
-	if (!refreshToken) {
-		return oauthError(c, 'invalid_request', 'refresh_token is required')
+	// Validate request body using Zod schema
+	let parseResult = refreshTokenGrantSchema.safeParse(body)
+	if (!parseResult.success) {
+		let firstError = parseResult.error.errors[0]
+		return oauthError(c, 'invalid_request', firstError?.message || 'Invalid request')
 	}
+
+	let { refresh_token: refreshToken } = parseResult.data
 
 	if (!supabaseClient) {
 		return oauthError(c, 'server_error', 'Supabase client not configured', 500)

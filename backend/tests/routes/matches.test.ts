@@ -2,9 +2,14 @@ import { describe, test, expect, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { createMatchesRoutes } from '../../src/routes/matches'
 import { createMockSupabaseClient } from '../mocks/supabase'
+import type { MatchResponse } from '../../src/schemas/matches'
 
 type Variables = {
 	userId: string
+}
+
+type ErrorResponse = {
+	error: string
 }
 
 describe('GET /api/matches/:personId', () => {
@@ -47,10 +52,10 @@ describe('GET /api/matches/:personId', () => {
 		let mockClient = createMockSupabaseClient({
 			from: mock((table: string) => ({
 				select: mock((columns: string) => ({
-					eq: mock((column: string, value: any) => {
+					eq: mock((column: string, value: unknown) => {
 						if (column === 'id' && value === mockPersonId) {
 							return {
-								eq: mock((column2: string, value2: any) => ({
+								eq: mock((column2: string, value2: unknown) => ({
 									maybeSingle: mock(() => ({
 										data: mockPerson,
 										error: null,
@@ -61,7 +66,7 @@ describe('GET /api/matches/:personId', () => {
 						// For fetching all people
 						if (column === 'matchmaker_id') {
 							return {
-								eq: mock((column2: string, value2: any) => ({
+								eq: mock((column2: string, value2: unknown) => ({
 									data: mockAllPeople,
 									error: null,
 								})),
@@ -86,7 +91,7 @@ describe('GET /api/matches/:personId', () => {
 		let req = new Request(`http://localhost/${mockPersonId}`)
 
 		let res = await app.fetch(req)
-		let json = (await res.json()) as any
+		let json = (await res.json()) as MatchResponse[]
 
 		expect(res.status).toBe(200)
 		expect(Array.isArray(json)).toBe(true)
@@ -98,8 +103,8 @@ describe('GET /api/matches/:personId', () => {
 		let mockClient = createMockSupabaseClient({
 			from: mock((table: string) => ({
 				select: mock((columns: string) => ({
-					eq: mock((column: string, value: any) => ({
-						eq: mock((column2: string, value2: any) => ({
+					eq: mock((column: string, value: unknown) => ({
+						eq: mock((column2: string, value2: unknown) => ({
 							maybeSingle: mock(() => ({
 								data: null,
 								error: null,
@@ -120,7 +125,7 @@ describe('GET /api/matches/:personId', () => {
 		let req = new Request('http://localhost/nonexistent-id')
 
 		let res = await app.fetch(req)
-		let json = (await res.json()) as { error: string }
+		let json = (await res.json()) as ErrorResponse
 
 		expect(res.status).toBe(404)
 		expect(json.error).toBe('Person not found')

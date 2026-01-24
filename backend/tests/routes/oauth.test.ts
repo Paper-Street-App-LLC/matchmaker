@@ -119,7 +119,7 @@ describe('POST /oauth/token', () => {
 		formData.append('code', 'invalid-code')
 		formData.append('redirect_uri', 'http://example.com/callback')
 		formData.append('client_id', 'test-client')
-		formData.append('code_verifier', 'verifier1234567890123456789012345678901234')
+		formData.append('code_verifier', 'verifier12345678901234567890123456789012345')
 
 		let req = new Request('http://localhost/oauth/token', {
 			method: 'POST',
@@ -219,7 +219,7 @@ describe('POST /oauth/token', () => {
 		formData.append('code', authCode)
 		formData.append('redirect_uri', 'http://example.com/callback')
 		formData.append('client_id', 'test-client')
-		formData.append('code_verifier', 'wrong-verifier-that-does-not-match')
+		formData.append('code_verifier', 'wrong-verifier-that-does-not-match-at-all!!')
 
 		let req = new Request('http://localhost/oauth/token', {
 			method: 'POST',
