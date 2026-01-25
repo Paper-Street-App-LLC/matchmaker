@@ -15,19 +15,15 @@ export async function POST(request: NextRequest) {
 		let supabase = createSupabaseClient();
 
 		// Insert into waitlist_matchmakers table
-		let { data, error } = await supabase
-			.from("waitlist_matchmakers")
-			.insert({
-				email: validatedData.email,
-				name: validatedData.name,
-				organization: validatedData.organization || null,
-				phone: validatedData.phone || null,
-				how_heard: validatedData.how_heard || null,
-				message: validatedData.message || null,
-				status: "pending",
-			})
-			.select()
-			.single();
+		let { error } = await supabase.from("waitlist_matchmakers").insert({
+			email: validatedData.email,
+			name: validatedData.name,
+			organization: validatedData.organization || null,
+			phone: validatedData.phone || null,
+			how_heard: validatedData.how_heard || null,
+			message: validatedData.message || null,
+			status: "pending",
+		});
 
 		if (error) {
 			// Handle duplicate email constraint
@@ -54,7 +50,6 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json(
 			{
 				message: "Successfully joined the waitlist!",
-				data,
 			},
 			{ status: 201 }
 		);

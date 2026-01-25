@@ -25,18 +25,14 @@ export async function POST(request: Request) {
 		let supabase = createSupabaseClient();
 
 		// Insert into waitlist_referrals table
-		let { data: insertedData, error } = await supabase
-			.from("waitlist_referrals")
-			.insert({
-				single_name: data.single_name,
-				single_email: data.single_email,
-				matchmaker_name: data.matchmaker_name || null,
-				matchmaker_email: data.matchmaker_email,
-				message: data.message || null,
-				status: "pending",
-			})
-			.select()
-			.single();
+		let { error } = await supabase.from("waitlist_referrals").insert({
+			single_name: data.single_name,
+			single_email: data.single_email,
+			matchmaker_name: data.matchmaker_name || null,
+			matchmaker_email: data.matchmaker_email,
+			message: data.message || null,
+			status: "pending",
+		});
 
 		// Handle duplicate constraint violation (unique on single_email + matchmaker_email)
 		if (error) {
@@ -62,7 +58,6 @@ export async function POST(request: Request) {
 		return NextResponse.json(
 			{
 				message: "Referral submitted successfully!",
-				data: insertedData,
 			},
 			{ status: 201 }
 		);
