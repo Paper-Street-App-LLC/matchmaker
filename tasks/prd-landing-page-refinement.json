@@ -1,0 +1,132 @@
+{
+  "name": "Landing Page Refinement",
+  "branchName": "feat/landing-page-refinement",
+  "userStories": [
+    {
+      "id": "US-LP-001",
+      "title": "Review Landing Page Structure",
+      "description": "As a developer, I need to understand the current landing page structure and identify all 'The Introduction' mentions so that I can plan the refinement changes accurately.",
+      "acceptanceCriteria": [
+        "Document current page section order",
+        "List all locations where 'The Introduction' is mentioned",
+        "Identify current sign-up form position",
+        "Note current FAQ content"
+      ],
+      "priority": 1,
+      "passes": true,
+      "dependsOn": [],
+      "filesInScope": [
+        "web/src/app/page.tsx"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-LP-002",
+      "title": "Move Sign-up Form After Demo Section",
+      "description": "As a visitor, I want to see the sign-up form immediately after the demo section so that I can register quickly once I'm interested without scrolling through the entire page.",
+      "acceptanceCriteria": [
+        "Sign-up form appears directly after demo section",
+        "Form retains all existing fields and functionality",
+        "Visual treatment feels prominent but not jarring",
+        "Form submission still works correctly"
+      ],
+      "priority": 2,
+      "passes": true,
+      "dependsOn": [
+        "US-LP-001"
+      ],
+      "filesInScope": [
+        "web/src/app/page.tsx"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-LP-003",
+      "title": "Remove Excess 'The Introduction' Mentions",
+      "description": "As a visitor, I want Matchmaker presented as a standalone product so that I understand I'm signing up for Matchmaker, not an internal tool for another service.",
+      "acceptanceCriteria": [
+        "'The Introduction' mentions removed from sections other than demo and FAQs",
+        "Demo section keeps existing The Introduction mention (acceptable)",
+        "Page positions Matchmaker as the standalone product",
+        "Existing Apple-like tone preserved"
+      ],
+      "priority": 3,
+      "passes": true,
+      "dependsOn": [
+        "US-LP-001"
+      ],
+      "filesInScope": [
+        "web/src/app/page.tsx"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-LP-004",
+      "title": "Rewrite FAQs to Center on Matchmaker",
+      "description": "As a visitor, I want FAQs that focus on Matchmaker with a clear explanation of The Introduction relationship so that I understand the product without confusion.",
+      "acceptanceCriteria": [
+        "FAQs rewritten to center on Matchmaker as the product",
+        "Single clear explanation of The Introduction relationship included",
+        "Positioning: 'Matchmaker powers The Introduction's matchmaking operations'",
+        "Context provided that The Introduction is a professional matchmaking service",
+        "Apple-like tone maintained"
+      ],
+      "priority": 4,
+      "passes": true,
+      "dependsOn": [
+        "US-LP-001"
+      ],
+      "filesInScope": [
+        "web/src/app/page.tsx"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-LP-005",
+      "title": "Simplify Copy Throughout Landing Page",
+      "description": "As a visitor, I want to read a focused, concise landing page so that I can understand the value proposition without information overload.",
+      "acceptanceCriteria": [
+        "Hero section preserves 'Meet Your Matchmaker' dual-audience appeal",
+        "Features/Benefits sections have tightened language",
+        "No sections removed (simplification only)",
+        "Dual audience messaging preserved (matchmakers and singles)",
+        "Apple-like tone maintained throughout"
+      ],
+      "priority": 5,
+      "passes": true,
+      "dependsOn": [
+        "US-LP-002",
+        "US-LP-003",
+        "US-LP-004"
+      ],
+      "filesInScope": [
+        "web/src/app/page.tsx"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-LP-006",
+      "title": "Verify Sign-up Form Functionality",
+      "description": "As a developer, I need to verify the sign-up form works correctly after relocation so that users can successfully register.",
+      "acceptanceCriteria": [
+        "Form submission works correctly in new location",
+        "All form validation still functions",
+        "Success/error states display properly",
+        "No console errors during form interaction"
+      ],
+      "priority": 6,
+      "passes": true,
+      "dependsOn": [
+        "US-LP-002"
+      ],
+      "filesInScope": [
+        "web/src/app/page.tsx"
+      ],
+      "completionNotes": "Completed by agent"
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-01-24T00:00:00.000Z",
+    "updatedAt": "2026-01-24T23:11:30.085Z"
+  }
+}
