@@ -11,32 +11,31 @@ let faqs: FAQItem[] = [
 	{
 		question: "What is Matchmaker?",
 		answer:
-			"Matchmaker is intelligent matchmaking software that transforms how you connect people. Keep detailed notes on everyone you know, and let AI surface the perfect matches you might have missed. Simple, powerful, and designed for anyone who loves bringing people together.",
+			"Intelligent matchmaking software. Keep notes on everyone you know, and let AI surface matches you might have missed.",
 	},
 	{
 		question: "What's the relationship between Matchmaker and The Introduction?",
 		answer:
-			"Matchmaker powers The Introduction's matchmaking operations. The Introduction is a professional matchmaking service that uses Matchmaker as its core technology. We built Matchmaker to solve our own challenges, and now we're making it available to everyone—from casual connectors to professional matchmakers.",
+			"Matchmaker powers The Introduction's matchmaking operations. We built it to solve our own challenges, and now we're making it available to everyone.",
 	},
 	{
 		question: "How does the AI work?",
 		answer:
-			"Matchmaker's AI reads your notes about each person and identifies compatibility signals you might overlook. It remembers every detail—interests, values, deal-breakers—and suggests matches based on genuine alignment. Think of it as a second brain that never forgets.",
+			"The AI reads your notes and identifies compatibility signals you might overlook. It remembers every detail and suggests matches based on genuine alignment.",
 	},
 	{
 		question: "Is my data private and secure?",
 		answer:
-			"Privacy is foundational to Matchmaker. All data is encrypted, never shared with third parties, and you control access completely. We built this to connect people, not to monetize their information.",
+			"All data is encrypted and never shared with third parties. You control access completely.",
 	},
 	{
 		question: "Who is Matchmaker for?",
 		answer:
-			"Anyone who connects people. Whether you're a professional matchmaker running a business, a social connector who loves setting up friends, or someone who just notices when two people would be perfect together—Matchmaker gives you the tools to do it well.",
+			"Anyone who connects people—professional matchmakers, social connectors, or anyone who notices when two people would be perfect together.",
 	},
 	{
 		question: "When can I start using Matchmaker?",
-		answer:
-			"We're launching soon. Join the waitlist to get early access and be part of shaping what Matchmaker becomes. Waitlist members will be the first to experience everything we're building.",
+		answer: "We're launching soon. Join the waitlist for early access.",
 	},
 ];
 

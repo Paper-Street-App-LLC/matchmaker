@@ -2,33 +2,33 @@ import { UserCircle, BookOpen, FolderKanban, Shield, Globe, TrendingUp } from "l
 
 let features = [
 	{
-		name: "You're in the Driver's Seat",
-		description: "AI assists your matchmaking decisions, never makes them for you",
+		name: "You're in Control",
+		description: "AI assists your decisions, never makes them for you",
 		icon: UserCircle,
 	},
 	{
-		name: "Smart Note-Taking",
-		description: "Keep track of friends, family, preferences, and personalities",
+		name: "Smart Notes",
+		description: "Track friends, preferences, and personalities",
 		icon: BookOpen,
 	},
 	{
-		name: "Seamless Organization",
-		description: "Manage introductions and track feedback in one place",
+		name: "Organized",
+		description: "Manage introductions and feedback in one place",
 		icon: FolderKanban,
 	},
 	{
-		name: "Privacy-First",
-		description: "Your data is secure with row-level security and encryption",
+		name: "Private",
+		description: "Encrypted data with row-level security",
 		icon: Shield,
 	},
 	{
-		name: "Works Anywhere",
-		description: "Claude, ChatGPT, or mobile app - use your preferred platform",
+		name: "Flexible",
+		description: "Claude, ChatGPT, or mobile app",
 		icon: Globe,
 	},
 	{
-		name: "Track Your Success",
-		description: "Monitor introduction outcomes and learn what works",
+		name: "Insightful",
+		description: "Track outcomes and learn what works",
 		icon: TrendingUp,
 	},
 ];
@@ -43,8 +43,7 @@ export function Features() {
 						<span className="text-indigo-600 dark:text-indigo-400">great matchmaker</span>
 					</h2>
 					<p className="mt-6 font-display text-lg font-light leading-8 text-gray-600 dark:text-gray-400">
-						AI-assisted tools that help you make meaningful connections while keeping you in
-						complete control.
+						AI-assisted tools for meaningful connections. You stay in control.
 					</p>
 				</div>
 				<div className="mx-auto mt-16 max-w-7xl sm:mt-20 lg:mt-24">

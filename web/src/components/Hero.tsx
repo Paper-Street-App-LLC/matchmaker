@@ -41,8 +41,8 @@ export function Hero() {
 
 					{/* Subheadline */}
 					<p className="mt-8 font-display text-xl font-light leading-relaxed text-gray-600 dark:text-gray-400">
-						AI-powered smart notes that help you connect friends and family with confidence. Work in
-						Claude, ChatGPT, or our mobile app.
+						Smart notes that help you connect people with confidence. Works with Claude, ChatGPT, or
+						our mobile app.
 					</p>
 
 					{/* Platform availability */}

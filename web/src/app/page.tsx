@@ -24,7 +24,7 @@ export default function Home() {
 							Ready to get started?
 						</h2>
 						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
-							Join the waitlist and be the first to know when we launch
+							Join the waitlist for early access
 						</p>
 					</div>
 					<div className="mx-auto mt-12 max-w-md" id="waitlist">
@@ -89,7 +89,7 @@ export default function Home() {
 												Refer a Matchmaker
 											</h2>
 											<p className="mt-3 font-display font-normal text-gray-600 dark:text-gray-400">
-												Know someone who loves playing matchmaker? Send them an invite!
+												Know someone who loves connecting people? Invite them.
 											</p>
 										</div>
 										<div className="mt-8">
@@ -140,7 +140,7 @@ export default function Home() {
 								Matchmaker
 							</h3>
 							<p className="mt-3 font-display text-lg font-normal text-gray-600 dark:text-gray-400">
-								Empowering matchmakers with AI-assisted tools
+								AI-assisted matchmaking tools
 							</p>
 						</div>
 						<div className="flex space-x-8 text-sm font-medium text-gray-500 dark:text-gray-400">
