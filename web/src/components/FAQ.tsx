@@ -9,33 +9,38 @@ interface FAQItem {
 
 let faqs: FAQItem[] = [
 	{
-		question: "What is Matchmaker?",
+		question: "What is Matchlight?",
 		answer:
-			"Intelligent matchmaking software. Keep notes on everyone you know, and let AI surface matches you might have missed.",
+			"A matchmaking experience where a real person finds your match, with AI doing the heavy lifting behind the scenes.",
 	},
 	{
-		question: "What's the relationship between Matchmaker and The Introduction?",
+		question: "How is this different from apps?",
 		answer:
-			"Matchmaker powers The Introduction's matchmaking operations. We built it to solve our own challenges, and now we're making it available to everyone.",
+			"Apps hand you a list of strangers and ask you to swipe. Matchlight gives you a matchmaker who knows both people and only introduces you when there's a real reason to.",
 	},
 	{
-		question: "How does the AI work?",
+		question: "What does the AI do?",
 		answer:
-			"The AI reads your notes and identifies compatibility signals you might overlook. It remembers every detail and suggests matches based on genuine alignment.",
+			"It reads matchmaker notes, spots compatibility patterns, and surfaces potential matches. It never reaches out to anyone or makes introductions on its own.",
 	},
 	{
-		question: "Is my data private and secure?",
+		question: "Who is Matchlight for?",
 		answer:
-			"All data is encrypted and never shared with third parties. You control access completely.",
+			"Singles who want a more personal way to find their person, and matchmakers who love connecting people and want better tools to do it.",
 	},
 	{
-		question: "Who is Matchmaker for?",
+		question: "Is my information safe?",
 		answer:
-			"Anyone who connects people—professional matchmakers, social connectors, or anyone who notices when two people would be perfect together.",
+			"All data is encrypted with row-level security. Nothing is shared with third parties. You control your data completely.",
 	},
 	{
-		question: "When can I start using Matchmaker?",
-		answer: "We're launching soon. Join the waitlist for early access.",
+		question: "What's the connection to The Introduction?",
+		answer:
+			"Matchlight was built by The Introduction to power our own matchmaking. Now we're opening it up to more matchmakers and more singles.",
+	},
+	{
+		question: "When does it launch?",
+		answer: "Soon. Join the waitlist and we'll let you know.",
 	},
 ];
 
@@ -59,7 +64,7 @@ export function FAQ() {
 							</span>
 						</h2>
 						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
-							Everything you need to know about Matchmaker
+							Everything you need to know about Matchlight
 						</p>
 					</div>
 

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Hero } from "@/components/Hero";
-import { Features } from "@/components/Features";
+import { Problem } from "@/components/Problem";
+import { Philosophy } from "@/components/Philosophy";
+import { HowItWorks } from "@/components/HowItWorks";
 import { FAQ } from "@/components/FAQ";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { ReferralForm } from "@/components/ReferralForm";
@@ -16,15 +18,24 @@ export default function Home() {
 			{/* Hero Section */}
 			<Hero />
 
-			{/* Waitlist Section - immediately after demo */}
+			{/* Problem Section */}
+			<Problem />
+
+			{/* Philosophy Section */}
+			<Philosophy />
+
+			{/* How It Works Section */}
+			<HowItWorks />
+
+			{/* Waitlist Section */}
 			<section className="relative overflow-hidden bg-gray-50 py-24 dark:bg-gray-900 sm:py-32">
 				<div className="container mx-auto px-4">
 					<div className="mx-auto max-w-2xl text-center">
 						<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
-							Ready to get started?
+							Get started
 						</h2>
 						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
-							Join the waitlist for early access
+							Join the Matchlight waitlist for early access.
 						</p>
 					</div>
 					<div className="mx-auto mt-12 max-w-md" id="waitlist">
@@ -52,7 +63,7 @@ export default function Home() {
 												Claim Your Spot
 											</h2>
 											<p className="mt-3 font-display font-normal text-gray-600 dark:text-gray-400">
-												For the friends who always know who should meet who
+												For the people who always know who should meet who.
 											</p>
 										</div>
 										<div className="mt-8">
@@ -63,7 +74,7 @@ export default function Home() {
 												onClick={() => setActiveForm("single")}
 												className="text-sm font-medium text-gray-500 transition-colors hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400"
 											>
-												Know a great matchmaker?
+												Ready to be matched?
 											</button>
 										</div>
 									</>
@@ -86,10 +97,11 @@ export default function Home() {
 												</svg>
 											</div>
 											<h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-												Refer a Matchmaker
+												Find Your Matchmaker
 											</h2>
 											<p className="mt-3 font-display font-normal text-gray-600 dark:text-gray-400">
-												Know someone who loves connecting people? Invite them.
+												Ready to be matched? We&apos;ll connect you with someone who can
+												help.
 											</p>
 										</div>
 										<div className="mt-8">
@@ -125,9 +137,6 @@ export default function Home() {
 				</div>
 			</section>
 
-			{/* Features Section */}
-			<Features />
-
 			{/* FAQ Section */}
 			<FAQ />
 
@@ -137,10 +146,10 @@ export default function Home() {
 					<div className="flex flex-col items-center space-y-8">
 						<div className="text-center">
 							<h3 className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-3xl font-bold text-transparent dark:from-sky-400 dark:to-indigo-400">
-								Matchmaker
+								Matchlight
 							</h3>
 							<p className="mt-3 font-display text-lg font-normal text-gray-600 dark:text-gray-400">
-								AI-assisted matchmaking tools
+								Human matchmaking, powered by AI.
 							</p>
 						</div>
 						<div className="flex space-x-8 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -158,7 +167,7 @@ export default function Home() {
 							</a>
 						</div>
 						<p className="text-sm text-gray-400 dark:text-gray-500">
-							© {new Date().getFullYear()} Matchmaker. All rights reserved.
+							© {new Date().getFullYear()} Matchlight. All rights reserved.
 						</p>
 					</div>
 				</div>

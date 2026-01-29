@@ -34,15 +34,14 @@ export function Hero() {
 				<div className="mx-auto max-w-3xl text-center">
 					{/* Main Headline */}
 					<h1 className="text-5xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-100 sm:text-6xl lg:text-7xl">
-						Intelligence, meet your
-						<br />
+						Meet your{" "}
 						<span className="text-sky-600 dark:text-sky-400">Matchmaker</span>
 					</h1>
 
 					{/* Subheadline */}
 					<p className="mt-8 font-display text-xl font-light leading-relaxed text-gray-600 dark:text-gray-400">
-						Smart notes that help you connect people with confidence. Works with Claude, ChatGPT, or
-						our mobile app.
+						A new kind of matchmaking experience, where a real person finds your match, with AI
+						doing the heavy lifting behind the scenes.
 					</p>
 
 					{/* Platform availability */}
@@ -85,7 +84,7 @@ export function Hero() {
 									<Check className="h-5 w-5 text-white" />
 								</div>
 								<div>
-									<h2 className="font-semibold text-gray-900 dark:text-gray-100">Matchmaker</h2>
+									<h2 className="font-semibold text-gray-900 dark:text-gray-100">Matchlight</h2>
 									<p className="text-xs text-gray-500 dark:text-gray-400">by The Introduction</p>
 								</div>
 							</div>
