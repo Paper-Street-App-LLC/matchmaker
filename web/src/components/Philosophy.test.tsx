@@ -19,12 +19,23 @@ describe("Philosophy", () => {
 		).toBeInTheDocument();
 	});
 
-	it("renders the second body paragraph", () => {
+	it("renders the AI card with title and description", () => {
 		render(<Philosophy />);
 		expect(
-			screen.getByText(
-				/matchlight gives matchmakers the tools to do that at scale/i,
-			),
+			screen.getByText(/ai does the analysis/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/remembers the details, spots the patterns/i),
+		).toBeInTheDocument();
+	});
+
+	it("renders the matchmaker card with title and description", () => {
+		render(<Philosophy />);
+		expect(
+			screen.getByText(/you make the call/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/the matchmaker makes the introduction/i),
 		).toBeInTheDocument();
 	});
 });

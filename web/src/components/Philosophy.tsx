@@ -1,3 +1,28 @@
+import { Sparkles, User } from "lucide-react";
+
+const cards = [
+	{
+		icon: Sparkles,
+		iconBg: "bg-sky-100 dark:bg-sky-900/30",
+		iconColor: "text-sky-600 dark:text-sky-400",
+		glowColor: "rgba(14, 165, 233, 0.15)",
+		animationDelay: "0s",
+		title: "AI does the analysis",
+		description:
+			"Remembers the details, spots the patterns, and surfaces the connections a human might miss.",
+	},
+	{
+		icon: User,
+		iconBg: "bg-indigo-100 dark:bg-indigo-900/30",
+		iconColor: "text-indigo-600 dark:text-indigo-400",
+		glowColor: "rgba(99, 102, 241, 0.15)",
+		animationDelay: "2s",
+		title: "You make the call",
+		description:
+			"The matchmaker makes the introduction — with the context and confidence to get it right.",
+	},
+];
+
 export function Philosophy() {
 	return (
 		<section className="relative overflow-hidden bg-gray-50 py-24 dark:bg-gray-900 sm:py-32">
@@ -11,11 +36,32 @@ export function Philosophy() {
 						just knew. Someone who understood what you were looking for before you could
 						fully explain it yourself.
 					</p>
-					<p className="mt-6 font-display text-xl font-light leading-relaxed text-gray-600 dark:text-gray-400">
-						Matchlight gives matchmakers the tools to do that at scale. AI remembers the
-						details, spots the patterns, and does the analysis. The matchmaker makes the
-						call.
-					</p>
+				</div>
+				<div className="mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
+					{cards.map((card) => (
+						<div
+							key={card.title}
+							className="animate-glow-pulse rounded-2xl border border-gray-200 bg-white p-8 transition-all hover:border-sky-300 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 dark:hover:border-sky-700"
+							style={
+								{
+									"--glow-color": card.glowColor,
+									animationDelay: card.animationDelay,
+								} as React.CSSProperties
+							}
+						>
+							<div
+								className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ${card.iconBg}`}
+							>
+								<card.icon className={`h-5 w-5 ${card.iconColor}`} />
+							</div>
+							<h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+								{card.title}
+							</h3>
+							<p className="mt-4 font-display font-normal leading-relaxed text-gray-600 dark:text-gray-400">
+								{card.description}
+							</p>
+						</div>
+					))}
 				</div>
 			</div>
 
