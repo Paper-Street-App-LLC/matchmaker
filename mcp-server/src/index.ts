@@ -1,9 +1,15 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+	CallToolRequestSchema,
+	ListToolsRequestSchema,
+	ListPromptsRequestSchema,
+	GetPromptRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { loadConfig } from './config.js'
 import { ApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
+import { prompts, getPrompt } from './prompts.js'
 
 export function createServer(apiClient: ApiClient) {
 	let server = new Server(
@@ -14,6 +20,7 @@ export function createServer(apiClient: ApiClient) {
 		{
 			capabilities: {
 				tools: {},
+				prompts: {},
 			},
 		}
 	)
@@ -214,6 +221,16 @@ export function createServer(apiClient: ApiClient) {
 				isError: true,
 			}
 		}
+	})
+
+	// Register prompts
+	server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+		prompts,
+	}))
+
+	server.setRequestHandler(GetPromptRequestSchema, async request => {
+		let { name } = request.params
+		return getPrompt(name)
 	})
 
 	return server
