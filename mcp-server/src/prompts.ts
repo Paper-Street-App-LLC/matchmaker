@@ -36,20 +36,19 @@ const INTAKE_QUESTIONNAIRE_TEXT = `Please gather the following information about
 1. **Name**: What is your full name?
 2. **Age**: How old are you?
 3. **Location**: Where do you live (city/area)?
-4. **Gender**: How do you identify?
+4. **Gender**: Are you a man or a woman?
 
 ## Preferences
 5. **Age Range**: What age range are you looking for in a partner?
 6. **Preferred Locations**: Are you open to matches from other locations, or do you prefer someone nearby?
-7. **Gender Preference**: What gender(s) are you interested in dating?
 
 ## Personality & Interests
-8. **Personality Traits**: How would you describe yourself in 3-5 words?
-9. **Interests & Hobbies**: What do you enjoy doing in your free time?
-10. **Values**: What's most important to you in a relationship?
+7. **Personality Traits**: How would you describe yourself in 3-5 words?
+8. **Interests & Hobbies**: What do you enjoy doing in your free time?
+9. **Values**: What's most important to you in a relationship?
 
 ## Additional Notes
-11. **Anything else**: Is there anything else you'd like us to know about you or what you're looking for?`
+10. **Anything else**: Is there anything else you'd like us to know about you or what you're looking for?`
 
 export function getPrompt(name: string): GetPromptResult {
 	if (name !== INTAKE_QUESTIONNAIRE_NAME) {
