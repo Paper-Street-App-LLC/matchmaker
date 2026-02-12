@@ -69,7 +69,11 @@ export function createServer(apiClient: ApiClient) {
 						age: { type: 'number', description: 'Person age' },
 						location: { type: 'string', description: 'Person location' },
 						gender: { type: 'string', description: 'Person gender' },
-						preferences: { type: 'object', description: 'Person preferences' },
+						preferences: {
+							type: 'object',
+							description:
+								'Structured preferences with three sections. aboutMe: facts about this person (height in inches, build "slim"|"average"|"athletic"|"heavy", fitnessLevel "active"|"average"|"sedentary", ethnicity, religion, hasChildren boolean, numberOfChildren, isDivorced boolean, hasTattoos boolean, hasPiercings boolean, isSmoker boolean, occupation). lookingFor: partner preferences (ageRange {min,max}, heightRange {min,max} in inches, fitnessPreference "active"|"average"|"any", ethnicityPreference string[], incomePreference "high"|"moderate"|"any", religionRequired string or null, wantsChildren boolean or null). dealBreakers: array from "divorced","has_children","tattoos","piercings","smoker". Example: {"aboutMe":{"height":70,"fitnessLevel":"active","religion":"Christian"},"lookingFor":{"ageRange":{"min":25,"max":35}},"dealBreakers":["tattoos"]}',
+						},
 						personality: { type: 'object', description: 'Person personality traits' },
 						notes: { type: 'string', description: 'Notes about the person' },
 					},

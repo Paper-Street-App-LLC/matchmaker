@@ -374,4 +374,505 @@ describe('findMatches', () => {
 		expect(matches).toHaveLength(1)
 		expect(matches[0].person.name).toBe('Bob')
 	})
+
+	// --- Deal Breaker Filter Tests ---
+
+	test('should filter out candidate when subject has deal breaker "divorced" and candidate is divorced', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { dealBreakers: ['divorced'] },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { isDivorced: true } },
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Charlie',
+				gender: 'male',
+				age: 29,
+				preferences: { aboutMe: { isDivorced: false } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].person.name).toBe('Charlie')
+	})
+
+	test('should filter bidirectionally — candidate deal breaker eliminates subject', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { aboutMe: { hasTattoos: true } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { dealBreakers: ['tattoos'] },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(0)
+	})
+
+	test('should filter out candidate with has_children deal breaker', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { dealBreakers: ['has_children'] },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { hasChildren: true } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(0)
+	})
+
+	test('should not filter when deal breakers array is empty', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { dealBreakers: [] },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { isDivorced: true, hasTattoos: true } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+	})
+
+	test('should not filter when no preferences exist', () => {
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { isDivorced: true } },
+			}),
+		]
+
+		let matches = findMatches(subject, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+	})
+
+	test('should ignore unknown deal breaker strings', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { dealBreakers: ['unknown_thing'] },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+	})
+
+	// --- Age Range Filter Tests ---
+
+	test('should filter out candidate outside subject age range preference', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { lookingFor: { ageRange: { min: 25, max: 35 } } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Old Charlie',
+				gender: 'male',
+				age: 50,
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].person.name).toBe('Bob')
+	})
+
+	test('should filter bidirectionally on age range — subject outside candidate range', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 45,
+			gender: 'female',
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { lookingFor: { ageRange: { min: 25, max: 35 } } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(0)
+	})
+
+	test('should handle partial age range with only min', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { lookingFor: { ageRange: { min: 30 } } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 28,
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Charlie',
+				gender: 'male',
+				age: 32,
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].person.name).toBe('Charlie')
+	})
+
+	test('should not filter on age range when no age range preference exists', () => {
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 55,
+			}),
+		]
+
+		let matches = findMatches(subject, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+	})
+
+	// --- Religion Filter Tests ---
+
+	test('should filter out candidate when religion required and does not match', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { lookingFor: { religionRequired: 'Christian' } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { religion: 'Muslim' } },
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Charlie',
+				gender: 'male',
+				age: 29,
+				preferences: { aboutMe: { religion: 'Christian' } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].person.name).toBe('Charlie')
+	})
+
+	test('should compare religion case-insensitively', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { lookingFor: { religionRequired: 'christian' } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { religion: 'Christian' } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+	})
+
+	test('should not filter when religionRequired is null', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { lookingFor: { religionRequired: null } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: { religion: 'Muslim' } },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+	})
+
+	test('should not filter on religion when candidate has no religion in aboutMe', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			gender: 'female',
+			preferences: { lookingFor: { religionRequired: 'Christian' } },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				gender: 'male',
+				age: 30,
+				preferences: { aboutMe: {} },
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		// Can't confirm religion, so don't filter out
+		expect(matches).toHaveLength(1)
+	})
+
+	// --- Structured Preferences Scoring Tests ---
+
+	test('should score higher when structured preferences align well', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			location: 'NYC',
+			gender: 'female',
+			preferences: {
+				aboutMe: { height: 64, fitnessLevel: 'active', religion: 'Christian', ethnicity: 'Nigerian' },
+				lookingFor: {
+					heightRange: { min: 68, max: 76 },
+					fitnessPreference: 'active',
+					ethnicityPreference: ['Nigerian'],
+					wantsChildren: true,
+				},
+			},
+		})
+
+		let goodMatch = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'Bob',
+			age: 30,
+			location: 'NYC',
+			gender: 'male',
+			preferences: {
+				aboutMe: {
+					height: 72,
+					fitnessLevel: 'active',
+					religion: 'Christian',
+					ethnicity: 'Nigerian',
+					hasChildren: false,
+				},
+				lookingFor: {
+					heightRange: { min: 60, max: 68 },
+					fitnessPreference: 'active',
+					ethnicityPreference: ['Nigerian'],
+					wantsChildren: true,
+				},
+			},
+		})
+
+		let weakMatch = makePerson({
+			id: '222e8400-e29b-41d4-a716-446655440022',
+			name: 'Charlie',
+			age: 30,
+			location: 'NYC',
+			gender: 'male',
+			preferences: null,
+		})
+
+		let matches = findMatches(subjectWithPrefs, [goodMatch, weakMatch], matchmakerId)
+
+		expect(matches).toHaveLength(2)
+		let bobMatch = matches.find(m => m.person.name === 'Bob')!
+		let charlieMatch = matches.find(m => m.person.name === 'Charlie')!
+		expect(bobMatch.compatibility_score).toBeGreaterThan(charlieMatch.compatibility_score)
+	})
+
+	test('should include structured preference reasons in match explanation', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			location: 'NYC',
+			gender: 'female',
+			preferences: {
+				aboutMe: { fitnessLevel: 'active', religion: 'Christian' },
+				lookingFor: { fitnessPreference: 'active' },
+			},
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				age: 30,
+				location: 'NYC',
+				gender: 'male',
+				preferences: {
+					aboutMe: { fitnessLevel: 'active', religion: 'Christian' },
+					lookingFor: { fitnessPreference: 'active' },
+				},
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].match_explanation).toContain('fitness')
+	})
+
+	// --- Backward Compatibility Tests ---
+
+	test('should still work with null preferences (backward compatible)', () => {
+		let subjectNull = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			location: 'NYC',
+			gender: 'female',
+			preferences: null,
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				age: 30,
+				location: 'NYC',
+				gender: 'male',
+				preferences: null,
+			}),
+		]
+
+		let matches = findMatches(subjectNull, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].compatibility_score).toBeGreaterThan(0)
+	})
+
+	test('should still work with old-format preferences (backward compatible)', () => {
+		let subjectOld = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			location: 'NYC',
+			gender: 'female',
+			preferences: { likes: 'hiking', random: 42 },
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Bob',
+				age: 30,
+				location: 'NYC',
+				gender: 'male',
+				preferences: { interests: ['cooking'] },
+			}),
+		]
+
+		let matches = findMatches(subjectOld, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].compatibility_score).toBeGreaterThan(0)
+	})
 })

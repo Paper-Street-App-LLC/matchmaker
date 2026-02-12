@@ -69,9 +69,30 @@ let getFeedbackInputSchema = z.object({
 })
 
 export interface PersonPreferences {
-	ageRange?: { min?: number; max?: number }
-	locations?: string[]
-	genders?: string[]
+	aboutMe?: {
+		height?: number
+		build?: 'slim' | 'average' | 'athletic' | 'heavy'
+		fitnessLevel?: 'active' | 'average' | 'sedentary'
+		ethnicity?: string
+		religion?: string
+		hasChildren?: boolean
+		numberOfChildren?: number
+		isDivorced?: boolean
+		hasTattoos?: boolean
+		hasPiercings?: boolean
+		isSmoker?: boolean
+		occupation?: string
+	}
+	lookingFor?: {
+		ageRange?: { min?: number; max?: number }
+		heightRange?: { min?: number; max?: number }
+		fitnessPreference?: 'active' | 'average' | 'any'
+		ethnicityPreference?: string[]
+		incomePreference?: 'high' | 'moderate' | 'any'
+		religionRequired?: string | null
+		wantsChildren?: boolean | null
+	}
+	dealBreakers?: string[]
 	[key: string]: unknown
 }
 
