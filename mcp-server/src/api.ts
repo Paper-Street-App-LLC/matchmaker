@@ -136,6 +136,7 @@ export interface Match {
 		age: number | null
 		location: string | null
 		gender: string | null
+		is_seed: boolean
 	}
 	compatibility_score: number
 	match_explanation: string

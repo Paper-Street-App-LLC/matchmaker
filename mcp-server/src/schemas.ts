@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const personResponseSchema = z
 	.object({
 		id: z.string().uuid(),
-		matchmaker_id: z.string().uuid(),
+		matchmaker_id: z.string().uuid().nullable(),
 		name: z.string(),
 		age: z.number().nullable(),
 		location: z.string().nullable(),
@@ -43,6 +43,7 @@ export const matchResponseSchema = z
 			age: z.number().nullable(),
 			location: z.string().nullable(),
 			gender: z.string().nullable(),
+			is_seed: z.boolean(),
 		}),
 		compatibility_score: z.number(),
 		match_explanation: z.string(),

@@ -16,6 +16,7 @@ let makePerson = (overrides: Partial<PersonResponse> = {}): PersonResponse => ({
 	personality: null,
 	notes: 'Private notes about Alice',
 	active: true,
+	is_seed: false,
 	created_at: new Date().toISOString(),
 	updated_at: new Date().toISOString(),
 	...overrides,
@@ -896,6 +897,110 @@ describe('findMatches', () => {
 
 		expect(matches).toHaveLength(1)
 		expect(matches[0].compatibility_score).toBeGreaterThan(0)
+	})
+
+	// --- Seed Profile Tests ---
+
+	test('should flag seed profile (matchmaker_id: null) as cross-matchmaker', () => {
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Seed Bob',
+				gender: 'male',
+				age: 30,
+				matchmaker_id: null,
+				is_seed: true,
+			}),
+		]
+
+		let matches = findMatches(subject, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].is_cross_matchmaker).toBe(true)
+		expect(matches[0].person.name).toBe('Seed Bob')
+		expect(matches[0].person.is_seed).toBe(true)
+	})
+
+	test('should include seed profiles in match results alongside regular profiles', () => {
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Regular Bob',
+				gender: 'male',
+				age: 30,
+				location: 'NYC',
+				matchmaker_id: matchmakerId,
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Seed Charlie',
+				gender: 'male',
+				age: 29,
+				location: 'NYC',
+				matchmaker_id: null,
+				is_seed: true,
+			}),
+		]
+
+		let matches = findMatches(subject, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(2)
+		let regular = matches.find(m => m.person.name === 'Regular Bob')!
+		let seed = matches.find(m => m.person.name === 'Seed Charlie')!
+		expect(regular.is_cross_matchmaker).toBe(false)
+		expect(regular.person.is_seed).toBe(false)
+		expect(seed.is_cross_matchmaker).toBe(true)
+		expect(seed.person.is_seed).toBe(true)
+	})
+
+	test('should match seed profiles using structured preferences', () => {
+		let subjectWithPrefs = makePerson({
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			name: 'Sarah',
+			age: 27,
+			location: 'Houston',
+			gender: 'female',
+			preferences: {
+				aboutMe: { religion: 'Christian', ethnicity: 'Nigerian' },
+				lookingFor: { ageRange: { min: 25, max: 35 } },
+			},
+		})
+
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Seed Match',
+				gender: 'male',
+				age: 30,
+				location: 'Houston',
+				matchmaker_id: null,
+				is_seed: true,
+				preferences: {
+					aboutMe: { religion: 'Christian', ethnicity: 'Nigerian' },
+					lookingFor: { ageRange: { min: 24, max: 32 } },
+				},
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Seed No Match',
+				gender: 'male',
+				age: 50,
+				location: 'Houston',
+				matchmaker_id: null,
+				is_seed: true,
+				preferences: {
+					aboutMe: { religion: 'Muslim' },
+					lookingFor: { ageRange: { min: 40, max: 55 } },
+				},
+			}),
+		]
+
+		let matches = findMatches(subjectWithPrefs, candidates, matchmakerId)
+
+		// Seed No Match is age 50 (outside subject's 25-35 range) and subject age 27 is outside candidate's 40-55 range
+		expect(matches).toHaveLength(1)
+		expect(matches[0].person.name).toBe('Seed Match')
+		expect(matches[0].is_cross_matchmaker).toBe(true)
 	})
 
 	// --- Income Scoring Tests ---
