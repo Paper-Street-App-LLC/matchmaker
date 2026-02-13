@@ -345,17 +345,75 @@ let buildExplanation = (
 	return reasons.join(', ')
 }
 
+// --- Decline Reason Penalty ---
+
+let DECLINE_KEYWORD_MAP: Record<string, keyof NonNullable<StructuredPreferences['aboutMe']>> = {
+	tattoo: 'hasTattoos',
+	tattoos: 'hasTattoos',
+	tattooed: 'hasTattoos',
+	piercing: 'hasPiercings',
+	piercings: 'hasPiercings',
+	pierced: 'hasPiercings',
+	smok: 'isSmoker',
+	smoke: 'isSmoker',
+	smoker: 'isSmoker',
+	smoking: 'isSmoker',
+	divorced: 'isDivorced',
+	divorce: 'isDivorced',
+	children: 'hasChildren',
+	kids: 'hasChildren',
+	child: 'hasChildren',
+}
+
+let DECLINE_PENALTY_PER_MATCH = 0.15
+let DECLINE_PENALTY_CAP = 0.45
+
+export type DeclineReason = { candidateId: string; reason: string }
+
+export type FindMatchesOptions = {
+	limit?: number
+	excludeIds?: Set<string>
+	declineReasons?: DeclineReason[]
+}
+
+let calculateDeclineReasonPenalty = (
+	candidatePrefs: StructuredPreferences,
+	declineReasons: DeclineReason[]
+): number => {
+	if (!declineReasons.length) return 0
+	if (!candidatePrefs.aboutMe) return 0
+
+	let matchedFields = new Set<string>()
+
+	for (let { reason } of declineReasons) {
+		let lowerReason = reason.toLowerCase()
+		for (let [keyword, field] of Object.entries(DECLINE_KEYWORD_MAP)) {
+			if (lowerReason.includes(keyword) && candidatePrefs.aboutMe[field] === true) {
+				matchedFields.add(field)
+			}
+		}
+	}
+
+	let penalty = matchedFields.size * DECLINE_PENALTY_PER_MATCH
+	return Math.min(penalty, DECLINE_PENALTY_CAP)
+}
+
 // --- Main Entry Point ---
 
 export let findMatches = (
 	subject: PersonResponse,
 	allCandidates: PersonResponse[],
-	requestingMatchmakerId: string
+	requestingMatchmakerId: string,
+	options?: FindMatchesOptions
 ): MatchResponse[] => {
 	let subjectPrefs = parsePreferences(subject.preferences)
+	let excludeIds = options?.excludeIds
+	let declineReasons = options?.declineReasons ?? []
+	let limit = options?.limit
 
 	let candidates = allCandidates.filter(p => {
 		if (p.id === subject.id || !p.active) return false
+		if (excludeIds?.has(p.id)) return false
 		if (!isOppositeGender(subject, p)) return false
 
 		let candidatePrefs = parsePreferences(p.preferences)
@@ -406,6 +464,12 @@ export let findMatches = (
 			compatibility_score = Math.min(baseScore + locationScore + ageScore + genderScore, 1)
 		}
 
+		// Apply decline reason penalty
+		if (declineReasons.length > 0) {
+			let penalty = calculateDeclineReasonPenalty(candidatePrefs, declineReasons)
+			compatibility_score = Math.max(compatibility_score - penalty, 0)
+		}
+
 		let isCross = candidate.matchmaker_id !== requestingMatchmakerId
 
 		return {
@@ -417,6 +481,10 @@ export let findMatches = (
 	})
 
 	matches.sort((a, b) => b.compatibility_score - a.compatibility_score)
+
+	if (limit != null) {
+		matches = matches.slice(0, limit)
+	}
 
 	return matches
 }
