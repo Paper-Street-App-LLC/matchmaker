@@ -145,7 +145,8 @@ describe('ApiClient', () => {
 		expect(result.person_a_id).toBe('550e8400-e29b-41d4-a716-446655440001')
 		expect(result.person_b_id).toBe('550e8400-e29b-41d4-a716-446655440002')
 		expect(result.status).toBe('pending')
-		expect(result.matchmaker_id).toBe('123e4567-e89b-12d3-a456-426614174000')
+		expect(result.matchmaker_a_id).toBe('123e4567-e89b-12d3-a456-426614174000')
+		expect(result.matchmaker_b_id).toBe('123e4567-e89b-12d3-a456-426614174000')
 	})
 
 	test('createIntroduction(person_a_id, person_b_id, notes) includes notes in request', async () => {
@@ -233,7 +234,8 @@ describe('ApiClient', () => {
 		expect(result.id).toBe('770e8400-e29b-41d4-a716-446655440000')
 		expect(result.status).toBe('accepted')
 		expect(result.notes).toBe('They went on a first date')
-		expect(result.matchmaker_id).toBe('123e4567-e89b-12d3-a456-426614174000')
+		expect(result.matchmaker_a_id).toBe('123e4567-e89b-12d3-a456-426614174000')
+		expect(result.matchmaker_b_id).toBe('123e4567-e89b-12d3-a456-426614174000')
 	})
 
 	test('updateIntroduction(id, updates) validates id is not empty', async () => {
@@ -284,8 +286,15 @@ describe('ApiClient', () => {
 		let result = await client.findMatches('550e8400-e29b-41d4-a716-446655440000')
 
 		expect(Array.isArray(result)).toBe(true)
-		// Currently returns empty array (placeholder algorithm)
-		expect(result.length).toBe(0)
+		expect(result.length).toBe(1)
+		let match = result[0]!
+		expect(match.person.name).toBe('Bob')
+		expect(match.person.age).toBe(30)
+		expect(match.person.location).toBe('NYC')
+		expect(match.person.gender).toBe('male')
+		expect(match.compatibility_score).toBe(0.8)
+		expect(match.match_explanation).toContain('NYC')
+		expect(match.is_cross_matchmaker).toBe(true)
 	})
 
 	test('findMatches(personId) validates personId is not empty', async () => {
@@ -338,7 +347,8 @@ describe('ApiClient', () => {
 		let result = await client.getIntroduction('770e8400-e29b-41d4-a716-446655440000')
 
 		expect(result.id).toBe('770e8400-e29b-41d4-a716-446655440000')
-		expect(result.matchmaker_id).toBe('123e4567-e89b-12d3-a456-426614174000')
+		expect(result.matchmaker_a_id).toBe('123e4567-e89b-12d3-a456-426614174000')
+		expect(result.matchmaker_b_id).toBe('123e4567-e89b-12d3-a456-426614174000')
 		expect(result.person_a_id).toBe('550e8400-e29b-41d4-a716-446655440001')
 		expect(result.person_b_id).toBe('550e8400-e29b-41d4-a716-446655440002')
 		expect(result.status).toBe('pending')

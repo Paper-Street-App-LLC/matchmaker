@@ -69,7 +69,11 @@ export function createServer(apiClient: ApiClient) {
 						age: { type: 'number', description: 'Person age' },
 						location: { type: 'string', description: 'Person location' },
 						gender: { type: 'string', description: 'Person gender' },
-						preferences: { type: 'object', description: 'Person preferences' },
+						preferences: {
+							type: 'object',
+							description:
+								'Structured preferences with three sections. aboutMe: facts about this person (height in inches, build "slim"|"average"|"athletic"|"heavy", fitnessLevel "active"|"average"|"sedentary", ethnicity, religion, hasChildren boolean, numberOfChildren, isDivorced boolean, hasTattoos boolean, hasPiercings boolean, isSmoker boolean, occupation). lookingFor: partner preferences (ageRange {min,max}, heightRange {min,max} in inches, fitnessPreference "active"|"average"|"any", ethnicityPreference string[], incomePreference "high"|"moderate"|"any", religionRequired string or null, wantsChildren boolean or null). dealBreakers: array from "divorced","has_children","tattoos","piercings","smoker". Example: {"aboutMe":{"height":70,"fitnessLevel":"active","religion":"Christian"},"lookingFor":{"ageRange":{"min":25,"max":35}},"dealBreakers":["tattoos"]}',
+						},
 						personality: { type: 'object', description: 'Person personality traits' },
 						notes: { type: 'string', description: 'Notes about the person' },
 					},
@@ -78,7 +82,8 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'create_introduction',
-				description: 'Create an introduction between two people',
+				description:
+					'Create an introduction between two people. Supports cross-matchmaker introductions where each person belongs to a different matchmaker. You must own at least one person.',
 				inputSchema: {
 					type: 'object',
 					properties: {
@@ -91,7 +96,8 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'list_introductions',
-				description: 'List all introductions for the matchmaker',
+				description:
+					'List all introductions where you are either matchmaker (includes cross-matchmaker introductions)',
 				inputSchema: {
 					type: 'object',
 					properties: {},
@@ -116,7 +122,8 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'find_matches',
-				description: 'Find compatible matches for a person',
+				description:
+					'Find compatible matches for a person across all matchmakers. Returns matches with limited info (name, age, location, gender) and compatibility scores. Cross-matchmaker matches are flagged.',
 				inputSchema: {
 					type: 'object',
 					properties: {

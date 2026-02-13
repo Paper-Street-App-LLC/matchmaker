@@ -120,7 +120,8 @@ export let handlers = [
 		return HttpResponse.json(
 			{
 				id: '770e8400-e29b-41d4-a716-446655440000',
-				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				matchmaker_a_id: '123e4567-e89b-12d3-a456-426614174000',
+				matchmaker_b_id: '123e4567-e89b-12d3-a456-426614174000',
 				person_a_id: body.person_a_id,
 				person_b_id: body.person_b_id,
 				status: 'pending',
@@ -141,7 +142,8 @@ export let handlers = [
 		return HttpResponse.json([
 			{
 				id: '770e8400-e29b-41d4-a716-446655440000',
-				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				matchmaker_a_id: '123e4567-e89b-12d3-a456-426614174000',
+				matchmaker_b_id: '123e4567-e89b-12d3-a456-426614174000',
 				person_a_id: '550e8400-e29b-41d4-a716-446655440001',
 				person_b_id: '550e8400-e29b-41d4-a716-446655440002',
 				status: 'pending',
@@ -151,7 +153,8 @@ export let handlers = [
 			},
 			{
 				id: '770e8400-e29b-41d4-a716-446655440001',
-				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				matchmaker_a_id: '123e4567-e89b-12d3-a456-426614174000',
+				matchmaker_b_id: '999e4567-e89b-12d3-a456-426614174099',
 				person_a_id: '550e8400-e29b-41d4-a716-446655440003',
 				person_b_id: '550e8400-e29b-41d4-a716-446655440004',
 				status: 'accepted',
@@ -174,7 +177,8 @@ export let handlers = [
 		}
 		return HttpResponse.json({
 			id: id,
-			matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+			matchmaker_a_id: '123e4567-e89b-12d3-a456-426614174000',
+			matchmaker_b_id: '123e4567-e89b-12d3-a456-426614174000',
 			person_a_id: '550e8400-e29b-41d4-a716-446655440001',
 			person_b_id: '550e8400-e29b-41d4-a716-446655440002',
 			status: 'pending',
@@ -197,7 +201,8 @@ export let handlers = [
 		let body = (await request.json()) as Record<string, unknown>
 		return HttpResponse.json({
 			id: id,
-			matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+			matchmaker_a_id: '123e4567-e89b-12d3-a456-426614174000',
+			matchmaker_b_id: '123e4567-e89b-12d3-a456-426614174000',
 			person_a_id: '550e8400-e29b-41d4-a716-446655440001',
 			person_b_id: '550e8400-e29b-41d4-a716-446655440002',
 			status: body.status ?? 'pending',
@@ -217,9 +222,20 @@ export let handlers = [
 		if (personId === 'not-found-id') {
 			return HttpResponse.json({ error: 'Person not found' }, { status: 404 })
 		}
-		// Currently returns empty array (placeholder algorithm)
-		// Will return match objects when algorithm is implemented
-		return HttpResponse.json([])
+		return HttpResponse.json([
+			{
+				person: {
+					id: '660e8400-e29b-41d4-a716-446655440001',
+					name: 'Bob',
+					age: 30,
+					location: 'NYC',
+					gender: 'male',
+				},
+				compatibility_score: 0.8,
+				match_explanation: 'Both based in NYC, Compatible age range (28 and 30)',
+				is_cross_matchmaker: true,
+			},
+		])
 	}),
 
 	// DELETE /api/people/:id - Success (soft delete)

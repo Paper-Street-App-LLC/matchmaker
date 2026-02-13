@@ -13,7 +13,8 @@ export let updateIntroductionSchema = z.object({
 
 export let introductionResponseSchema = z.object({
 	id: z.string().uuid(),
-	matchmaker_id: z.string().uuid(),
+	matchmaker_a_id: z.string().uuid(),
+	matchmaker_b_id: z.string().uuid(),
 	person_a_id: z.string().uuid(),
 	person_b_id: z.string().uuid(),
 	status: z.string(),

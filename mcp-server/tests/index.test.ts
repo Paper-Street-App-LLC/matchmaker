@@ -68,7 +68,8 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 				_notes?: string
 			): Promise<Introduction> => ({
 				id: 'intro-id',
-				matchmaker_id: 'user-id',
+				matchmaker_a_id: 'user-id',
+				matchmaker_b_id: 'user-id',
 				person_a_id: _person_a_id,
 				person_b_id: _person_b_id,
 				status: 'pending',
@@ -87,7 +88,8 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 				}
 			): Promise<Introduction> => ({
 				id: _id,
-				matchmaker_id: 'user-id',
+				matchmaker_a_id: 'user-id',
+				matchmaker_b_id: 'user-id',
 				person_a_id: 'person-a-uuid',
 				person_b_id: 'person-b-uuid',
 				status: _updates.status ?? 'pending',
@@ -112,7 +114,8 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 		getIntroduction: mock(
 			async (_id: string): Promise<Introduction> => ({
 				id: _id,
-				matchmaker_id: 'user-id',
+				matchmaker_a_id: 'user-id',
+				matchmaker_b_id: 'user-id',
 				person_a_id: 'person-a-uuid',
 				person_b_id: 'person-b-uuid',
 				status: 'pending',
@@ -340,7 +343,8 @@ describe('MCP Server', () => {
 				_notes?: string
 			): Promise<Introduction> => ({
 				id: 'intro-id',
-				matchmaker_id: 'user-id',
+				matchmaker_a_id: 'user-id',
+				matchmaker_b_id: 'user-id',
 				person_a_id: _person_a_id,
 				person_b_id: _person_b_id,
 				status: 'pending',
@@ -377,7 +381,8 @@ describe('MCP Server', () => {
 			async (): Promise<Introduction[]> => [
 				{
 					id: 'intro-1',
-					matchmaker_id: 'user-id',
+					matchmaker_a_id: 'user-id',
+					matchmaker_b_id: 'user-id',
 					person_a_id: 'person-a-uuid',
 					person_b_id: 'person-b-uuid',
 					status: 'pending',
@@ -387,7 +392,8 @@ describe('MCP Server', () => {
 				},
 				{
 					id: 'intro-2',
-					matchmaker_id: 'user-id',
+					matchmaker_a_id: 'user-id',
+					matchmaker_b_id: 'other-user-id',
 					person_a_id: 'person-c-uuid',
 					person_b_id: 'person-d-uuid',
 					status: 'accepted',
@@ -431,7 +437,8 @@ describe('MCP Server', () => {
 				}
 			): Promise<Introduction> => ({
 				id: _id,
-				matchmaker_id: 'user-id',
+				matchmaker_a_id: 'user-id',
+				matchmaker_b_id: 'user-id',
 				person_a_id: 'person-a-uuid',
 				person_b_id: 'person-b-uuid',
 				status: _updates.status ?? 'pending',
@@ -504,7 +511,8 @@ describe('MCP Server', () => {
 		let mockGetIntroduction = mock(
 			async (_id: string): Promise<Introduction> => ({
 				id: _id,
-				matchmaker_id: 'user-id',
+				matchmaker_a_id: 'user-id',
+				matchmaker_b_id: 'user-id',
 				person_a_id: 'person-a-uuid',
 				person_b_id: 'person-b-uuid',
 				status: 'pending',
@@ -522,7 +530,8 @@ describe('MCP Server', () => {
 
 		expect(mockGetIntroduction).toHaveBeenCalledWith('intro-uuid')
 		expect(result.id).toBe('intro-uuid')
-		expect(result.matchmaker_id).toBe('user-id')
+		expect(result.matchmaker_a_id).toBe('user-id')
+		expect(result.matchmaker_b_id).toBe('user-id')
 		expect(result.person_a_id).toBe('person-a-uuid')
 		expect(result.person_b_id).toBe('person-b-uuid')
 		expect(result.status).toBe('pending')

@@ -8,6 +8,8 @@ import {
 	matchesListResponseSchema,
 	feedbackResponseSchema,
 	feedbackListResponseSchema,
+	matchDecisionResponseSchema,
+	matchDecisionsListResponseSchema,
 } from './schemas'
 
 let addPersonInputSchema = z.object({
@@ -68,10 +70,42 @@ let getFeedbackInputSchema = z.object({
 	id: z.string().min(1, 'ID is required'),
 })
 
+let recordDecisionInputSchema = z.object({
+	person_id: z.string().uuid('person_id must be a valid UUID'),
+	candidate_id: z.string().uuid('candidate_id must be a valid UUID'),
+	decision: z.enum(['accepted', 'declined']),
+	decline_reason: z.string().optional(),
+})
+
+let listDecisionsInputSchema = z.object({
+	person_id: z.string().min(1, 'Person ID is required'),
+})
+
 export interface PersonPreferences {
-	ageRange?: { min?: number; max?: number }
-	locations?: string[]
-	genders?: string[]
+	aboutMe?: {
+		height?: number
+		build?: 'slim' | 'average' | 'athletic' | 'heavy'
+		fitnessLevel?: 'active' | 'average' | 'sedentary'
+		ethnicity?: string
+		religion?: string
+		hasChildren?: boolean
+		numberOfChildren?: number
+		isDivorced?: boolean
+		hasTattoos?: boolean
+		hasPiercings?: boolean
+		isSmoker?: boolean
+		occupation?: string
+	}
+	lookingFor?: {
+		ageRange?: { min?: number; max?: number }
+		heightRange?: { min?: number; max?: number }
+		fitnessPreference?: 'active' | 'average' | 'any'
+		ethnicityPreference?: string[]
+		incomePreference?: 'high' | 'moderate' | 'any'
+		religionRequired?: string | null
+		wantsChildren?: boolean | null
+	}
+	dealBreakers?: string[]
 	[key: string]: unknown
 }
 
@@ -98,7 +132,8 @@ export interface Person {
 
 export interface Introduction {
 	id: string
-	matchmaker_id: string
+	matchmaker_a_id: string
+	matchmaker_b_id: string
 	person_a_id: string
 	person_b_id: string
 	status: string
@@ -108,14 +143,17 @@ export interface Introduction {
 }
 
 export interface Match {
-	person?: {
+	person: {
 		id: string
 		name: string
-		age?: number | null
-		location?: string | null
+		age: number | null
+		location: string | null
+		gender: string | null
+		is_seed: boolean
 	}
-	compatibility_score?: number
-	match_reasons?: string[]
+	compatibility_score: number
+	match_explanation: string
+	is_cross_matchmaker: boolean
 }
 
 export interface Feedback {
@@ -124,6 +162,16 @@ export interface Feedback {
 	from_person_id: string
 	content: string
 	sentiment?: string | null
+	created_at: string
+}
+
+export interface MatchDecision {
+	id: string
+	matchmaker_id: string
+	person_id: string
+	candidate_id: string
+	decision: string
+	decline_reason: string | null
 	created_at: string
 }
 
@@ -435,5 +483,61 @@ export class ApiClient {
 		}
 
 		return this.parseResponse(response, feedbackResponseSchema)
+	}
+
+	async recordDecision(
+		person_id: string,
+		candidate_id: string,
+		decision: 'accepted' | 'declined',
+		decline_reason?: string
+	): Promise<MatchDecision> {
+		// Validate input
+		recordDecisionInputSchema.parse({ person_id, candidate_id, decision, decline_reason })
+
+		let body: {
+			person_id: string
+			candidate_id: string
+			decision: string
+			decline_reason?: string
+		} = { person_id, candidate_id, decision }
+		if (decline_reason !== undefined) {
+			body.decline_reason = decline_reason
+		}
+
+		let response = await fetch(`${this.config.api_base_url}/api/match-decisions`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.config.auth_token}`,
+			},
+			body: JSON.stringify(body),
+		})
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, matchDecisionResponseSchema)
+	}
+
+	async listDecisions(person_id: string): Promise<MatchDecision[]> {
+		// Validate input
+		listDecisionsInputSchema.parse({ person_id })
+
+		let response = await fetch(
+			`${this.config.api_base_url}/api/match-decisions/${encodeURIComponent(person_id)}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${this.config.auth_token}`,
+				},
+			}
+		)
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, matchDecisionsListResponseSchema)
 	}
 }

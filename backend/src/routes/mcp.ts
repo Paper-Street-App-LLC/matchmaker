@@ -11,6 +11,9 @@ import {
 	GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
+import { findMatches } from '../services/matchingAlgorithm'
+import type { DeclineReason } from '../services/matchingAlgorithm'
+import type { PersonResponse } from '../schemas/people'
 import { prompts, getPrompt } from '../prompts'
 
 type Env = {
@@ -223,7 +226,11 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 							age: { type: 'number', description: 'Person age' },
 							location: { type: 'string', description: 'Person location' },
 							gender: { type: 'string', description: 'Person gender' },
-							preferences: { type: 'object', description: 'Person preferences' },
+							preferences: {
+								type: 'object',
+								description:
+									'Structured preferences with three sections. aboutMe: facts about this person (height in inches, build "slim"|"average"|"athletic"|"heavy", fitnessLevel "active"|"average"|"sedentary", ethnicity, religion, hasChildren boolean, numberOfChildren, isDivorced boolean, hasTattoos boolean, hasPiercings boolean, isSmoker boolean, occupation). lookingFor: partner preferences (ageRange {min,max}, heightRange {min,max} in inches, fitnessPreference "active"|"average"|"any", ethnicityPreference string[], incomePreference "high"|"moderate"|"any", religionRequired string or null, wantsChildren boolean or null). dealBreakers: array from "divorced","has_children","tattoos","piercings","smoker". Example: {"aboutMe":{"height":70,"fitnessLevel":"active","religion":"Christian"},"lookingFor":{"ageRange":{"min":25,"max":35}},"dealBreakers":["tattoos"]}',
+							},
 							personality: { type: 'object', description: 'Person personality traits' },
 							notes: { type: 'string', description: 'Notes about the person' },
 						},
@@ -232,7 +239,8 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				},
 				{
 					name: 'create_introduction',
-					description: 'Create an introduction between two people',
+					description:
+						'Create an introduction between two people. Supports cross-matchmaker introductions where each person belongs to a different matchmaker. You must own at least one person.',
 					inputSchema: {
 						type: 'object',
 						properties: {
@@ -245,7 +253,8 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				},
 				{
 					name: 'list_introductions',
-					description: 'List all introductions for the matchmaker',
+					description:
+						'List all introductions where you are either matchmaker (includes cross-matchmaker introductions)',
 					inputSchema: {
 						type: 'object',
 						properties: {},
@@ -270,7 +279,8 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				},
 				{
 					name: 'find_matches',
-					description: 'Find compatible matches for a person',
+					description:
+						'Find compatible matches for a person across all matchmakers. Returns matches with limited info (name, age, location, gender) and compatibility scores. Cross-matchmaker matches are flagged.',
 					inputSchema: {
 						type: 'object',
 						properties: {
@@ -344,6 +354,50 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 							id: { type: 'string', description: 'Feedback ID (UUID)' },
 						},
 						required: ['id'],
+					},
+				},
+				{
+					name: 'record_decision',
+					description:
+						'Record a match decision (accept or decline a candidate for a person). When declining, provide a reason — this feeds back into the algorithm as a "revealed preference" to improve future matches. The decline reason should describe WHY the match was rejected (e.g., "she doesn\'t like tattoos", "too far away", "smoking is a dealbreaker").',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							person_id: {
+								type: 'string',
+								description: 'The person ID (UUID) you are deciding matches for',
+							},
+							candidate_id: {
+								type: 'string',
+								description: 'The candidate ID (UUID) being accepted or declined',
+							},
+							decision: {
+								type: 'string',
+								enum: ['accepted', 'declined'],
+								description: 'Whether to accept or decline this candidate',
+							},
+							decline_reason: {
+								type: 'string',
+								description:
+									'Why the candidate was declined (required when decision is "declined"). Describe the reason naturally — keywords like "tattoos", "smoking", "divorced", "children", "piercings" will be extracted to penalize similar candidates in future matches.',
+							},
+						},
+						required: ['person_id', 'candidate_id', 'decision'],
+					},
+				},
+				{
+					name: 'list_decisions',
+					description:
+						'List all match decisions (accepted/declined) for a specific person. Shows previous decisions including decline reasons which serve as revealed preferences.',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							person_id: {
+								type: 'string',
+								description: 'Person ID (UUID) to list decisions for',
+							},
+						},
+						required: ['person_id'],
 					},
 				},
 			],
@@ -448,14 +502,35 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						person_b_id: string
 						notes?: string
 					}
+
+					// Look up both people to get their matchmaker IDs
+					let { data: personA, error: personAError } = await supabaseClient
+						.from('people')
+						.select('id, matchmaker_id')
+						.eq('id', person_a_id)
+						.single()
+					if (personAError || !personA) throw new Error('Person A not found')
+
+					let { data: personB, error: personBError } = await supabaseClient
+						.from('people')
+						.select('id, matchmaker_id')
+						.eq('id', person_b_id)
+						.single()
+					if (personBError || !personB) throw new Error('Person B not found')
+
+					// Validate requesting user owns at least one person
+					if (personA.matchmaker_id !== userId && personB.matchmaker_id !== userId) {
+						throw new Error('You must own at least one person in the introduction')
+					}
+
 					let { data, error } = await supabaseClient
 						.from('introductions')
 						.insert({
-							matchmaker_id: userId,
+							matchmaker_a_id: personA.matchmaker_id,
+							matchmaker_b_id: personB.matchmaker_id,
 							person_a_id,
 							person_b_id,
 							notes: notes || null,
-							status: 'pending',
 						})
 						.select()
 						.single()
@@ -469,7 +544,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					let { data, error } = await supabaseClient
 						.from('introductions')
 						.select('*')
-						.eq('matchmaker_id', userId)
+						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 					if (error) throw new Error(error.message)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
@@ -485,7 +560,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						.from('introductions')
 						.update(updates)
 						.eq('id', id)
-						.eq('matchmaker_id', userId)
+						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 						.select()
 						.single()
 					if (error) throw new Error(error.message)
@@ -503,32 +578,133 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					) {
 						throw new Error('Invalid arguments: person_id is required and must be a string')
 					}
-					// Verify the person exists and belongs to this user
-					let { error: personError } = await supabaseClient
-						.from('people')
-						.select('id')
-						.eq('id', args.person_id)
-						.eq('matchmaker_id', userId)
-						.single()
-					if (personError) throw new Error(personError.message)
+					let personId = args.person_id
 
-					// Get all other active people
+					// Verify the person exists and belongs to this user
+					let { data: person, error: personError } = await supabaseClient
+						.from('people')
+						.select('*')
+						.eq('id', personId)
+						.eq('matchmaker_id', userId)
+						.maybeSingle()
+					if (personError) throw new Error(personError.message)
+					if (!person) throw new Error('Person not found')
+
+					// Get ALL active people across all matchmakers (excluding the subject)
 					let { data: candidates, error: candidatesError } = await supabaseClient
 						.from('people')
 						.select('*')
-						.eq('matchmaker_id', userId)
 						.eq('active', true)
-						.neq('id', args.person_id)
+						.neq('id', personId)
 					if (candidatesError) throw new Error(candidatesError.message)
 
-					// Simple matching - return candidates with compatibility score
-					let matches = (candidates || []).map(candidate => ({
-						person: candidate,
-						compatibility_score: Math.random(), // Placeholder
-						reasons: ['Both are in the matchmaker system'],
-					}))
+					// Get previous match decisions to exclude already-decided candidates
+					let { data: decisions, error: decisionsError } = await supabaseClient
+						.from('match_decisions')
+						.select('candidate_id, decision, decline_reason')
+						.eq('person_id', personId)
+						.eq('matchmaker_id', userId)
+					if (decisionsError) throw new Error(decisionsError.message)
+
+					// Get existing introductions to exclude already-introduced candidates
+					let { data: introductions, error: introError } = await supabaseClient
+						.from('introductions')
+						.select('person_a_id, person_b_id')
+						.or(`person_a_id.eq.${personId},person_b_id.eq.${personId}`)
+					if (introError) throw new Error(introError.message)
+
+					// Build exclude set from decisions + introductions
+					let excludeIds = new Set<string>()
+					for (let d of decisions || []) {
+						excludeIds.add(d.candidate_id)
+					}
+					for (let intro of introductions || []) {
+						let otherId =
+							intro.person_a_id === personId ? intro.person_b_id : intro.person_a_id
+						excludeIds.add(otherId)
+					}
+
+					// Collect decline reasons as revealed preferences
+					let declineReasons: DeclineReason[] = (decisions || [])
+						.filter(
+							(d: { decision: string; decline_reason?: string | null }) =>
+								d.decision === 'declined' && d.decline_reason
+						)
+						.map((d: { candidate_id: string; decline_reason: string }) => ({
+							candidateId: d.candidate_id,
+							reason: d.decline_reason,
+						}))
+
+					// Find matches using the algorithm with options
+					let matches = findMatches(
+						person as PersonResponse,
+						(candidates || []) as PersonResponse[],
+						userId,
+						{ excludeIds, declineReasons, limit: 3 }
+					)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
+					}
+				}
+
+				if (name === 'record_decision') {
+					if (
+						!args ||
+						typeof args !== 'object' ||
+						!('person_id' in args) ||
+						typeof args.person_id !== 'string' ||
+						!('candidate_id' in args) ||
+						typeof args.candidate_id !== 'string' ||
+						!('decision' in args) ||
+						typeof args.decision !== 'string'
+					) {
+						throw new Error(
+							'Invalid arguments: person_id, candidate_id, and decision are required'
+						)
+					}
+					let { person_id, candidate_id, decision, decline_reason } = args as {
+						person_id: string
+						candidate_id: string
+						decision: string
+						decline_reason?: string
+					}
+					if (decision !== 'accepted' && decision !== 'declined') {
+						throw new Error('Invalid decision: must be "accepted" or "declined"')
+					}
+					let { data, error } = await supabaseClient
+						.from('match_decisions')
+						.insert({
+							matchmaker_id: userId,
+							person_id,
+							candidate_id,
+							decision,
+							decline_reason: decline_reason || null,
+						})
+						.select()
+						.single()
+					if (error) throw new Error(error.message)
+					return {
+						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+					}
+				}
+
+				if (name === 'list_decisions') {
+					if (
+						!args ||
+						typeof args !== 'object' ||
+						!('person_id' in args) ||
+						typeof args.person_id !== 'string'
+					) {
+						throw new Error('Invalid arguments: person_id is required and must be a string')
+					}
+					let { data, error } = await supabaseClient
+						.from('match_decisions')
+						.select('*')
+						.eq('person_id', args.person_id)
+						.eq('matchmaker_id', userId)
+					if (error) throw new Error(error.message)
+					return {
+						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 					}
 				}
 
@@ -557,9 +733,10 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						.from('introductions')
 						.select('*')
 						.eq('id', args.id)
-						.eq('matchmaker_id', userId)
-						.single()
+						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
+						.maybeSingle()
 					if (error) throw new Error(error.message)
+					if (!data) throw new Error('Introduction not found')
 					return {
 						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 					}

@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const personResponseSchema = z
 	.object({
 		id: z.string().uuid(),
-		matchmaker_id: z.string().uuid(),
+		matchmaker_id: z.string().uuid().nullable(),
 		name: z.string(),
 		age: z.number().nullable(),
 		location: z.string().nullable(),
@@ -22,7 +22,8 @@ export const peopleListResponseSchema = z.array(personResponseSchema)
 export const introductionResponseSchema = z
 	.object({
 		id: z.string().uuid(),
-		matchmaker_id: z.string().uuid(),
+		matchmaker_a_id: z.string().uuid(),
+		matchmaker_b_id: z.string().uuid(),
 		person_a_id: z.string().uuid(),
 		person_b_id: z.string().uuid(),
 		status: z.string(),
@@ -34,20 +35,19 @@ export const introductionResponseSchema = z
 
 export const introductionsListResponseSchema = z.array(introductionResponseSchema)
 
-// Match schema - currently placeholder, will be expanded when algorithm is implemented
 export const matchResponseSchema = z
 	.object({
-		person: z
-			.object({
-				id: z.string().uuid(),
-				name: z.string(),
-				age: z.number().nullable().optional(),
-				location: z.string().nullable().optional(),
-			})
-			.passthrough()
-			.optional(),
-		compatibility_score: z.number().optional(),
-		match_reasons: z.array(z.string()).optional(),
+		person: z.object({
+			id: z.string().uuid(),
+			name: z.string(),
+			age: z.number().nullable(),
+			location: z.string().nullable(),
+			gender: z.string().nullable(),
+			is_seed: z.boolean(),
+		}),
+		compatibility_score: z.number(),
+		match_explanation: z.string(),
+		is_cross_matchmaker: z.boolean(),
 	})
 	.passthrough()
 
@@ -66,3 +66,18 @@ export const feedbackResponseSchema = z
 	.passthrough()
 
 export const feedbackListResponseSchema = z.array(feedbackResponseSchema)
+
+// Match decision schema
+export const matchDecisionResponseSchema = z
+	.object({
+		id: z.string().uuid(),
+		matchmaker_id: z.string().uuid(),
+		person_id: z.string().uuid(),
+		candidate_id: z.string().uuid(),
+		decision: z.string(),
+		decline_reason: z.string().nullable(),
+		created_at: z.string(),
+	})
+	.passthrough()
+
+export const matchDecisionsListResponseSchema = z.array(matchDecisionResponseSchema)
