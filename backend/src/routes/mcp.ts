@@ -12,6 +12,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
 import { findMatches } from '../services/matchingAlgorithm'
+import type { DeclineReason } from '../services/matchingAlgorithm'
+import type { PersonResponse } from '../schemas/people'
 import { personResponseSchema } from '../schemas/people'
 import { prompts, getPrompt } from '../prompts'
 import { createIntroduction } from '../services/introductions'
@@ -356,6 +358,50 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						required: ['id'],
 					},
 				},
+				{
+					name: 'record_decision',
+					description:
+						'Record a match decision (accept or decline a candidate for a person). When declining, provide a reason — this feeds back into the algorithm as a "revealed preference" to improve future matches. The decline reason should describe WHY the match was rejected (e.g., "she doesn\'t like tattoos", "too far away", "smoking is a dealbreaker").',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							person_id: {
+								type: 'string',
+								description: 'The person ID (UUID) you are deciding matches for',
+							},
+							candidate_id: {
+								type: 'string',
+								description: 'The candidate ID (UUID) being accepted or declined',
+							},
+							decision: {
+								type: 'string',
+								enum: ['accepted', 'declined'],
+								description: 'Whether to accept or decline this candidate',
+							},
+							decline_reason: {
+								type: 'string',
+								description:
+									'Why the candidate was declined (required when decision is "declined"). Describe the reason naturally — keywords like "tattoos", "smoking", "divorced", "children", "piercings" will be extracted to penalize similar candidates in future matches.',
+							},
+						},
+						required: ['person_id', 'candidate_id', 'decision'],
+					},
+				},
+				{
+					name: 'list_decisions',
+					description:
+						'List all match decisions (accepted/declined) for a specific person. Shows previous decisions including decline reasons which serve as revealed preferences.',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							person_id: {
+								type: 'string',
+								description: 'Person ID (UUID) to list decisions for',
+							},
+						},
+						required: ['person_id'],
+					},
+				},
 			],
 		}))
 
@@ -509,11 +555,13 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					) {
 						throw new Error('Invalid arguments: person_id is required and must be a string')
 					}
+					let personId = args.person_id
+
 					// Verify the person exists and belongs to this user
 					let { data: person, error: personError } = await supabaseClient
 						.from('people')
 						.select('*')
-						.eq('id', args.person_id)
+						.eq('id', personId)
 						.eq('matchmaker_id', userId)
 						.maybeSingle()
 					if (personError) throw new Error(personError.message)
@@ -524,15 +572,116 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						.from('people')
 						.select('*')
 						.eq('active', true)
-						.neq('id', args.person_id)
+						.neq('id', personId)
 					if (candidatesError) throw new Error(candidatesError.message)
 
-					// Find matches using the algorithm
-					let validatedPerson = personResponseSchema.parse(person)
-					let validatedCandidates = (candidates || []).map(c => personResponseSchema.parse(c))
-					let matches = findMatches(validatedPerson, validatedCandidates, userId)
+					// Get previous match decisions to exclude already-decided candidates
+					let { data: decisions, error: decisionsError } = await supabaseClient
+						.from('match_decisions')
+						.select('candidate_id, decision, decline_reason')
+						.eq('person_id', personId)
+						.eq('matchmaker_id', userId)
+					if (decisionsError) throw new Error(decisionsError.message)
+
+					// Get existing introductions to exclude already-introduced candidates
+					let { data: introductions, error: introError } = await supabaseClient
+						.from('introductions')
+						.select('person_a_id, person_b_id')
+						.or(`person_a_id.eq.${personId},person_b_id.eq.${personId}`)
+					if (introError) throw new Error(introError.message)
+
+					// Build exclude set from decisions + introductions
+					let excludeIds = new Set<string>()
+					for (let d of decisions || []) {
+						excludeIds.add(d.candidate_id)
+					}
+					for (let intro of introductions || []) {
+						let otherId =
+							intro.person_a_id === personId ? intro.person_b_id : intro.person_a_id
+						excludeIds.add(otherId)
+					}
+
+					// Collect decline reasons as revealed preferences
+					let declineReasons: DeclineReason[] = (decisions || [])
+						.filter(
+							(d: { decision: string; decline_reason?: string | null }) =>
+								d.decision === 'declined' && d.decline_reason
+						)
+						.map((d: { candidate_id: string; decline_reason: string }) => ({
+							candidateId: d.candidate_id,
+							reason: d.decline_reason,
+						}))
+
+					// Find matches using the algorithm with options
+					let matches = findMatches(
+						person as PersonResponse,
+						(candidates || []) as PersonResponse[],
+						userId,
+						{ excludeIds, declineReasons, limit: 3 }
+					)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
+					}
+				}
+
+				if (name === 'record_decision') {
+					if (
+						!args ||
+						typeof args !== 'object' ||
+						!('person_id' in args) ||
+						typeof args.person_id !== 'string' ||
+						!('candidate_id' in args) ||
+						typeof args.candidate_id !== 'string' ||
+						!('decision' in args) ||
+						typeof args.decision !== 'string'
+					) {
+						throw new Error(
+							'Invalid arguments: person_id, candidate_id, and decision are required'
+						)
+					}
+					let { person_id, candidate_id, decision, decline_reason } = args as {
+						person_id: string
+						candidate_id: string
+						decision: string
+						decline_reason?: string
+					}
+					if (decision !== 'accepted' && decision !== 'declined') {
+						throw new Error('Invalid decision: must be "accepted" or "declined"')
+					}
+					let { data, error } = await supabaseClient
+						.from('match_decisions')
+						.insert({
+							matchmaker_id: userId,
+							person_id,
+							candidate_id,
+							decision,
+							decline_reason: decline_reason || null,
+						})
+						.select()
+						.single()
+					if (error) throw new Error(error.message)
+					return {
+						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+					}
+				}
+
+				if (name === 'list_decisions') {
+					if (
+						!args ||
+						typeof args !== 'object' ||
+						!('person_id' in args) ||
+						typeof args.person_id !== 'string'
+					) {
+						throw new Error('Invalid arguments: person_id is required and must be a string')
+					}
+					let { data, error } = await supabaseClient
+						.from('match_decisions')
+						.select('*')
+						.eq('person_id', args.person_id)
+						.eq('matchmaker_id', userId)
+					if (error) throw new Error(error.message)
+					return {
+						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 					}
 				}
 

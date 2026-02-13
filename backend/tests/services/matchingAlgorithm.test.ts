@@ -1260,4 +1260,176 @@ describe('findMatches', () => {
 		let charlieMatch = matches.find(m => m.person.name === 'Charlie')!
 		expect(bobMatch.compatibility_score).toBeGreaterThan(charlieMatch.compatibility_score)
 	})
+
+	// --- Options: limit, excludeIds, decline penalty ---
+
+	test('should return at most 3 results when limit is 3', () => {
+		let candidates = Array.from({ length: 6 }, (_, i) =>
+			makePerson({
+				id: `111e8400-e29b-41d4-a716-44665544001${i}`,
+				name: `Candidate ${i}`,
+				gender: 'male',
+				age: 28 + i,
+				location: 'NYC',
+			})
+		)
+
+		let matches = findMatches(subject, candidates, matchmakerId, { limit: 3 })
+
+		expect(matches).toHaveLength(3)
+	})
+
+	test('should return all results when limit is not specified', () => {
+		let candidates = Array.from({ length: 5 }, (_, i) =>
+			makePerson({
+				id: `111e8400-e29b-41d4-a716-44665544001${i}`,
+				name: `Candidate ${i}`,
+				gender: 'male',
+				age: 28 + i,
+				location: 'NYC',
+			})
+		)
+
+		let matches = findMatches(subject, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(5)
+	})
+
+	test('should exclude candidates in excludeIds', () => {
+		let candidates = [
+			makePerson({
+				id: '111e8400-e29b-41d4-a716-446655440011',
+				name: 'Keep',
+				gender: 'male',
+				age: 30,
+			}),
+			makePerson({
+				id: '222e8400-e29b-41d4-a716-446655440022',
+				name: 'Exclude',
+				gender: 'male',
+				age: 30,
+			}),
+		]
+
+		let excludeIds = new Set(['222e8400-e29b-41d4-a716-446655440022'])
+		let matches = findMatches(subject, candidates, matchmakerId, { excludeIds })
+
+		expect(matches).toHaveLength(1)
+		expect(matches[0].person.name).toBe('Keep')
+	})
+
+	test('should apply decline reason penalty for tattoos keyword', () => {
+		let candidateWithTattoos = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'Tattooed Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: {
+				aboutMe: { hasTattoos: true },
+			},
+		})
+		let candidateWithout = makePerson({
+			id: '222e8400-e29b-41d4-a716-446655440022',
+			name: 'Clean Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: {
+				aboutMe: { hasTattoos: false },
+			},
+		})
+
+		let declineReasons = [
+			{ candidateId: '000e8400-e29b-41d4-a716-446655440099', reason: 'she does not like tattoos' },
+		]
+		let matches = findMatches(subject, [candidateWithTattoos, candidateWithout], matchmakerId, {
+			declineReasons,
+		})
+
+		let tattooed = matches.find(m => m.person.name === 'Tattooed Bob')!
+		let clean = matches.find(m => m.person.name === 'Clean Bob')!
+
+		expect(tattooed.compatibility_score).toBeLessThan(clean.compatibility_score)
+	})
+
+	test('should not apply decline reason penalty when keyword does not match candidate', () => {
+		let candidate = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'No Tattoos Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: {
+				aboutMe: { hasTattoos: false },
+			},
+		})
+
+		let declineReasons = [
+			{ candidateId: '000e8400-e29b-41d4-a716-446655440099', reason: 'she does not like tattoos' },
+		]
+		let withPenalty = findMatches(subject, [candidate], matchmakerId, { declineReasons })
+		let withoutPenalty = findMatches(subject, [candidate], matchmakerId)
+
+		expect(withPenalty[0].compatibility_score).toBe(withoutPenalty[0].compatibility_score)
+	})
+
+	test('should cap decline penalty so score does not go below 0', () => {
+		let candidate = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'Everything Bob',
+			gender: 'male',
+			age: 30,
+			preferences: {
+				aboutMe: {
+					hasTattoos: true,
+					hasPiercings: true,
+					isSmoker: true,
+					isDivorced: true,
+					hasChildren: true,
+				},
+			},
+		})
+
+		let declineReasons = [
+			{ candidateId: 'a', reason: 'tattoos are a dealbreaker' },
+			{ candidateId: 'b', reason: 'piercings not her thing' },
+			{ candidateId: 'c', reason: 'she hates smoking' },
+			{ candidateId: 'd', reason: 'no divorced men' },
+			{ candidateId: 'e', reason: 'no children please' },
+		]
+		let matches = findMatches(subject, [candidate], matchmakerId, { declineReasons })
+
+		expect(matches[0].compatibility_score).toBeGreaterThanOrEqual(0)
+	})
+
+	test('should apply penalty for smoker keyword variations', () => {
+		let smokerCandidate = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'Smoker Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: { aboutMe: { isSmoker: true } },
+		})
+		let nonSmoker = makePerson({
+			id: '222e8400-e29b-41d4-a716-446655440022',
+			name: 'Clean Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: { aboutMe: { isSmoker: false } },
+		})
+
+		let declineReasons = [
+			{ candidateId: 'x', reason: 'smoking is a no-go' },
+		]
+		let matches = findMatches(subject, [smokerCandidate, nonSmoker], matchmakerId, {
+			declineReasons,
+		})
+
+		let smoker = matches.find(m => m.person.name === 'Smoker Bob')!
+		let clean = matches.find(m => m.person.name === 'Clean Bob')!
+		expect(smoker.compatibility_score).toBeLessThan(clean.compatibility_score)
+	})
 })

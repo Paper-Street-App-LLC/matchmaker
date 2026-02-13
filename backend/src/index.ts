@@ -7,6 +7,7 @@ import { createPeopleRoutes } from './routes/people'
 import { createIntroductionsRoutes } from './routes/introductions'
 import { createFeedbackRoutes } from './routes/feedback'
 import { createMatchesRoutes } from './routes/matches'
+import { createMatchDecisionsRoutes } from './routes/matchDecisions'
 import { createOAuthRoutes } from './routes/oauth'
 import { createLoginRoutes } from './routes/login'
 import { createWellKnownRoutes } from './routes/well-known'
@@ -63,6 +64,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 	app.route('/api/introductions', createIntroductionsRoutes(supabaseClient))
 	app.route('/api/feedback', createFeedbackRoutes(supabaseClient))
 	app.route('/api/matches', createMatchesRoutes(supabaseClient))
+	app.route('/api/match-decisions', createMatchDecisionsRoutes(supabaseClient))
 
 	// MCP Streamable HTTP endpoint (protected via route-level auth)
 	app.route('/mcp', createMcpRoutes(supabaseClient))

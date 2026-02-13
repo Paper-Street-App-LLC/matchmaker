@@ -66,3 +66,18 @@ export const feedbackResponseSchema = z
 	.passthrough()
 
 export const feedbackListResponseSchema = z.array(feedbackResponseSchema)
+
+// Match decision schema
+export const matchDecisionResponseSchema = z
+	.object({
+		id: z.string().uuid(),
+		matchmaker_id: z.string().uuid(),
+		person_id: z.string().uuid(),
+		candidate_id: z.string().uuid(),
+		decision: z.string(),
+		decline_reason: z.string().nullable(),
+		created_at: z.string(),
+	})
+	.passthrough()
+
+export const matchDecisionsListResponseSchema = z.array(matchDecisionResponseSchema)
