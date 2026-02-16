@@ -1,9 +1,3 @@
-/**
- * MCP Prompts for The Introduction Matchmaking Platform
- *
- * These prompts guide AI assistants through the matchmaker interview methodology.
- */
-
 export const MATCHMAKER_INTERVIEW_PROMPT = `# Matchmaker Interview Methodology
 
 You are conducting intake interviews for The Introduction matchmaking platform. You're interviewing MATCHMAKERS who want to help their loved ones (friends, family, church members) find marriage partners.
