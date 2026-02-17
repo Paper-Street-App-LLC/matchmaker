@@ -204,6 +204,23 @@ describe('findMatches', () => {
 		expect(matches).toHaveLength(0)
 	})
 
+	test('should limit results to 3', () => {
+		let candidates = [
+			makePerson({ id: '111e8400-e29b-41d4-a716-446655440011', name: 'Bob', gender: 'male', age: 28 }),
+			makePerson({ id: '222e8400-e29b-41d4-a716-446655440022', name: 'Charlie', gender: 'male', age: 29 }),
+			makePerson({ id: '333e8400-e29b-41d4-a716-446655440033', name: 'Dave', gender: 'male', age: 30 }),
+			makePerson({ id: '444e8400-e29b-41d4-a716-446655440044', name: 'Ed', gender: 'male', age: 31 }),
+			makePerson({ id: '555e8400-e29b-41d4-a716-446655440055', name: 'Frank', gender: 'male', age: 32 }),
+		]
+
+		let matches = findMatches(subject, candidates, matchmakerId)
+
+		expect(matches).toHaveLength(3)
+		// Should be sorted by score, so top 3 are returned
+		expect(matches[0].compatibility_score).toBeGreaterThanOrEqual(matches[1].compatibility_score)
+		expect(matches[1].compatibility_score).toBeGreaterThanOrEqual(matches[2].compatibility_score)
+	})
+
 	test('should include location in explanation when locations match', () => {
 		let candidates = [
 			makePerson({

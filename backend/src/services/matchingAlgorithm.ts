@@ -1,6 +1,8 @@
 import type { PersonResponse } from '../schemas/people'
 import type { MatchResponse, LimitedPerson } from '../schemas/matches'
 
+let MAX_RESULTS = 3
+
 let toLimitedPerson = (person: PersonResponse): LimitedPerson => ({
 	id: person.id,
 	name: person.name,
@@ -96,5 +98,5 @@ export let findMatches = (
 
 	matches.sort((a, b) => b.compatibility_score - a.compatibility_score)
 
-	return matches
+	return matches.slice(0, MAX_RESULTS)
 }

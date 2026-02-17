@@ -12,7 +12,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
 import { findMatches } from '../services/matchingAlgorithm'
-import type { PersonResponse } from '../schemas/people'
+import { personResponseSchema } from '../schemas/people'
 import { prompts, getPrompt } from '../prompts'
 
 type Env = {
@@ -548,11 +548,9 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					if (candidatesError) throw new Error(candidatesError.message)
 
 					// Find matches using the algorithm
-					let matches = findMatches(
-						person as PersonResponse,
-						(candidates || []) as PersonResponse[],
-						userId
-					)
+					let validatedPerson = personResponseSchema.parse(person)
+					let validatedCandidates = (candidates || []).map(c => personResponseSchema.parse(c))
+					let matches = findMatches(validatedPerson, validatedCandidates, userId)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
 					}
