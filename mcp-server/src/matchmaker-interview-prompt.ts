@@ -15,7 +15,7 @@ Begin the interview flow when you hear trigger phrases like:
 - Any mention of wanting to help someone find love/marriage
 
 **If a name is mentioned:**
-1. First check if they already exist using \`list_singles\`
+1. First check if they already exist using \`list_people\`
 2. If they exist, retrieve their profile with \`get_person\` and assess completeness
 3. If they don't exist OR their profile is incomplete, begin the interview
 
@@ -317,11 +317,11 @@ But I need to be honest with you:
 
 ## After Interview: Using MCP Tools
 
-After gathering all information, use the Pro Matchmaker MCP tools to complete the process:
+After gathering all information, use the MCP tools to complete the process:
 
 ### Scenario A: New Person (not in system yet)
 
-1. Add the person using \`add_single\` with their name
+1. Add the person using \`add_person\` with their name
 2. Update their profile using \`update_person\` with all gathered details:
    - age, gender, location
    - notes field should contain the full interview intelligence (see template below)
@@ -334,7 +334,7 @@ After gathering all information, use the Pro Matchmaker MCP tools to complete th
 
 When a matchmaker says "I want to match [Name]" and that person already exists:
 
-1. Use \`list_singles\` to find the person by name
+1. Use \`list_people\` to find the person by name
 2. Use \`get_person\` to retrieve their full profile
 3. Review their existing profile - if incomplete, conduct interview to fill gaps
 4. Once profile is complete, call \`find_matches\` with their person_id
