@@ -50,35 +50,45 @@ describe('GET /api/matches/:personId', () => {
 		]
 
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				select: mock((columns: string) => ({
-					eq: mock((column: string, value: unknown) => {
-						if (column === 'id' && value === mockPersonId) {
-							return {
-								eq: mock((column2: string, value2: unknown) => ({
-									maybeSingle: mock(() => ({
-										data: mockPerson,
-										error: null,
-									})),
-								})),
-							}
-						}
-						// For fetching all people
-						if (column === 'matchmaker_id') {
-							return {
-								eq: mock((column2: string, value2: unknown) => ({
-									data: mockAllPeople,
+			from: mock((table: string) => {
+				if (table === 'match_decisions') {
+					return {
+						select: mock((_columns: string) => ({
+							eq: mock((_col: string, _val: unknown) => ({
+								eq: mock((_col2: string, _val2: unknown) => ({
+									data: [],
 									error: null,
 								})),
+							})),
+						})),
+					}
+				}
+				// people table
+				return {
+					select: mock((_columns: string) => ({
+						eq: mock((column: string, value: unknown) => {
+							if (column === 'id' && value === mockPersonId) {
+								return {
+									eq: mock((_col2: string, _val2: unknown) => ({
+										maybeSingle: mock(() => ({
+											data: mockPerson,
+											error: null,
+										})),
+									})),
+								}
 							}
-						}
-						return {
-							data: null,
-							error: null,
-						}
-					}),
-				})),
-			})),
+							// .eq('active', true) — return all people for matchFinder
+							if (column === 'active') {
+								return {
+									data: mockAllPeople,
+									error: null,
+								}
+							}
+							return { data: null, error: null }
+						}),
+					})),
+				}
+			}),
 		})
 
 		let app = new Hono<{ Variables: Variables }>()
@@ -95,16 +105,16 @@ describe('GET /api/matches/:personId', () => {
 
 		expect(res.status).toBe(200)
 		expect(Array.isArray(json)).toBe(true)
-		// Placeholder algorithm returns empty array
+		// Stub algorithm returns empty array
 		expect(json).toHaveLength(0)
 	})
 
 	test('should return 404 when person not found', async () => {
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				select: mock((columns: string) => ({
-					eq: mock((column: string, value: unknown) => ({
-						eq: mock((column2: string, value2: unknown) => ({
+			from: mock((_table: string) => ({
+				select: mock((_columns: string) => ({
+					eq: mock((_column: string, _value: unknown) => ({
+						eq: mock((_column2: string, _value2: unknown) => ({
 							maybeSingle: mock(() => ({
 								data: null,
 								error: null,

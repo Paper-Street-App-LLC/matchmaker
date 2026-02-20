@@ -12,6 +12,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '../prompts'
+import { matchFinder } from '../services/matchFinder'
 
 type Env = {
 	Variables: {
@@ -270,13 +271,56 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				},
 				{
 					name: 'find_matches',
-					description: 'Find compatible matches for a person',
+					description:
+						'Find compatible matches for a person. Searches across all active people including seed profiles and other matchmakers\' clients (cross-matchmaker). Automatically excludes candidates the matchmaker has already reviewed.',
 					inputSchema: {
 						type: 'object',
 						properties: {
 							person_id: {
 								type: 'string',
 								description: 'Person ID (UUID) to find matches for',
+							},
+						},
+						required: ['person_id'],
+					},
+				},
+				{
+					name: 'record_decision',
+					description:
+						'Record a matchmaker\'s accept or decline decision on a candidate match. Declined candidates are excluded from future find_matches results for this person.',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							person_id: {
+								type: 'string',
+								description: 'Person ID (UUID) — the person being matched',
+							},
+							candidate_id: {
+								type: 'string',
+								description: 'Candidate ID (UUID) — the match candidate',
+							},
+							decision: {
+								type: 'string',
+								enum: ['accepted', 'declined'],
+								description: 'Whether to accept or decline this candidate',
+							},
+							decline_reason: {
+								type: 'string',
+								description: 'Optional reason for declining (used to improve future suggestions)',
+							},
+						},
+						required: ['person_id', 'candidate_id', 'decision'],
+					},
+				},
+				{
+					name: 'list_decisions',
+					description: 'List all match decisions recorded for a specific person',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							person_id: {
+								type: 'string',
+								description: 'Person ID (UUID)',
 							},
 						},
 						required: ['person_id'],
@@ -503,32 +547,100 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					) {
 						throw new Error('Invalid arguments: person_id is required and must be a string')
 					}
-					// Verify the person exists and belongs to this user
-					let { error: personError } = await supabaseClient
+					// Verify person belongs to this matchmaker
+					let { data: person, error: personError } = await supabaseClient
 						.from('people')
 						.select('id')
 						.eq('id', args.person_id)
 						.eq('matchmaker_id', userId)
-						.single()
+						.maybeSingle()
 					if (personError) throw new Error(personError.message)
+					if (!person) throw new Error('Person not found')
 
-					// Get all other active people
-					let { data: candidates, error: candidatesError } = await supabaseClient
-						.from('people')
-						.select('*')
-						.eq('matchmaker_id', userId)
-						.eq('active', true)
-						.neq('id', args.person_id)
-					if (candidatesError) throw new Error(candidatesError.message)
-
-					// Simple matching - return candidates with compatibility score
-					let matches = (candidates || []).map(candidate => ({
-						person: candidate,
-						compatibility_score: Math.random(), // Placeholder
-						reasons: ['Both are in the matchmaker system'],
-					}))
+					let matches = await matchFinder(args.person_id, userId, supabaseClient)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
+					}
+				}
+
+				if (name === 'record_decision') {
+					if (
+						!args ||
+						typeof args !== 'object' ||
+						!('person_id' in args) ||
+						typeof args.person_id !== 'string' ||
+						!('candidate_id' in args) ||
+						typeof args.candidate_id !== 'string' ||
+						!('decision' in args) ||
+						typeof args.decision !== 'string'
+					) {
+						throw new Error(
+							'Invalid arguments: person_id, candidate_id, and decision are required'
+						)
+					}
+					let { person_id, candidate_id, decision, decline_reason } = args as {
+						person_id: string
+						candidate_id: string
+						decision: string
+						decline_reason?: string
+					}
+					if (decision !== 'accepted' && decision !== 'declined') {
+						throw new Error("decision must be 'accepted' or 'declined'")
+					}
+					// Verify person belongs to this matchmaker
+					let { data: person, error: personError } = await supabaseClient
+						.from('people')
+						.select('id')
+						.eq('id', person_id)
+						.eq('matchmaker_id', userId)
+						.maybeSingle()
+					if (personError) throw new Error(personError.message)
+					if (!person) throw new Error('Person not found')
+
+					let { data, error } = await supabaseClient
+						.from('match_decisions')
+						.insert({
+							matchmaker_id: userId,
+							person_id,
+							candidate_id,
+							decision,
+							decline_reason: decline_reason || null,
+						})
+						.select()
+						.single()
+					if (error) throw new Error(error.message)
+					return {
+						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+					}
+				}
+
+				if (name === 'list_decisions') {
+					if (
+						!args ||
+						typeof args !== 'object' ||
+						!('person_id' in args) ||
+						typeof args.person_id !== 'string'
+					) {
+						throw new Error('Invalid arguments: person_id is required and must be a string')
+					}
+					// Verify person belongs to this matchmaker
+					let { data: person, error: personError } = await supabaseClient
+						.from('people')
+						.select('id')
+						.eq('id', args.person_id)
+						.eq('matchmaker_id', userId)
+						.maybeSingle()
+					if (personError) throw new Error(personError.message)
+					if (!person) throw new Error('Person not found')
+
+					let { data, error } = await supabaseClient
+						.from('match_decisions')
+						.select('*')
+						.eq('person_id', args.person_id)
+						.eq('matchmaker_id', userId)
+					if (error) throw new Error(error.message)
+					return {
+						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 					}
 				}
 
