@@ -1,5 +1,5 @@
 import type { GetPromptResult, PromptMessage } from '@modelcontextprotocol/sdk/types.js'
-import { MATCHMAKER_INTERVIEW_PROMPT } from './matchmaker-interview-prompt.js'
+import { MATCHMAKER_INTERVIEW_TEXT } from './matchmaker-interview-prompt.js'
 
 export type { GetPromptResult, PromptMessage }
 
@@ -33,7 +33,7 @@ export function getPrompt(name: string): GetPromptResult {
 				role: 'user',
 				content: {
 					type: 'text',
-					text: MATCHMAKER_INTERVIEW_PROMPT,
+					text: MATCHMAKER_INTERVIEW_TEXT,
 				},
 			},
 		],

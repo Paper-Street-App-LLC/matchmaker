@@ -407,7 +407,7 @@ describe('MCP Routes', () => {
 				expect(promptsListResult.prompts.length).toBeGreaterThan(0)
 
 				let intakePrompt = promptsListResult.prompts.find(
-					(p: { name: string }) => p.name === 'intake_questionnaire'
+					(p: { name: string }) => p.name === 'matchmaker_interview'
 				)
 				expect(intakePrompt).toBeDefined()
 				expect(intakePrompt.description).toBeDefined()
@@ -427,7 +427,7 @@ describe('MCP Routes', () => {
 						jsonrpc: '2.0',
 						method: 'prompts/get',
 						params: {
-							name: 'intake_questionnaire',
+							name: 'matchmaker_interview',
 						},
 						id: 1,
 					}),
@@ -463,7 +463,7 @@ describe('MCP Routes', () => {
 				// Check the prompt content includes expected text
 				let messageContent = promptResult.messages[0].content
 				expect(messageContent.type).toBe('text')
-				expect(messageContent.text).toContain('following information')
+				expect(messageContent.text).toContain('Phase 1')
 			})
 
 			test('returns an error for unknown prompt name', async () => {
