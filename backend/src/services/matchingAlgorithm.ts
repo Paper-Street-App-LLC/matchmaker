@@ -18,14 +18,6 @@ let isOppositeGender = (subject: PersonResponse, candidate: PersonResponse): boo
 	return subject.gender.toLowerCase() !== candidate.gender.toLowerCase()
 }
 
-let DEAL_BREAKER_MAP: Record<string, keyof NonNullable<StructuredPreferences['aboutMe']>> = {
-	divorced: 'isDivorced',
-	has_children: 'hasChildren',
-	tattoos: 'hasTattoos',
-	piercings: 'hasPiercings',
-	smoker: 'isSmoker',
-}
-
 let checkDealBreakers = (
 	dealBreakers: string[] | undefined,
 	targetAboutMe: StructuredPreferences['aboutMe']
@@ -34,8 +26,7 @@ let checkDealBreakers = (
 	if (!targetAboutMe) return true
 
 	for (let breaker of dealBreakers) {
-		let field = DEAL_BREAKER_MAP[breaker]
-		if (field && targetAboutMe[field] === true) return false
+		if (targetAboutMe[breaker as keyof NonNullable<StructuredPreferences['aboutMe']>] === true) return false
 	}
 	return true
 }

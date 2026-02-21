@@ -40,7 +40,7 @@ export let structuredPreferencesSchema = z.object({
 	aboutMe: aboutMeSchema.optional(),
 	lookingFor: lookingForSchema.optional(),
 	dealBreakers: z
-		.array(z.enum(['divorced', 'has_children', 'tattoos', 'piercings', 'smoker']))
+		.array(z.enum(['isDivorced', 'hasChildren', 'hasTattoos', 'hasPiercings', 'isSmoker']))
 		.optional(),
 })
 
@@ -62,7 +62,7 @@ export let parsePreferences = (raw: Record<string, unknown> | null): StructuredP
 	}
 
 	if ('dealBreakers' in raw && Array.isArray(raw.dealBreakers)) {
-		let validValues = ['divorced', 'has_children', 'tattoos', 'piercings', 'smoker']
+		let validValues = ['isDivorced', 'hasChildren', 'hasTattoos', 'hasPiercings', 'isSmoker']
 		let filtered = raw.dealBreakers.filter(
 			(v): v is string => typeof v === 'string' && validValues.includes(v)
 		)

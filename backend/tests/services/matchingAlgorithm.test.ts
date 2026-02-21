@@ -412,7 +412,7 @@ describe('findMatches', () => {
 			name: 'Sarah',
 			age: 27,
 			gender: 'female',
-			preferences: { dealBreakers: ['divorced'] },
+			preferences: { dealBreakers: ['isDivorced'] },
 		})
 
 		let allPeople = [
@@ -455,7 +455,7 @@ describe('findMatches', () => {
 				name: 'Bob',
 				gender: 'male',
 				age: 30,
-				preferences: { dealBreakers: ['tattoos'] },
+				preferences: { dealBreakers: ['hasTattoos'] },
 			}),
 		]
 
@@ -470,7 +470,7 @@ describe('findMatches', () => {
 			name: 'Sarah',
 			age: 27,
 			gender: 'female',
-			preferences: { dealBreakers: ['has_children'] },
+			preferences: { dealBreakers: ['hasChildren'] },
 		})
 
 		let allPeople = [
