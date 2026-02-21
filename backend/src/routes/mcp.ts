@@ -13,6 +13,7 @@ import {
 import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '../prompts'
 import { parsePreferences } from '../schemas/preferences'
+import { matchFinder } from '../services/matchFinder'
 import { createIntroduction } from '../services/introductions'
 
 type Env = {
