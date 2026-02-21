@@ -16,16 +16,20 @@ export let matchFinder = async (
 		.eq('active', true)
 
 	if (peopleError) {
-		return []
+		throw new Error(peopleError.message)
 	}
 
 	// Fetch declined decisions to build the exclusion set
-	let { data: decisions } = await supabaseClient
+	let { data: decisions, error: decisionsError } = await supabaseClient
 		.from('match_decisions')
 		.select('candidate_id')
 		.eq('person_id', personId)
 		.eq('matchmaker_id', matchmakerId)
 		.eq('decision', 'declined')
+
+	if (decisionsError) {
+		throw new Error(decisionsError.message)
+	}
 
 	let excludeIds = new Set<string>(
 		(decisions || []).map((d: { candidate_id: string }) => d.candidate_id)

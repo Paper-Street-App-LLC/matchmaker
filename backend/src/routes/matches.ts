@@ -31,9 +31,13 @@ export let createMatchesRoutes = (
 			return c.json({ error: 'Person not found' }, 404)
 		}
 
-		let matches = await matchFinder(personId, userId, supabaseClient)
-
-		return c.json(matches, 200)
+		try {
+			let matches = await matchFinder(personId, userId, supabaseClient)
+			return c.json(matches, 200)
+		} catch (error) {
+			let message = error instanceof Error ? error.message : 'Failed to find matches'
+			return c.json({ error: message }, 500)
+		}
 	})
 
 	return app
