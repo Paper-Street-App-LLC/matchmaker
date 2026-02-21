@@ -95,8 +95,15 @@ describe('GET /api/matches/:personId', () => {
 
 		expect(res.status).toBe(200)
 		expect(Array.isArray(json)).toBe(true)
-		// Placeholder algorithm returns empty array
-		expect(json).toHaveLength(0)
+		expect(json).toHaveLength(1)
+		expect(json[0]).toMatchObject({
+			person: {
+				id: '750e8400-e29b-41d4-a716-446655440002',
+				name: 'Jane Doe',
+			},
+			compatibility_score: expect.any(Number),
+			match_explanation: expect.any(String),
+		})
 	})
 
 	test('should return 404 when person not found', async () => {
