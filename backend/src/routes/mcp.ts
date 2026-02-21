@@ -12,6 +12,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '../prompts'
+import { createIntroduction } from '../services/introductions'
 
 type Env = {
 	Variables: {
@@ -232,7 +233,8 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				},
 				{
 					name: 'create_introduction',
-					description: 'Create an introduction between two people',
+					description:
+						'Create an introduction between two people. Supports cross-matchmaker introductions where each person belongs to a different matchmaker. You must own at least one person.',
 					inputSchema: {
 						type: 'object',
 						properties: {
@@ -245,7 +247,8 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 				},
 				{
 					name: 'list_introductions',
-					description: 'List all introductions for the matchmaker',
+					description:
+						'List all introductions where you are either matchmaker (includes cross-matchmaker introductions)',
 					inputSchema: {
 						type: 'object',
 						properties: {},
@@ -448,20 +451,16 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						person_b_id: string
 						notes?: string
 					}
-					let { data, error } = await supabaseClient
-						.from('introductions')
-						.insert({
-							matchmaker_id: userId,
-							person_a_id,
-							person_b_id,
-							notes: notes || null,
-							status: 'pending',
-						})
-						.select()
-						.single()
-					if (error) throw new Error(error.message)
+
+					let result = await createIntroduction(supabaseClient, {
+						person_a_id,
+						person_b_id,
+						notes,
+						userId,
+					})
+					if (result.error) throw new Error(result.error.message)
 					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+						content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
 					}
 				}
 
@@ -469,7 +468,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					let { data, error } = await supabaseClient
 						.from('introductions')
 						.select('*')
-						.eq('matchmaker_id', userId)
+						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 					if (error) throw new Error(error.message)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
@@ -485,10 +484,11 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						.from('introductions')
 						.update(updates)
 						.eq('id', id)
-						.eq('matchmaker_id', userId)
+						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 						.select()
-						.single()
+						.maybeSingle()
 					if (error) throw new Error(error.message)
+					if (!data) throw new Error('Introduction not found')
 					return {
 						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 					}
@@ -557,9 +557,10 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						.from('introductions')
 						.select('*')
 						.eq('id', args.id)
-						.eq('matchmaker_id', userId)
-						.single()
+						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
+						.maybeSingle()
 					if (error) throw new Error(error.message)
+					if (!data) throw new Error('Introduction not found')
 					return {
 						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 					}
