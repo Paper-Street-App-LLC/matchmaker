@@ -53,12 +53,20 @@ export let parsePreferences = (raw: Record<string, unknown> | null): StructuredP
 
 	if ('aboutMe' in raw && raw.aboutMe) {
 		let parsed = aboutMeSchema.safeParse(raw.aboutMe)
-		if (parsed.success) result.aboutMe = parsed.data
+		if (parsed.success) {
+			result.aboutMe = parsed.data
+		} else {
+			console.warn('parsePreferences: invalid aboutMe dropped', parsed.error.issues)
+		}
 	}
 
 	if ('lookingFor' in raw && raw.lookingFor) {
 		let parsed = lookingForSchema.safeParse(raw.lookingFor)
-		if (parsed.success) result.lookingFor = parsed.data
+		if (parsed.success) {
+			result.lookingFor = parsed.data
+		} else {
+			console.warn('parsePreferences: invalid lookingFor dropped', parsed.error.issues)
+		}
 	}
 
 	if ('dealBreakers' in raw && Array.isArray(raw.dealBreakers)) {
@@ -66,6 +74,12 @@ export let parsePreferences = (raw: Record<string, unknown> | null): StructuredP
 		let filtered = raw.dealBreakers.filter(
 			(v): v is string => typeof v === 'string' && validValues.includes(v)
 		)
+		let invalid = raw.dealBreakers.filter(
+			v => typeof v !== 'string' || !validValues.includes(v)
+		)
+		if (invalid.length > 0) {
+			console.warn('parsePreferences: invalid dealBreakers dropped', invalid)
+		}
 		if (filtered.length > 0) result.dealBreakers = filtered
 	}
 
