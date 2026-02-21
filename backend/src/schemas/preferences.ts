@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-let aboutMeSchema = z.object({
+export let aboutMeSchema = z.object({
 	height: z.number().optional(),
 	build: z.enum(['slim', 'average', 'athletic', 'heavy']).optional(),
 	fitnessLevel: z.enum(['active', 'average', 'sedentary']).optional(),
@@ -16,7 +16,7 @@ let aboutMeSchema = z.object({
 	income: z.enum(['high', 'moderate', 'low']).optional(),
 })
 
-let lookingForSchema = z.object({
+export let lookingForSchema = z.object({
 	ageRange: z
 		.object({
 			min: z.number().optional(),
