@@ -1492,4 +1492,55 @@ describe('findMatches', () => {
 		let clean = matches.find(m => m.person.name === 'Clean Bob')!
 		expect(smoker.compatibility_score).toBeLessThan(clean.compatibility_score)
 	})
+
+	test('should not apply penalty when keyword appears as part of a name (e.g. "Pierce")', () => {
+		let candidate = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'Pierced Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: { aboutMe: { hasPiercings: true } },
+		})
+
+		let declineReasons = [
+			{ candidateId: 'x', reason: "she didn't like Pierce" },
+		]
+		let withDecline = findMatches(subject.id, [subject, candidate], { matchmakerId, declineReasons })
+		let withoutDecline = findMatches(subject.id, [subject, candidate], { matchmakerId })
+
+		expect(withDecline[0].compatibility_score).toBe(withoutDecline[0].compatibility_score)
+	})
+
+	test('should still apply penalty for valid piercing keyword in context', () => {
+		let candidate = makePerson({
+			id: '111e8400-e29b-41d4-a716-446655440011',
+			name: 'Pierced Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: { aboutMe: { hasPiercings: true } },
+		})
+		let clean = makePerson({
+			id: '222e8400-e29b-41d4-a716-446655440022',
+			name: 'Clean Bob',
+			gender: 'male',
+			age: 30,
+			location: 'NYC',
+			preferences: { aboutMe: { hasPiercings: false } },
+		})
+
+		let declineReasons = [
+			{ candidateId: 'x', reason: 'she does not like piercings' },
+		]
+		let matches = findMatches(
+			subject.id,
+			[subject, candidate, clean],
+			{ matchmakerId, declineReasons }
+		)
+
+		let pierced = matches.find(m => m.person.name === 'Pierced Bob')!
+		let noPiercing = matches.find(m => m.person.name === 'Clean Bob')!
+		expect(pierced.compatibility_score).toBeLessThan(noPiercing.compatibility_score)
+	})
 })

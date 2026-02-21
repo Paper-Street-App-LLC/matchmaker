@@ -363,16 +363,14 @@ let buildExplanation = (
 
 // --- Decline Reason Penalty ---
 
-let DECLINE_KEYWORD_MAP: Record<string, keyof NonNullable<StructuredPreferences['aboutMe']>> = {
-	tattoo: 'hasTattoos',
-	piercing: 'hasPiercings',
-	pierc: 'hasPiercings',
-	smok: 'isSmoker',
-	divorc: 'isDivorced',
-	children: 'hasChildren',
-	kids: 'hasChildren',
-	child: 'hasChildren',
-}
+let DECLINE_KEYWORDS: { pattern: RegExp; field: keyof NonNullable<StructuredPreferences['aboutMe']> }[] = [
+	{ pattern: /\btattoo/i, field: 'hasTattoos' },
+	{ pattern: /\bpiercing/i, field: 'hasPiercings' },
+	{ pattern: /\bsmok/i, field: 'isSmoker' },
+	{ pattern: /\bdivorc/i, field: 'isDivorced' },
+	{ pattern: /\bchildren\b/i, field: 'hasChildren' },
+	{ pattern: /\bkids?\b/i, field: 'hasChildren' },
+]
 
 let DECLINE_PENALTY_PER_MATCH = 0.15
 let DECLINE_PENALTY_CAP = 0.45
@@ -396,9 +394,8 @@ let calculateDeclineReasonPenalty = (
 	let matchedFields = new Set<string>()
 
 	for (let { reason } of declineReasons) {
-		let lowerReason = reason.toLowerCase()
-		for (let [keyword, field] of Object.entries(DECLINE_KEYWORD_MAP)) {
-			if (lowerReason.includes(keyword) && candidatePrefs.aboutMe[field] === true) {
+		for (let { pattern, field } of DECLINE_KEYWORDS) {
+			if (pattern.test(reason) && candidatePrefs.aboutMe[field] === true) {
 				matchedFields.add(field)
 			}
 		}
