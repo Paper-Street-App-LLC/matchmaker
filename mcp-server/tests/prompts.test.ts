@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { prompts, getPrompt, MATCHMAKER_INTERVIEW_NAME } from '../src/prompts'
+import { prompts, getPrompt } from '../src/prompts'
 
 describe('Prompts', () => {
 	describe('prompts list', () => {
@@ -14,7 +14,7 @@ describe('Prompts', () => {
 		})
 
 		test('matchmaker_interview has correct metadata', () => {
-			let interviewPrompt = prompts.find(p => p.name === MATCHMAKER_INTERVIEW_NAME)
+			let interviewPrompt = prompts.find(p => p.name === 'matchmaker_interview')
 			expect(interviewPrompt).toBeDefined()
 			expect(interviewPrompt?.name).toBe('matchmaker_interview')
 			expect(interviewPrompt?.description).toContain('matchmaker')
