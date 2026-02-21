@@ -22,7 +22,7 @@ export let updatePersonSchema = z.object({
 
 export let personResponseSchema = z.object({
 	id: z.string().uuid(),
-	matchmaker_id: z.string().uuid(),
+	matchmaker_id: z.string().uuid().nullable(),
 	name: z.string(),
 	age: z.number().nullable(),
 	location: z.string().nullable(),
