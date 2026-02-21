@@ -12,6 +12,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '../prompts'
+import { parsePreferences } from '../schemas/preferences'
 import { createIntroduction } from '../services/introductions'
 
 type Env = {
@@ -425,6 +426,9 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						throw new Error('Invalid arguments: id is required and must be a string')
 					}
 					let { id, ...updates } = args as Record<string, unknown>
+					if (updates.preferences != null) {
+						updates.preferences = parsePreferences(updates.preferences as Record<string, unknown>)
+					}
 					let { data, error } = await supabaseClient
 						.from('people')
 						.update(updates)
