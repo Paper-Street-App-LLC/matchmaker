@@ -31,7 +31,6 @@ export let personResponseSchema = z.object({
 	personality: z.record(z.unknown()).nullable(),
 	notes: z.string().nullable(),
 	active: z.boolean(),
-	is_seed: z.boolean().default(false),
 	created_at: z.string(),
 	updated_at: z.string(),
 })
