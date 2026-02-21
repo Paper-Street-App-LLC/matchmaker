@@ -407,7 +407,7 @@ describe('MCP Routes', () => {
 				expect(promptsListResult.prompts.length).toBeGreaterThan(0)
 
 				let intakePrompt = promptsListResult.prompts.find(
-					(p: { name: string }) => p.name === 'intake_questionnaire'
+					(p: { name: string }) => p.name === 'matchmaker_interview'
 				)
 				expect(intakePrompt).toBeDefined()
 				expect(intakePrompt.description).toBeDefined()
@@ -427,7 +427,7 @@ describe('MCP Routes', () => {
 						jsonrpc: '2.0',
 						method: 'prompts/get',
 						params: {
-							name: 'intake_questionnaire',
+							name: 'matchmaker_interview',
 						},
 						id: 1,
 					}),
@@ -463,7 +463,7 @@ describe('MCP Routes', () => {
 				// Check the prompt content includes expected text
 				let messageContent = promptResult.messages[0].content
 				expect(messageContent.type).toBe('text')
-				expect(messageContent.text).toContain('following information')
+				expect(messageContent.text).toContain('Phase 1')
 			})
 
 			test('returns an error for unknown prompt name', async () => {
@@ -587,6 +587,76 @@ describe('MCP Routes', () => {
 
 			let res = await app.fetch(req)
 			expect(res.status).toBe(400)
+		})
+
+		test('update_introduction returns not found for non-existent introduction', async () => {
+			let notFoundMockClient = createMockSupabaseClient({
+				auth: {
+					getUser: mock(async () => ({
+						data: { user: { id: 'user-123' } },
+						error: null,
+					})),
+				},
+				from: mock(() => ({
+					update: mock(() => ({
+						eq: mock(() => ({
+							or: mock(() => ({
+								select: mock(() => ({
+									maybeSingle: mock(async () => ({
+										data: null,
+										error: null,
+									})),
+								})),
+							})),
+						})),
+					})),
+				})),
+			})
+
+			let notFoundApp = new Hono()
+			notFoundApp.route('/mcp', createMcpRoutes(notFoundMockClient))
+
+			let req = new Request('http://localhost/mcp', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json, text/event-stream',
+					Authorization: 'Bearer valid-token',
+				},
+				body: JSON.stringify({
+					jsonrpc: '2.0',
+					method: 'tools/call',
+					params: {
+						name: 'update_introduction',
+						arguments: { id: 'non-existent-id', status: 'accepted' },
+					},
+					id: 2,
+				}),
+			})
+
+			let res = await notFoundApp.fetch(req)
+			expect(res.status).toBe(200)
+
+			let body = await res.text()
+			let lines = body.split('\n')
+			let hasNotFoundError = false
+			for (let line of lines) {
+				if (line.startsWith('data:')) {
+					try {
+						let data = JSON.parse(line.slice(5).trim())
+						if (
+							data.result?.isError === true &&
+							data.result?.content?.[0]?.text === 'Error: Introduction not found'
+						) {
+							hasNotFoundError = true
+							break
+						}
+					} catch {
+						// Skip non-JSON lines
+					}
+				}
+			}
+			expect(hasNotFoundError).toBe(true)
 		})
 
 		test('MCP tool error responses follow specification format', async () => {

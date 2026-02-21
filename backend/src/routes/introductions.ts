@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import type { SupabaseClient } from '../lib/supabase'
 import { createIntroductionSchema, updateIntroductionSchema } from '../schemas/introductions'
+import { createIntroduction } from '../services/introductions'
 
 type Variables = {
 	userId: string
@@ -16,20 +17,18 @@ export let createIntroductionsRoutes = (
 		let userId = c.get('userId')
 		let data = c.req.valid('json')
 
-		let { data: introduction, error } = await supabaseClient
-			.from('introductions')
-			.insert({
-				...data,
-				matchmaker_id: userId,
-			})
-			.select()
-			.single()
+		let result = await createIntroduction(supabaseClient, {
+			person_a_id: data.person_a_id,
+			person_b_id: data.person_b_id,
+			notes: data.notes,
+			userId,
+		})
 
-		if (error) {
-			return c.json({ error: error.message }, 500)
+		if (result.error) {
+			return c.json({ error: result.error.message }, result.error.status as 403 | 404 | 500)
 		}
 
-		return c.json(introduction, 201)
+		return c.json(result.data, 201)
 	})
 
 	app.get('/', async c => {
@@ -38,7 +37,7 @@ export let createIntroductionsRoutes = (
 		let { data: introductions, error } = await supabaseClient
 			.from('introductions')
 			.select('*')
-			.eq('matchmaker_id', userId)
+			.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 
 		if (error) {
 			return c.json({ error: error.message }, 500)
@@ -55,7 +54,7 @@ export let createIntroductionsRoutes = (
 			.from('introductions')
 			.select('*')
 			.eq('id', introductionId)
-			.eq('matchmaker_id', userId)
+			.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 			.maybeSingle()
 
 		if (error) {
@@ -78,7 +77,7 @@ export let createIntroductionsRoutes = (
 			.from('introductions')
 			.update(data)
 			.eq('id', introductionId)
-			.eq('matchmaker_id', userId)
+			.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
 			.select()
 			.maybeSingle()
 

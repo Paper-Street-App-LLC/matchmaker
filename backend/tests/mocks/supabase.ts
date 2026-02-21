@@ -19,6 +19,8 @@ export type MockSingleResult<T = unknown> = {
 	error: { message: string } | null
 }
 
+export let VALID_TABLES = new Set(['people', 'introductions', 'feedback'])
+
 // Allow tests to provide partial mock implementations
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockOverrides = {
@@ -87,7 +89,7 @@ export let createMockSupabaseClient = (overrides: MockOverrides = {}): SupabaseC
 	}
 
 	// Default mock for the 'from' method that provides common query builder patterns
-	let defaultFrom = mock((_table: string) => ({
+	let createDefaultQueryBuilder = () => ({
 		select: mock((_columns: string = '*') => ({
 			eq: mock((_column: string, _value: unknown): MockQueryResult<unknown[]> => ({
 				data: [],
@@ -128,7 +130,14 @@ export let createMockSupabaseClient = (overrides: MockOverrides = {}): SupabaseC
 				error: null,
 			})),
 		})),
-	}))
+	})
+
+	let defaultFrom = mock((table: string) => {
+		if (!VALID_TABLES.has(table)) {
+			throw new Error(`Mock Supabase: unknown table "${table}"`)
+		}
+		return createDefaultQueryBuilder()
+	})
 
 	let client = {
 		auth: overrides.auth || defaultAuth,
