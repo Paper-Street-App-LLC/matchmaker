@@ -5,7 +5,10 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
+		"dev:http": "bun --watch src/http-server.ts",
+		"dev:http:mock": "MOCK=true bun --watch src/http-server.ts",
 		"start": "bun src/index.ts",
+		"start:http": "bun src/http-server.ts",
 		"build": "bun build src/index.ts --outdir dist --target node",
 		"test": "bun test --preload ./tests/setup.ts",
 		"test:watch": "bun test --watch --preload ./tests/setup.ts",

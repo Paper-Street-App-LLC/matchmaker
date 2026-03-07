@@ -5,7 +5,16 @@ import {
 	ListToolsRequestSchema,
 	ListPromptsRequestSchema,
 	GetPromptRequestSchema,
+	ListResourcesRequestSchema,
+	ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const MATCHES_WIDGET_URI = 'ui://matches/widget.html'
+const matchesWidgetHtml = readFileSync(join(__dirname, 'widget', 'widget.html'), 'utf-8')
 import { loadConfig } from './config.js'
 import { ApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
@@ -21,6 +30,7 @@ export function createServer(apiClient: ApiClient) {
 			capabilities: {
 				tools: {},
 				prompts: {},
+				resources: {},
 			},
 		}
 	)
@@ -117,6 +127,7 @@ export function createServer(apiClient: ApiClient) {
 			{
 				name: 'find_matches',
 				description: 'Find compatible matches for a person',
+				_meta: { ui: { resourceUri: MATCHES_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
@@ -208,8 +219,11 @@ export function createServer(apiClient: ApiClient) {
 			let errorMessage = 'Unknown error'
 			if (error instanceof Error) {
 				errorMessage = error.message
+				console.error(`Tool [${name}] error:`, error.message)
+				console.error(error.stack)
 			} else if (typeof error === 'string') {
 				errorMessage = error
+				console.error(`Tool [${name}] error:`, error)
 			}
 			return {
 				content: [
@@ -231,6 +245,32 @@ export function createServer(apiClient: ApiClient) {
 	server.setRequestHandler(GetPromptRequestSchema, async request => {
 		let { name } = request.params
 		return getPrompt(name)
+	})
+
+	// Register resources
+	server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+		resources: [
+			{
+				uri: MATCHES_WIDGET_URI,
+				name: 'Matches Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
+		],
+	}))
+
+	server.setRequestHandler(ReadResourceRequestSchema, async request => {
+		if (request.params.uri === MATCHES_WIDGET_URI) {
+			return {
+				contents: [
+					{
+						uri: MATCHES_WIDGET_URI,
+						mimeType: 'text/html;profile=mcp-app',
+						text: matchesWidgetHtml,
+					},
+				],
+			}
+		}
+		throw new Error(`Resource not found: ${request.params.uri}`)
 	})
 
 	return server

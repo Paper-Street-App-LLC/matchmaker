@@ -16,6 +16,7 @@ import {
 
 type ToolResult = {
 	content: Array<{ type: 'text'; text: string }>
+	structuredContent?: Record<string, unknown>
 	isError?: boolean
 }
 
@@ -77,8 +78,11 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		find_matches: async args => {
 			let validated = validateFindMatchesArgs(args)
-			let result = await apiClient.findMatches(validated.person_id)
-			return successResult(result)
+			let matches = await apiClient.findMatches(validated.person_id)
+			return {
+				content: [{ type: 'text', text: `Found ${matches.length} match${matches.length === 1 ? '' : 'es'}.` }],
+				structuredContent: { matches },
+			}
 		},
 
 		delete_person: async args => {
