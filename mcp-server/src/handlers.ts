@@ -43,8 +43,11 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		get_person: async args => {
 			let validated = validateGetPersonArgs(args)
-			let result = await apiClient.getPerson(validated.id)
-			return successResult(result)
+			let person = await apiClient.getPerson(validated.id)
+			return {
+				content: [{ type: 'text', text: `${person.name}, ${person.age ?? '?'}, ${person.location ?? 'unknown location'}` }],
+				structuredContent: { person },
+			}
 		},
 
 		update_person: async args => {

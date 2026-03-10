@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react'
-import { useApp, useHostStyles, useDocumentTheme, type App } from '@modelcontextprotocol/ext-apps/react'
+import {
+	useApp,
+	useHostStyles,
+	useDocumentTheme,
+	type App,
+} from '@modelcontextprotocol/ext-apps/react'
 import { AppsSDKUIProvider } from '@openai/apps-sdk-ui/components/AppsSDKUIProvider'
 import { EmptyMessage } from '@openai/apps-sdk-ui/components/EmptyMessage'
 import '@openai/apps-sdk-ui/css'
@@ -21,7 +26,17 @@ function getInitial(name: string) {
 	return name.charAt(0).toUpperCase() + '.'
 }
 
-function MatchCard({ match, isDark, onRequest }: { match: Match; isDark: boolean; onRequest: () => void }) {
+function MatchCard({
+	match,
+	isDark,
+	onRequest,
+	onViewProfile,
+}: {
+	match: Match
+	isDark: boolean
+	onRequest: () => void
+	onViewProfile: () => void
+}) {
 	const { person, about, matchmaker_note } = match
 	if (!person) return null
 
@@ -29,6 +44,10 @@ function MatchCard({ match, isDark, onRequest }: { match: Match; isDark: boolean
 
 	return (
 		<div
+			onClick={() => {
+				console.log('[MatchCard] clicked, person.id:', person.id)
+				onViewProfile()
+			}}
 			style={{
 				flexShrink: 0,
 				width: 240,
@@ -42,6 +61,7 @@ function MatchCard({ match, isDark, onRequest }: { match: Match; isDark: boolean
 				alignItems: 'center',
 				gap: 12,
 				textAlign: 'center',
+				cursor: 'pointer',
 			}}
 		>
 			{/* Avatar circle */}
@@ -99,7 +119,7 @@ function MatchCard({ match, isDark, onRequest }: { match: Match; isDark: boolean
 					cursor: 'pointer',
 					fontFamily: 'inherit',
 				}}
-				onClick={onRequest}
+				onClick={e => { e.stopPropagation(); onRequest() }}
 			>
 				Request Full Introduction
 			</button>
@@ -131,7 +151,9 @@ function SkeletonCard({ isDark }: { isDark: boolean }) {
 			<div style={{ width: 100, height: 14, borderRadius: 6, background: shimmer }} />
 			<div style={{ width: 160, height: 14, borderRadius: 6, background: shimmer }} />
 			<div style={{ width: 130, height: 14, borderRadius: 6, background: shimmer }} />
-			<div style={{ width: '100%', height: 40, borderRadius: 999, background: shimmer, marginTop: 4 }} />
+			<div
+				style={{ width: '100%', height: 40, borderRadius: 999, background: shimmer, marginTop: 4 }}
+			/>
 		</div>
 	)
 }
@@ -146,6 +168,7 @@ export function MatchesWidget() {
 		appInfo: { name: 'matchmaker-matches', version: '1.0.0' },
 		capabilities: {},
 		onAppCreated: app => {
+			console.log('[MatchesWidget] app created, capabilities:', app)
 			app.ontoolinput = () => {
 				setHasResult(false)
 				setMatches([])
@@ -201,11 +224,28 @@ export function MatchesWidget() {
 			>
 				{!isConnected || !hasResult ? (
 					<>
-						<div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 16 }}>
+						<div
+							style={{
+								fontSize: 20,
+								fontWeight: 700,
+								color: 'var(--color-text-primary)',
+								marginBottom: 16,
+							}}
+						>
 							Finding your matches...
 						</div>
-						<div style={{ display: 'flex', gap: 16, overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
-							{[0, 1, 2].map(i => <SkeletonCard key={i} isDark={isDark} />)}
+						<div
+							style={{
+								display: 'flex',
+								gap: 16,
+								overflow: 'hidden',
+								width: '100%',
+								boxSizing: 'border-box',
+							}}
+						>
+							{[0, 1, 2].map(i => (
+								<SkeletonCard key={i} isDark={isDark} />
+							))}
 						</div>
 					</>
 				) : matches.length === 0 ? (
@@ -245,7 +285,23 @@ export function MatchesWidget() {
 						>
 							{matches.map((match, i) => (
 								<div key={match.person?.id ?? i} style={{ scrollSnapAlign: 'start' }}>
-									<MatchCard match={match} isDark={isDark} onRequest={() => app?.openLink({ url: 'https://introduction.ai' })} />
+									<MatchCard
+										match={match}
+										isDark={isDark}
+										onRequest={() => app?.openLink({ url: 'https://theintroduction.ai' })}
+										onViewProfile={() => {
+											console.log('[MatchesWidget] onViewProfile called, app:', !!app, 'person:', match.person?.id)
+											if (match.person) {
+												console.log('[MatchesWidget] sending message to trigger get_person:', match.person.id)
+												app?.sendMessage({
+													role: 'user',
+													content: [{ type: 'text', text: `Show me the profile for ${match.person.name} (id: ${match.person.id})` }],
+												})
+													.then((r: unknown) => console.log('[MatchesWidget] sendMessage result:', r))
+													.catch((e: unknown) => console.error('[MatchesWidget] sendMessage error:', e))
+											}
+										}}
+									/>
 								</div>
 							))}
 						</div>

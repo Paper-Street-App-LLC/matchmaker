@@ -15,6 +15,8 @@ import { dirname, join } from 'node:path'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const MATCHES_WIDGET_URI = 'ui://matches/widget.html'
 const matchesWidgetHtml = readFileSync(join(__dirname, 'widget', 'widget.html'), 'utf-8')
+const PERSON_WIDGET_URI = 'ui://person/widget.html'
+const personWidgetHtml = readFileSync(join(__dirname, 'widget', 'person-widget.html'), 'utf-8')
 import { loadConfig } from './config.js'
 import { ApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
@@ -59,22 +61,23 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'get_person',
-				description: 'Retrieve detailed information about a specific person',
+				description: 'Look up a matchmaker client profile by ID',
+				_meta: { ui: { resourceUri: PERSON_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
-						id: { type: 'string', description: 'Person ID (UUID)' },
+						id: { type: 'string', description: 'Person ID' },
 					},
 					required: ['id'],
 				},
 			},
 			{
 				name: 'update_person',
-				description: "Update a person's profile information",
+				description: "Update a matchmaker client's profile information",
 				inputSchema: {
 					type: 'object',
 					properties: {
-						id: { type: 'string', description: 'Person ID (UUID)' },
+						id: { type: 'string', description: 'Person ID' },
 						name: { type: 'string', description: 'Person name' },
 						age: { type: 'number', description: 'Person age' },
 						location: { type: 'string', description: 'Person location' },
@@ -131,18 +134,18 @@ export function createServer(apiClient: ApiClient) {
 				inputSchema: {
 					type: 'object',
 					properties: {
-						person_id: { type: 'string', description: 'Person ID (UUID) to find matches for' },
+						person_id: { type: 'string', description: 'Person ID to find matches for' },
 					},
 					required: ['person_id'],
 				},
 			},
 			{
 				name: 'delete_person',
-				description: 'Soft-delete a person (sets active=false)',
+				description: 'Remove a client from the matchmaker roster (sets active=false)',
 				inputSchema: {
 					type: 'object',
 					properties: {
-						id: { type: 'string', description: 'Person ID (UUID)' },
+						id: { type: 'string', description: 'Person ID' },
 					},
 					required: ['id'],
 				},
@@ -255,6 +258,11 @@ export function createServer(apiClient: ApiClient) {
 				name: 'Matches Widget',
 				mimeType: 'text/html;profile=mcp-app',
 			},
+			{
+				uri: PERSON_WIDGET_URI,
+				name: 'Person Profile Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
 		],
 	}))
 
@@ -266,6 +274,17 @@ export function createServer(apiClient: ApiClient) {
 						uri: MATCHES_WIDGET_URI,
 						mimeType: 'text/html;profile=mcp-app',
 						text: matchesWidgetHtml,
+					},
+				],
+			}
+		}
+		if (request.params.uri === PERSON_WIDGET_URI) {
+			return {
+				contents: [
+					{
+						uri: PERSON_WIDGET_URI,
+						mimeType: 'text/html;profile=mcp-app',
+						text: personWidgetHtml,
 					},
 				],
 			}
