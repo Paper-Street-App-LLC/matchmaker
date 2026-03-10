@@ -49,15 +49,25 @@ class MockApiClient {
 	}
 	async findMatches(personId: string): Promise<Match[]> {
 		const subject = await this.getPerson(personId)
+		const subjectTraits = subject.personality?.traits ?? []
 		return this.people
 			.filter(p => p.id !== personId)
-			.map(p => ({
-				person: { id: p.id, name: p.name, age: p.age, location: p.location },
-				compatibility_score: Math.floor(Math.random() * 30) + 65,
-				match_reasons: (p.personality?.interests ?? []).slice(0, 2).map(i => `Shared interest in ${i}`),
-				about: (p.personality?.interests ?? []).join(', '),
-				matchmaker_note: `${(p.personality?.traits ?? []).join(', ')}`,
-			}))
+			.map(p => {
+				const traits = p.personality?.traits ?? []
+				const interests = p.personality?.interests ?? []
+				const firstName = p.name.split(' ')[0]
+				const sharedTrait = subjectTraits.find(t => traits.includes(t))
+				const note = sharedTrait
+					? `${firstName}'s ${traits[0]} and ${traits[1] ?? 'open'} nature pairs naturally with yours — you both share a ${sharedTrait} side, which tends to make for genuine connection.`
+					: `${firstName}'s ${traits[0] ?? 'warm'} personality and passion for ${interests[0] ?? 'new experiences'} complement your profile well. A strong foundation for something real.`
+				return {
+					person: { id: p.id, name: p.name, age: p.age, location: p.location },
+					compatibility_score: Math.floor(Math.random() * 30) + 65,
+					match_reasons: interests.slice(0, 2).map(i => `Shared interest in ${i}`),
+					about: interests.join(', '),
+					matchmaker_note: note,
+				}
+			})
 	}
 	async createIntroduction(a: string, b: string, notes?: string): Promise<Introduction> {
 		return { id: 'mock-intro-1', matchmaker_id: 'mm-1', person_a_id: a, person_b_id: b, status: 'pending', notes, created_at: '', updated_at: '' }

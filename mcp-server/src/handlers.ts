@@ -78,7 +78,14 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		find_matches: async args => {
 			let validated = validateFindMatchesArgs(args)
-			let matches = await apiClient.findMatches(validated.person_id)
+			let raw = await apiClient.findMatches(validated.person_id)
+			let matches = raw.map(m => ({
+				person: m.person,
+				about: (m as unknown as { about?: string }).about
+					?? (m.match_reasons ?? []).slice(0, 2).join('. '),
+				matchmaker_note: (m as unknown as { matchmaker_note?: string }).matchmaker_note
+					?? (m.match_reasons ?? []).slice(2).join(' '),
+			}))
 			return {
 				content: [{ type: 'text', text: `Found ${matches.length} match${matches.length === 1 ? '' : 'es'}.` }],
 				structuredContent: { matches },

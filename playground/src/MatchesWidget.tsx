@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useApp, useHostStyles, useDocumentTheme } from '@modelcontextprotocol/ext-apps/react'
+import { useApp, useHostStyles, useDocumentTheme, type App } from '@modelcontextprotocol/ext-apps/react'
 import { AppsSDKUIProvider } from '@openai/apps-sdk-ui/components/AppsSDKUIProvider'
 import { EmptyMessage } from '@openai/apps-sdk-ui/components/EmptyMessage'
 import '@openai/apps-sdk-ui/css'
@@ -21,7 +21,7 @@ function getInitial(name: string) {
 	return name.charAt(0).toUpperCase() + '.'
 }
 
-function MatchCard({ match, isDark }: { match: Match; isDark: boolean }) {
+function MatchCard({ match, isDark, onRequest }: { match: Match; isDark: boolean; onRequest: () => void }) {
 	const { person, about, matchmaker_note } = match
 	if (!person) return null
 
@@ -99,6 +99,7 @@ function MatchCard({ match, isDark }: { match: Match; isDark: boolean }) {
 					cursor: 'pointer',
 					fontFamily: 'inherit',
 				}}
+				onClick={onRequest}
 			>
 				Request Full Introduction
 			</button>
@@ -106,8 +107,38 @@ function MatchCard({ match, isDark }: { match: Match; isDark: boolean }) {
 	)
 }
 
+function SkeletonCard({ isDark }: { isDark: boolean }) {
+	const shimmer = isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6'
+	const shimmerDark = isDark ? 'rgba(255,255,255,0.13)' : '#e5e7eb'
+
+	return (
+		<div
+			style={{
+				flexShrink: 0,
+				width: 240,
+				background: isDark ? 'rgba(255,255,255,0.07)' : '#ffffff',
+				border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
+				boxShadow: isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.08)',
+				borderRadius: 16,
+				padding: '24px 20px 20px',
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				gap: 12,
+			}}
+		>
+			<div style={{ width: 64, height: 64, borderRadius: '50%', background: shimmerDark }} />
+			<div style={{ width: 100, height: 14, borderRadius: 6, background: shimmer }} />
+			<div style={{ width: 160, height: 14, borderRadius: 6, background: shimmer }} />
+			<div style={{ width: 130, height: 14, borderRadius: 6, background: shimmer }} />
+			<div style={{ width: '100%', height: 40, borderRadius: 999, background: shimmer, marginTop: 4 }} />
+		</div>
+	)
+}
+
 export function MatchesWidget() {
 	const [matches, setMatches] = useState<Match[]>([])
+	const [hasResult, setHasResult] = useState(false)
 	const scrollRef = useRef<HTMLDivElement>(null)
 	const [activeIndex, setActiveIndex] = useState(0)
 
@@ -115,8 +146,14 @@ export function MatchesWidget() {
 		appInfo: { name: 'matchmaker-matches', version: '1.0.0' },
 		capabilities: {},
 		onAppCreated: app => {
+			app.ontoolinput = () => {
+				setHasResult(false)
+				setMatches([])
+				setActiveIndex(0)
+			}
 			app.ontoolresult = result => {
 				const data = (result as { structuredContent?: { matches?: Match[] } }).structuredContent
+				setHasResult(true)
 				if (data?.matches) {
 					setMatches(data.matches)
 					setActiveIndex(0)
@@ -162,15 +199,20 @@ export function MatchesWidget() {
 					boxSizing: 'border-box',
 				}}
 			>
-				{!isConnected || matches.length === 0 ? (
+				{!isConnected || !hasResult ? (
+					<>
+						<div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 16 }}>
+							Finding your matches...
+						</div>
+						<div style={{ display: 'flex', gap: 16, overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
+							{[0, 1, 2].map(i => <SkeletonCard key={i} isDark={isDark} />)}
+						</div>
+					</>
+				) : matches.length === 0 ? (
 					<EmptyMessage>
-						<EmptyMessage.Title>
-							{!isConnected ? 'Connecting...' : 'No matches found'}
-						</EmptyMessage.Title>
+						<EmptyMessage.Title>No matches found</EmptyMessage.Title>
 						<EmptyMessage.Description>
-							{!isConnected
-								? 'Waiting for matchmaker results.'
-								: 'Try updating preferences to find compatible people.'}
+							Try updating preferences to find compatible people.
 						</EmptyMessage.Description>
 					</EmptyMessage>
 				) : (
@@ -203,7 +245,7 @@ export function MatchesWidget() {
 						>
 							{matches.map((match, i) => (
 								<div key={match.person?.id ?? i} style={{ scrollSnapAlign: 'start' }}>
-									<MatchCard match={match} isDark={isDark} />
+									<MatchCard match={match} isDark={isDark} onRequest={() => app?.openLink({ url: 'https://introduction.ai' })} />
 								</div>
 							))}
 						</div>
