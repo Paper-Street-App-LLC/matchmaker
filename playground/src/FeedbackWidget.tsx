@@ -123,7 +123,7 @@ export function FeedbackWidget() {
 	useHostStyles(app, app?.getHostContext())
 	const theme = useDocumentTheme()
 	const isDark = theme === 'dark'
-	const isLoading = !isConnected || !hasResult
+	const isLoading = !hasResult
 
 	if (error) return (
 		<AppsSDKUIProvider>
