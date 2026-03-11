@@ -113,8 +113,18 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		get_introduction: async args => {
 			let validated = validateGetIntroductionArgs(args)
-			let result = await apiClient.getIntroduction(validated.id)
-			return successResult(result)
+			let intro = await apiClient.getIntroduction(validated.id)
+			let people = await apiClient.listPeople()
+			const personMap = Object.fromEntries(people.map(p => [p.id, p]))
+			let enriched = {
+				...intro,
+				person_a: personMap[intro.person_a_id] ?? null,
+				person_b: personMap[intro.person_b_id] ?? null,
+			}
+			return {
+				content: [{ type: 'text', text: `Introduction between ${enriched.person_a?.name ?? intro.person_a_id} and ${enriched.person_b?.name ?? intro.person_b_id} — status: ${intro.status}` }],
+				structuredContent: { introduction: enriched },
+			}
 		},
 
 		submit_feedback: async args => {

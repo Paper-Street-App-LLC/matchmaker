@@ -78,6 +78,26 @@ const WIDGETS = [
     ),
   },
   {
+    label: 'get_introduction',
+    src: '/introduction-widget.html',
+    payload: JSON.stringify(
+      {
+        structuredContent: {
+          introduction: {
+            id: 'intro-1', person_a_id: 'mock-1', person_b_id: 'mock-2',
+            status: 'dating',
+            notes: 'Great first date at Bar Agricole. Both expressed strong interest in a second meeting. Jordan mentioned she felt immediately comfortable.',
+            created_at: '2026-01-10T00:00:00Z', updated_at: '2026-02-01T00:00:00Z',
+            person_a: { id: 'mock-1', name: 'Jordan Lee', age: 29, location: 'San Francisco', gender: 'woman', personality: { traits: ['curious', 'adventurous'], interests: ['hiking', 'coffee', 'architecture'] } },
+            person_b: { id: 'mock-2', name: 'Morgan Patel', age: 32, location: 'New York', gender: 'woman', personality: { traits: ['ambitious', 'thoughtful'], interests: ['travel', 'books', 'teaching'] } },
+          },
+        },
+      },
+      null,
+      2
+    ),
+  },
+  {
     label: 'list_people',
     src: '/people-widget.html',
     payload: JSON.stringify(

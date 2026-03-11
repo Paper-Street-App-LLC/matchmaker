@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:widget": "vite build --config vite.widget.config.ts && vite build --config vite.person-widget.config.ts && vite build --config vite.people-widget.config.ts && vite build --config vite.introductions-widget.config.ts"
+    "build:widget": "vite build --config vite.widget.config.ts && vite build --config vite.person-widget.config.ts && vite build --config vite.people-widget.config.ts && vite build --config vite.introductions-widget.config.ts && vite build --config vite.introduction-widget.config.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.2.0",

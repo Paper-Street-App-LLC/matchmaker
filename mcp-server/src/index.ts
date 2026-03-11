@@ -19,6 +19,8 @@ const PERSON_WIDGET_URI = 'ui://person/widget.html'
 const personWidgetHtml = readFileSync(join(__dirname, 'widget', 'person-widget.html'), 'utf-8')
 const INTRODUCTIONS_WIDGET_URI = 'ui://introductions/widget.html'
 const introductionsWidgetHtml = readFileSync(join(__dirname, 'widget', 'introductions-widget.html'), 'utf-8')
+const INTRODUCTION_WIDGET_URI = 'ui://introduction/widget.html'
+const introductionWidgetHtml = readFileSync(join(__dirname, 'widget', 'introduction-widget.html'), 'utf-8')
 import { loadConfig } from './config.js'
 import { ApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
@@ -156,6 +158,7 @@ export function createServer(apiClient: ApiClient) {
 			{
 				name: 'get_introduction',
 				description: 'Get details of a specific introduction',
+				_meta: { ui: { resourceUri: INTRODUCTION_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
@@ -271,6 +274,11 @@ export function createServer(apiClient: ApiClient) {
 				name: 'Introductions Dashboard Widget',
 				mimeType: 'text/html;profile=mcp-app',
 			},
+			{
+				uri: INTRODUCTION_WIDGET_URI,
+				name: 'Introduction Detail Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
 		],
 	}))
 
@@ -299,6 +307,9 @@ export function createServer(apiClient: ApiClient) {
 		}
 		if (request.params.uri === INTRODUCTIONS_WIDGET_URI) {
 			return { contents: [{ uri: INTRODUCTIONS_WIDGET_URI, mimeType: 'text/html;profile=mcp-app', text: introductionsWidgetHtml }] }
+		}
+		if (request.params.uri === INTRODUCTION_WIDGET_URI) {
+			return { contents: [{ uri: INTRODUCTION_WIDGET_URI, mimeType: 'text/html;profile=mcp-app', text: introductionWidgetHtml }] }
 		}
 		throw new Error(`Resource not found: ${request.params.uri}`)
 	})
