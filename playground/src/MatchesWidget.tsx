@@ -171,16 +171,19 @@ export function MatchesWidget() {
 		if (data?.matches) { setMatches(data.matches); setActiveIndex(0) }
 	}
 
+	const clearBufferRef = useRef<(() => void) | null>(null)
+
 	const { app, isConnected, error } = useApp({
 		appInfo: { name: 'matchmaker-matches', version: '1.0.0' },
 		capabilities: {},
 		onAppCreated: app => {
-			app.ontoolinput = () => { setHasResult(false); setMatches([]); setActiveIndex(0); clearBuffer() }
+			app.ontoolinput = () => { setHasResult(false); setMatches([]); setActiveIndex(0); clearBufferRef.current?.() }
 			app.ontoolresult = applyResult
 		},
 	})
 
 	const { clearBuffer } = useToolResultBuffer(isConnected, applyResult)
+	clearBufferRef.current = clearBuffer
 
 	useHostStyles(app, app?.getHostContext())
 	const theme = useDocumentTheme()

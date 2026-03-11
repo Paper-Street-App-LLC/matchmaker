@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useApp, useHostStyles, useDocumentTheme } from '@modelcontextprotocol/ext-apps/react'
 import { useToolResultBuffer } from './useToolResult'
 import { AppsSDKUIProvider } from '@openai/apps-sdk-ui/components/AppsSDKUIProvider'
@@ -169,16 +169,19 @@ export function IntroductionsWidget() {
 		if (data?.introductions) setIntroductions(data.introductions)
 	}
 
+	const clearBufferRef = useRef<(() => void) | null>(null)
+
 	const { app, isConnected, error } = useApp({
 		appInfo: { name: 'matchmaker-introductions', version: '1.0.0' },
 		capabilities: {},
 		onAppCreated: app => {
-			app.ontoolinput = () => { setHasResult(false); setIntroductions([]); clearBuffer() }
+			app.ontoolinput = () => { setHasResult(false); setIntroductions([]); clearBufferRef.current?.() }
 			app.ontoolresult = applyResult
 		},
 	})
 
 	const { clearBuffer } = useToolResultBuffer(isConnected, applyResult)
+	clearBufferRef.current = clearBuffer
 
 	useHostStyles(app, app?.getHostContext())
 	const theme = useDocumentTheme()
