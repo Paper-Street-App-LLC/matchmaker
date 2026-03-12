@@ -226,7 +226,7 @@ export function IntroductionsWidget() {
 									isDark={isDark}
 									onView={() => app?.sendMessage({
 										role: 'user',
-										content: [{ type: 'text', text: `Show me the introduction between ${intro.person_a?.name ?? intro.person_a_id} and ${intro.person_b?.name ?? intro.person_b_id} (id: ${intro.id})` }],
+										content: [{ type: 'text', text: `Show me introduction ${intro.id}` }],
 									})}
 								/>
 							))

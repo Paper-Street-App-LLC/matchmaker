@@ -110,7 +110,7 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'list_introductions',
-				description: 'List all introductions for the matchmaker',
+				description: 'List all introductions. Use this to browse all introductions or to find an introduction ID before calling get_introduction.',
 				_meta: { ui: { resourceUri: INTRODUCTIONS_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
@@ -159,7 +159,7 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'get_introduction',
-				description: 'Get details of a specific introduction',
+				description: 'Get full details of a specific introduction by ID. If the user asks about an introduction by person names but you do not have the ID, first call list_introductions to find it, then call get_introduction with that ID.',
 				_meta: { ui: { resourceUri: INTRODUCTION_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
