@@ -5,13 +5,40 @@ import {
 	ListToolsRequestSchema,
 	ListPromptsRequestSchema,
 	GetPromptRequestSchema,
+	ListResourcesRequestSchema,
+	ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+function loadWidget(filename: string): string {
+	const path = join(__dirname, 'widget', filename)
+	try {
+		return readFileSync(path, 'utf-8')
+	} catch {
+		throw new Error(`Widget file not found: ${path}. Run 'npm run build:widget' in the playground directory first.`)
+	}
+}
+
+const MATCHES_WIDGET_URI = 'ui://matches/widget.html'
+const matchesWidgetHtml = loadWidget('widget.html')
+const PERSON_WIDGET_URI = 'ui://person/widget.html'
+const personWidgetHtml = loadWidget('person-widget.html')
+const INTRODUCTIONS_WIDGET_URI = 'ui://introductions/widget.html'
+const introductionsWidgetHtml = loadWidget('introductions-widget.html')
+const INTRODUCTION_WIDGET_URI = 'ui://introduction/widget.html'
+const introductionWidgetHtml = loadWidget('introduction-widget.html')
+const FEEDBACK_WIDGET_URI = 'ui://feedback/widget.html'
+const feedbackWidgetHtml = loadWidget('feedback-widget.html')
 import { loadConfig } from './config.js'
-import { ApiClient } from './api.js'
+import { ApiClient, IApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
 import { prompts, getPrompt } from './prompts.js'
 
-export function createServer(apiClient: ApiClient) {
+export function createServer(apiClient: IApiClient) {
 	let server = new Server(
 		{
 			name: 'matchmaker-mcp',
@@ -21,6 +48,7 @@ export function createServer(apiClient: ApiClient) {
 			capabilities: {
 				tools: {},
 				prompts: {},
+				resources: {},
 			},
 		}
 	)
@@ -49,22 +77,23 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'get_person',
-				description: 'Retrieve detailed information about a specific person',
+				description: 'Look up a matchmaker client profile by ID',
+				_meta: { ui: { resourceUri: PERSON_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
-						id: { type: 'string', description: 'Person ID (UUID)' },
+						id: { type: 'string', description: 'Person ID' },
 					},
 					required: ['id'],
 				},
 			},
 			{
 				name: 'update_person',
-				description: "Update a person's profile information",
+				description: "Update a matchmaker client's profile information",
 				inputSchema: {
 					type: 'object',
 					properties: {
-						id: { type: 'string', description: 'Person ID (UUID)' },
+						id: { type: 'string', description: 'Person ID' },
 						name: { type: 'string', description: 'Person name' },
 						age: { type: 'number', description: 'Person age' },
 						location: { type: 'string', description: 'Person location' },
@@ -91,7 +120,8 @@ export function createServer(apiClient: ApiClient) {
 			},
 			{
 				name: 'list_introductions',
-				description: 'List all introductions for the matchmaker',
+				description: 'List all introductions. Use this to browse all introductions or to find an introduction ID before calling get_introduction.',
+				_meta: { ui: { resourceUri: INTRODUCTIONS_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {},
@@ -117,28 +147,30 @@ export function createServer(apiClient: ApiClient) {
 			{
 				name: 'find_matches',
 				description: 'Find compatible matches for a person',
+				_meta: { ui: { resourceUri: MATCHES_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
-						person_id: { type: 'string', description: 'Person ID (UUID) to find matches for' },
+						person_id: { type: 'string', description: 'Person ID to find matches for' },
 					},
 					required: ['person_id'],
 				},
 			},
 			{
 				name: 'delete_person',
-				description: 'Soft-delete a person (sets active=false)',
+				description: 'Remove a client from the matchmaker roster (sets active=false)',
 				inputSchema: {
 					type: 'object',
 					properties: {
-						id: { type: 'string', description: 'Person ID (UUID)' },
+						id: { type: 'string', description: 'Person ID' },
 					},
 					required: ['id'],
 				},
 			},
 			{
 				name: 'get_introduction',
-				description: 'Get details of a specific introduction',
+				description: 'Get full details of a specific introduction by ID. If the user asks about an introduction by person names but you do not have the ID, first call list_introductions to find it, then call get_introduction with that ID.',
+				_meta: { ui: { resourceUri: INTRODUCTION_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
@@ -170,6 +202,7 @@ export function createServer(apiClient: ApiClient) {
 			{
 				name: 'list_feedback',
 				description: 'Get all feedback for a specific introduction',
+				_meta: { ui: { resourceUri: FEEDBACK_WIDGET_URI } },
 				inputSchema: {
 					type: 'object',
 					properties: {
@@ -208,8 +241,11 @@ export function createServer(apiClient: ApiClient) {
 			let errorMessage = 'Unknown error'
 			if (error instanceof Error) {
 				errorMessage = error.message
+				console.error(`Tool [${name}] error:`, error.message)
+				console.error(error.stack)
 			} else if (typeof error === 'string') {
 				errorMessage = error
+				console.error(`Tool [${name}] error:`, error)
 			}
 			return {
 				content: [
@@ -231,6 +267,72 @@ export function createServer(apiClient: ApiClient) {
 	server.setRequestHandler(GetPromptRequestSchema, async request => {
 		let { name } = request.params
 		return getPrompt(name)
+	})
+
+	// Register resources
+	server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+		resources: [
+			{
+				uri: MATCHES_WIDGET_URI,
+				name: 'Matches Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
+			{
+				uri: PERSON_WIDGET_URI,
+				name: 'Person Profile Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
+			{
+				uri: INTRODUCTIONS_WIDGET_URI,
+				name: 'Introductions Dashboard Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
+			{
+				uri: INTRODUCTION_WIDGET_URI,
+				name: 'Introduction Detail Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
+			{
+				uri: FEEDBACK_WIDGET_URI,
+				name: 'Feedback Thread Widget',
+				mimeType: 'text/html;profile=mcp-app',
+			},
+		],
+	}))
+
+	server.setRequestHandler(ReadResourceRequestSchema, async request => {
+		if (request.params.uri === MATCHES_WIDGET_URI) {
+			return {
+				contents: [
+					{
+						uri: MATCHES_WIDGET_URI,
+						mimeType: 'text/html;profile=mcp-app',
+						text: matchesWidgetHtml,
+					},
+				],
+			}
+		}
+		if (request.params.uri === PERSON_WIDGET_URI) {
+			return {
+				contents: [
+					{
+						uri: PERSON_WIDGET_URI,
+						mimeType: 'text/html;profile=mcp-app',
+						text: personWidgetHtml,
+					},
+				],
+			}
+		}
+		if (request.params.uri === INTRODUCTIONS_WIDGET_URI) {
+			return { contents: [{ uri: INTRODUCTIONS_WIDGET_URI, mimeType: 'text/html;profile=mcp-app', text: introductionsWidgetHtml }] }
+		}
+		if (request.params.uri === INTRODUCTION_WIDGET_URI) {
+			return { contents: [{ uri: INTRODUCTION_WIDGET_URI, mimeType: 'text/html;profile=mcp-app', text: introductionWidgetHtml }] }
+		}
+		if (request.params.uri === FEEDBACK_WIDGET_URI) {
+			return { contents: [{ uri: FEEDBACK_WIDGET_URI, mimeType: 'text/html;profile=mcp-app', text: feedbackWidgetHtml }] }
+		}
+		throw new Error(`Resource not found: ${request.params.uri}`)
 	})
 
 	return server

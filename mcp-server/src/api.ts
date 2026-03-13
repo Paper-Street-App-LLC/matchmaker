@@ -116,6 +116,8 @@ export interface Match {
 	}
 	compatibility_score?: number
 	match_reasons?: string[]
+	about?: string
+	matchmaker_note?: string
 }
 
 export interface Feedback {
@@ -127,7 +129,23 @@ export interface Feedback {
 	created_at: string
 }
 
-export class ApiClient {
+export interface IApiClient {
+	addPerson(name: string): Promise<Person>
+	listPeople(): Promise<Person[]>
+	getPerson(id: string): Promise<Person>
+	updatePerson(id: string, updates: Partial<Person>): Promise<Person>
+	createIntroduction(person_a_id: string, person_b_id: string, notes?: string): Promise<Introduction>
+	listIntroductions(): Promise<Introduction[]>
+	updateIntroduction(id: string, updates: { status?: 'pending' | 'accepted' | 'declined' | 'dating' | 'ended'; notes?: string }): Promise<Introduction>
+	findMatches(personId: string): Promise<Match[]>
+	deletePerson(id: string): Promise<Person>
+	getIntroduction(id: string): Promise<Introduction>
+	submitFeedback(introduction_id: string, from_person_id: string, content: string, sentiment?: string): Promise<Feedback>
+	listFeedback(introduction_id: string): Promise<Feedback[]>
+	getFeedback(id: string): Promise<Feedback>
+}
+
+export class ApiClient implements IApiClient {
 	constructor(private config: Config) {}
 
 	private async parseResponse<T>(response: Response, schema: z.ZodSchema<T>): Promise<T> {

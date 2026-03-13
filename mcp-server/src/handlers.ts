@@ -1,4 +1,4 @@
-import type { ApiClient } from './api.js'
+import type { IApiClient } from './api.js'
 import type { ToolName } from './tools.js'
 import {
 	validateAddPersonArgs,
@@ -16,6 +16,7 @@ import {
 
 type ToolResult = {
 	content: Array<{ type: 'text'; text: string }>
+	structuredContent?: Record<string, unknown>
 	isError?: boolean
 }
 
@@ -27,7 +28,7 @@ function successResult(data: unknown): ToolResult {
 	}
 }
 
-export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolHandler> {
+export function createToolHandlers(apiClient: IApiClient): Record<ToolName, ToolHandler> {
 	return {
 		add_person: async args => {
 			let validated = validateAddPersonArgs(args)
@@ -42,8 +43,11 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		get_person: async args => {
 			let validated = validateGetPersonArgs(args)
-			let result = await apiClient.getPerson(validated.id)
-			return successResult(result)
+			let person = await apiClient.getPerson(validated.id)
+			return {
+				content: [{ type: 'text', text: `${person.name}, ${person.age ?? '?'}, ${person.location ?? 'unknown location'}` }],
+				structuredContent: { person },
+			}
 		},
 
 		update_person: async args => {
@@ -64,8 +68,20 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 		},
 
 		list_introductions: async () => {
-			let result = await apiClient.listIntroductions()
-			return successResult(result)
+			let [introductions, people] = await Promise.all([
+				apiClient.listIntroductions(),
+				apiClient.listPeople(),
+			])
+			const personMap = Object.fromEntries(people.map(p => [p.id, p]))
+			let enriched = introductions.map(intro => ({
+				...intro,
+				person_a: personMap[intro.person_a_id] ?? null,
+				person_b: personMap[intro.person_b_id] ?? null,
+			}))
+			return {
+				content: [{ type: 'text', text: `${introductions.length} introduction${introductions.length === 1 ? '' : 's'}` }],
+				structuredContent: { introductions: enriched },
+			}
 		},
 
 		update_introduction: async args => {
@@ -77,8 +93,16 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		find_matches: async args => {
 			let validated = validateFindMatchesArgs(args)
-			let result = await apiClient.findMatches(validated.person_id)
-			return successResult(result)
+			let raw = await apiClient.findMatches(validated.person_id)
+			let matches = raw.map(m => ({
+				person: m.person,
+				about: m.about ?? (m.match_reasons ?? []).slice(0, 2).join('. '),
+				matchmaker_note: m.matchmaker_note ?? (m.match_reasons ?? []).slice(2).join(' '),
+			}))
+			return {
+				content: [{ type: 'text', text: `Found ${matches.length} match${matches.length === 1 ? '' : 'es'}.` }],
+				structuredContent: { matches },
+			}
 		},
 
 		delete_person: async args => {
@@ -89,8 +113,16 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		get_introduction: async args => {
 			let validated = validateGetIntroductionArgs(args)
-			let result = await apiClient.getIntroduction(validated.id)
-			return successResult(result)
+			let intro = await apiClient.getIntroduction(validated.id)
+			const [person_a, person_b] = await Promise.all([
+				apiClient.getPerson(intro.person_a_id).catch(() => null),
+				apiClient.getPerson(intro.person_b_id).catch(() => null),
+			])
+			let enriched = { ...intro, person_a, person_b }
+			return {
+				content: [{ type: 'text', text: `Introduction between ${enriched.person_a?.name ?? intro.person_a_id} and ${enriched.person_b?.name ?? intro.person_b_id} — status: ${intro.status}` }],
+				structuredContent: { introduction: enriched },
+			}
 		},
 
 		submit_feedback: async args => {
@@ -106,8 +138,18 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		list_feedback: async args => {
 			let validated = validateListFeedbackArgs(args)
-			let result = await apiClient.listFeedback(validated.introduction_id)
-			return successResult(result)
+			let feedback = await apiClient.listFeedback(validated.introduction_id)
+			const personIds = [...new Set(feedback.map(f => f.from_person_id))]
+			const people = await Promise.all(personIds.map(id => apiClient.getPerson(id).catch(() => null)))
+			const personMap = Object.fromEntries(personIds.map((id, i) => [id, people[i]]))
+			let enriched = feedback.map(f => ({
+				...f,
+				from_person: personMap[f.from_person_id] ?? null,
+			}))
+			return {
+				content: [{ type: 'text', text: `${feedback.length} feedback response${feedback.length === 1 ? '' : 's'}` }],
+				structuredContent: { feedback: enriched, introduction_id: validated.introduction_id },
+			}
 		},
 
 		get_feedback: async args => {
