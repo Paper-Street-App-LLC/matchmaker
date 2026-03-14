@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { statusBadge, sentimentBadge, personSummary } from '../src/widgets'
+import { statusBadge, sentimentBadge, personSummary, buildPersonCard } from '../src/widgets'
 import type { Person } from '../src/api'
 
 describe('statusBadge', () => {
@@ -135,5 +135,87 @@ describe('personSummary', () => {
 		expect(texts[0]).toEqual({ type: 'Text', content: 'Bob' })
 		// Should only have the name text
 		expect(texts.length).toBe(1)
+	})
+})
+
+describe('buildPersonCard', () => {
+	test('full person returns Card with all sections', () => {
+		let person: Person = {
+			id: 'p1',
+			name: 'Alice',
+			matchmaker_id: 'mm1',
+			age: 28,
+			location: 'New York',
+			gender: 'female',
+			personality: {
+				interests: ['hiking', 'cooking'],
+				traits: ['outgoing', 'kind'],
+			},
+			preferences: {
+				ageRange: { min: 25, max: 35 },
+				locations: ['New York', 'Boston'],
+			},
+			notes: 'Looking for a serious relationship',
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+
+		let card = buildPersonCard(person)
+		expect(card.type).toBe('Card')
+		expect(card.title).toBe('Alice')
+
+		let children = card.children as Array<{ type: string; [key: string]: unknown }>
+		expect(children.length).toBeGreaterThan(0)
+
+		// Should have metadata row with age, location, gender
+		let metaRow = children[0]
+		expect(metaRow?.type).toBe('Row')
+		let metaChildren = metaRow?.children as Array<{ type: string; content?: string }>
+		expect(metaChildren.some(c => c.content?.includes('28'))).toBe(true)
+		expect(metaChildren.some(c => c.content?.includes('New York'))).toBe(true)
+		expect(metaChildren.some(c => c.type === 'Badge')).toBe(true)
+
+		// Should have divider
+		expect(children.some(c => c.type === 'Divider')).toBe(true)
+
+		// Should have interests section with badges
+		let interestsSection = children.find(
+			c => c.type === 'Row' && Array.isArray(c.children) &&
+				(c.children as Array<{ label?: string }>).some(b => b.label === 'hiking')
+		)
+		expect(interestsSection).toBeDefined()
+
+		// Should have traits section with badges
+		let traitsSection = children.find(
+			c => c.type === 'Row' && Array.isArray(c.children) &&
+				(c.children as Array<{ label?: string }>).some(b => b.label === 'outgoing')
+		)
+		expect(traitsSection).toBeDefined()
+
+		// Should have notes
+		let notesText = children.find(
+			c => c.type === 'Text' && (c.content as string)?.includes('serious relationship')
+		)
+		expect(notesText).toBeDefined()
+	})
+
+	test('minimal person returns Card with title only, no empty sections', () => {
+		let person: Person = {
+			id: 'p2',
+			name: 'Bob',
+			matchmaker_id: 'mm1',
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+
+		let card = buildPersonCard(person)
+		expect(card.type).toBe('Card')
+		expect(card.title).toBe('Bob')
+
+		let children = card.children as Array<{ type: string }>
+		// Should not have any sections since there's no metadata
+		expect(children.length).toBe(0)
 	})
 })

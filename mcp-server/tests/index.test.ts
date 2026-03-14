@@ -1,4 +1,5 @@
 import { describe, test, expect, mock } from 'bun:test'
+import { createToolHandlers } from '../src/handlers'
 import type {
 	IApiClient,
 	Person,
@@ -640,5 +641,32 @@ describe('MCP Server', () => {
 		expect(result.from_person_id).toBe('person-uuid')
 		expect(result.content).toBe('Great match! We had a wonderful time.')
 		expect(result.sentiment).toBe('positive')
+	})
+})
+
+describe('Handler structuredContent', () => {
+	test('get_person returns both content and structuredContent', async () => {
+		let person: Person = {
+			id: 'p1',
+			name: 'Alice',
+			matchmaker_id: 'mm1',
+			age: 28,
+			location: 'New York',
+			gender: 'female',
+			personality: { interests: ['hiking'], traits: ['kind'] },
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let mockClient = createMockApiClient({
+			getPerson: mock(async () => person),
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.get_person({ id: 'p1' })
+
+		expect(result.content[0]?.text).toBe(JSON.stringify(person, null, 2))
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		expect(result.structuredContent?.title).toBe('Alice')
 	})
 })
