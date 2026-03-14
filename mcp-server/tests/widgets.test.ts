@@ -1,6 +1,12 @@
 import { describe, test, expect } from 'bun:test'
-import { statusBadge, sentimentBadge, personSummary, buildPersonCard } from '../src/widgets'
-import type { Person } from '../src/api'
+import {
+	statusBadge,
+	sentimentBadge,
+	personSummary,
+	buildPersonCard,
+	buildMatchList,
+} from '../src/widgets'
+import type { Person, Match } from '../src/api'
 
 describe('statusBadge', () => {
 	test('pending returns warning variant', () => {
@@ -217,5 +223,71 @@ describe('buildPersonCard', () => {
 		let children = card.children as Array<{ type: string }>
 		// Should not have any sections since there's no metadata
 		expect(children.length).toBe(0)
+	})
+})
+
+describe('buildMatchList', () => {
+	test('empty matches returns Card with no-matches message', () => {
+		let card = buildMatchList([])
+		expect(card.type).toBe('Card')
+		expect(card.title).toBe('Match Results')
+
+		let children = card.children as Array<{ type: string; content?: string }>
+		expect(children[0]?.type).toBe('Text')
+		expect(children[0]?.content).toBe('No matches found')
+	})
+
+	test('matches returns Card with ListView', () => {
+		let matches: Match[] = [
+			{
+				person: { id: 'p1', name: 'Alice', age: 28, location: 'New York' },
+				compatibility_score: 85,
+				match_reasons: ['Similar interests', 'Same city'],
+			},
+			{
+				person: { id: 'p2', name: 'Carol', age: 31, location: 'Boston' },
+				compatibility_score: 72,
+				match_reasons: ['Compatible personality'],
+			},
+		]
+
+		let card = buildMatchList(matches)
+		expect(card.type).toBe('Card')
+		expect(card.title).toBe('Match Results')
+
+		let children = card.children as Array<{ type: string; items?: unknown[] }>
+		let listView = children.find(c => c.type === 'ListView')
+		expect(listView).toBeDefined()
+
+		let items = listView?.items as Array<{
+			type: string
+			title?: string
+			subtitle?: string
+			children?: Array<{ type: string; label?: string }>
+		}>
+		expect(items.length).toBe(2)
+		expect(items[0]?.title).toBe('Alice')
+		expect(items[0]?.subtitle).toContain('New York')
+		// Should have score badge
+		let scoreBadge = items[0]?.children?.find(c => c.type === 'Badge')
+		expect(scoreBadge).toBeDefined()
+		expect(scoreBadge?.label).toContain('85')
+	})
+
+	test('match with missing person is handled gracefully', () => {
+		let matches: Match[] = [
+			{
+				compatibility_score: 60,
+				match_reasons: ['Algorithm suggestion'],
+			},
+		]
+
+		let card = buildMatchList(matches)
+		let children = card.children as Array<{ type: string; items?: unknown[] }>
+		let listView = children.find(c => c.type === 'ListView')
+		expect(listView).toBeDefined()
+
+		let items = listView?.items as Array<{ title?: string }>
+		expect(items[0]?.title).toBe('Unknown')
 	})
 })

@@ -669,4 +669,24 @@ describe('Handler structuredContent', () => {
 		expect(result.structuredContent?.type).toBe('Card')
 		expect(result.structuredContent?.title).toBe('Alice')
 	})
+
+	test('find_matches returns structuredContent', async () => {
+		let matches: Match[] = [
+			{
+				person: { id: 'p1', name: 'Alice', age: 28, location: 'NYC' },
+				compatibility_score: 85,
+				match_reasons: ['Similar interests'],
+			},
+		]
+		let mockClient = createMockApiClient({
+			findMatches: mock(async () => matches),
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.find_matches({ person_id: 'p2' })
+
+		expect(result.content[0]?.text).toBe(JSON.stringify(matches, null, 2))
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		expect(result.structuredContent?.title).toBe('Match Results')
+	})
 })

@@ -1,5 +1,5 @@
 import type { IApiClient } from './api.js'
-import { buildPersonCard, widgetResult } from './widgets.js'
+import { buildPersonCard, buildMatchList, widgetResult } from './widgets.js'
 import type { ToolName } from './tools.js'
 import {
 	validateAddPersonArgs,
@@ -80,7 +80,7 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 		find_matches: async args => {
 			let validated = validateFindMatchesArgs(args)
 			let result = await apiClient.findMatches(validated.person_id)
-			return successResult(result)
+			return widgetResult(result, buildMatchList(result))
 		},
 
 		delete_person: async args => {

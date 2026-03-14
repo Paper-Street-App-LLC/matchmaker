@@ -1,4 +1,4 @@
-import type { Person } from './api.js'
+import type { Person, Match } from './api.js'
 
 export type ChatKitNode = {
 	type: string
@@ -119,6 +119,45 @@ export function buildPersonCard(person: Person): ChatKitNode {
 	}
 
 	return { type: 'Card', title: person.name, children }
+}
+
+export function buildMatchList(matches: Match[]): ChatKitNode {
+	if (matches.length === 0) {
+		return {
+			type: 'Card',
+			title: 'Match Results',
+			children: [{ type: 'Text', content: 'No matches found' }],
+		}
+	}
+
+	let items = matches.map(match => {
+		let name = match.person?.name ?? 'Unknown'
+		let parts: string[] = []
+		if (match.person?.location) parts.push(match.person.location)
+		if (match.match_reasons?.length) parts.push(match.match_reasons.join(', '))
+
+		let children: ChatKitNode[] = []
+		if (match.compatibility_score != null) {
+			children.push({
+				type: 'Badge',
+				label: `${match.compatibility_score}% compatible`,
+				variant: match.compatibility_score >= 80 ? 'success' : 'secondary',
+			})
+		}
+
+		return {
+			type: 'ListViewItem',
+			title: name,
+			subtitle: parts.join(' — ') || undefined,
+			children: children.length > 0 ? children : undefined,
+		}
+	})
+
+	return {
+		type: 'Card',
+		title: 'Match Results',
+		children: [{ type: 'ListView', items }],
+	}
 }
 
 export function widgetResult(data: unknown, widget: ChatKitNode): ToolResult {
