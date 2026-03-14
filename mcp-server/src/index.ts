@@ -8,10 +8,11 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { loadConfig } from './config.js'
 import { ApiClient } from './api.js'
+import type { IApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
 import { prompts, getPrompt } from './prompts.js'
 
-export function createServer(apiClient: ApiClient) {
+export function createServer(apiClient: IApiClient) {
 	let server = new Server(
 		{
 			name: 'matchmaker-mcp',

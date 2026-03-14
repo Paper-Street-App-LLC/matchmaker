@@ -1,4 +1,4 @@
-import type { ApiClient } from './api.js'
+import type { IApiClient } from './api.js'
 import type { ToolName } from './tools.js'
 import {
 	validateAddPersonArgs,
@@ -27,7 +27,7 @@ function successResult(data: unknown): ToolResult {
 	}
 }
 
-export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolHandler> {
+export function createToolHandlers(apiClient: IApiClient): Record<ToolName, ToolHandler> {
 	return {
 		add_person: async args => {
 			let validated = validateAddPersonArgs(args)

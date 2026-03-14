@@ -1,6 +1,6 @@
 import { describe, test, expect, mock } from 'bun:test'
 import type {
-	ApiClient,
+	IApiClient,
 	Person,
 	Introduction,
 	Match,
@@ -9,7 +9,7 @@ import type {
 	PersonPersonality,
 } from '../src/api'
 
-function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
+function createMockApiClient(overrides?: Partial<IApiClient>): IApiClient {
 	return {
 		addPerson: mock(
 			async (_name: string): Promise<Person> => ({
@@ -148,7 +148,7 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 			})
 		),
 		...overrides,
-	} as unknown as ApiClient
+	} as IApiClient
 }
 
 describe('MCP Server', () => {
@@ -186,7 +186,7 @@ describe('MCP Server', () => {
 		let mockApiClient = {
 			addPerson: mockAddPerson,
 			listPeople: mock(async (): Promise<Person[]> => []),
-		} as unknown as ApiClient
+		} as IApiClient
 
 		// Simulate what the handler does
 		let personName = 'John Doe'
@@ -231,7 +231,7 @@ describe('MCP Server', () => {
 				})
 			),
 			listPeople: mockListPeople,
-		} as unknown as ApiClient
+		} as IApiClient
 
 		let result = await mockApiClient.listPeople()
 
