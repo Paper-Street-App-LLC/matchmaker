@@ -1,5 +1,11 @@
 import type { IApiClient } from './api.js'
-import { buildPersonCard, buildMatchList, widgetResult } from './widgets.js'
+import {
+	buildPersonCard,
+	buildMatchList,
+	buildIntroductionList,
+	buildIntroductionCard,
+	widgetResult,
+} from './widgets.js'
 import type { ToolName } from './tools.js'
 import {
 	validateAddPersonArgs,
@@ -66,8 +72,12 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 		},
 
 		list_introductions: async () => {
-			let result = await apiClient.listIntroductions()
-			return successResult(result)
+			let [intros, people] = await Promise.all([
+				apiClient.listIntroductions(),
+				apiClient.listPeople(),
+			])
+			let personMap = new Map(people.map(p => [p.id, p.name]))
+			return widgetResult(intros, buildIntroductionList(intros, personMap))
 		},
 
 		update_introduction: async args => {
@@ -91,8 +101,14 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 
 		get_introduction: async args => {
 			let validated = validateGetIntroductionArgs(args)
-			let result = await apiClient.getIntroduction(validated.id)
-			return successResult(result)
+			let intro = await apiClient.getIntroduction(validated.id)
+			let [personAResult, personBResult] = await Promise.allSettled([
+				apiClient.getPerson(intro.person_a_id),
+				apiClient.getPerson(intro.person_b_id),
+			])
+			let personA = personAResult.status === 'fulfilled' ? personAResult.value : null
+			let personB = personBResult.status === 'fulfilled' ? personBResult.value : null
+			return widgetResult(intro, buildIntroductionCard(intro, personA, personB))
 		},
 
 		submit_feedback: async args => {

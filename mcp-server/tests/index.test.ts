@@ -689,4 +689,84 @@ describe('Handler structuredContent', () => {
 		expect(result.structuredContent?.type).toBe('Card')
 		expect(result.structuredContent?.title).toBe('Match Results')
 	})
+
+	test('list_introductions fetches people for enrichment', async () => {
+		let intros: Introduction[] = [
+			{
+				id: 'i1',
+				matchmaker_id: 'mm1',
+				person_a_id: 'pa',
+				person_b_id: 'pb',
+				status: 'pending',
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let people: Person[] = [
+			{
+				id: 'pa',
+				name: 'Alice',
+				matchmaker_id: 'mm1',
+				active: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+			{
+				id: 'pb',
+				name: 'Bob',
+				matchmaker_id: 'mm1',
+				active: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let mockListPeople = mock(async () => people)
+		let mockClient = createMockApiClient({
+			listIntroductions: mock(async () => intros),
+			listPeople: mockListPeople,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_introductions({})
+
+		expect(mockListPeople).toHaveBeenCalled()
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+	})
+
+	test('get_introduction fetches both persons for enrichment', async () => {
+		let intro: Introduction = {
+			id: 'i1',
+			matchmaker_id: 'mm1',
+			person_a_id: 'pa',
+			person_b_id: 'pb',
+			status: 'dating',
+			notes: 'Going great',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let personA: Person = {
+			id: 'pa',
+			name: 'Alice',
+			matchmaker_id: 'mm1',
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let mockGetPerson = mock(async (id: string) => {
+			if (id === 'pa') return personA
+			throw new Error('Not found')
+		})
+		let mockClient = createMockApiClient({
+			getIntroduction: mock(async () => intro),
+			getPerson: mockGetPerson,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.get_introduction({ id: 'i1' })
+
+		expect(mockGetPerson).toHaveBeenCalledTimes(2)
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		// personB failed, so title should contain truncated ID for personB
+		expect(result.structuredContent?.title).toContain('Alice')
+	})
 })

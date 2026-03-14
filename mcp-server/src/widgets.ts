@@ -1,4 +1,4 @@
-import type { Person, Match } from './api.js'
+import type { Person, Match, Introduction } from './api.js'
 
 export type ChatKitNode = {
 	type: string
@@ -157,6 +157,75 @@ export function buildMatchList(matches: Match[]): ChatKitNode {
 		type: 'Card',
 		title: 'Match Results',
 		children: [{ type: 'ListView', items }],
+	}
+}
+
+function personLabel(id: string, personMap: Map<string, string>): string {
+	return personMap.get(id) ?? id.slice(0, 8)
+}
+
+export function buildIntroductionList(
+	intros: Introduction[],
+	personMap: Map<string, string>
+): ChatKitNode {
+	if (intros.length === 0) {
+		return {
+			type: 'Card',
+			title: 'Introductions',
+			children: [{ type: 'Text', content: 'No introductions' }],
+		}
+	}
+
+	let items = intros.map(intro => {
+		let nameA = personLabel(intro.person_a_id, personMap)
+		let nameB = personLabel(intro.person_b_id, personMap)
+
+		let children: ChatKitNode[] = [statusBadge(intro.status)]
+		if (intro.notes) {
+			children.push({ type: 'Text', content: intro.notes })
+		}
+
+		return {
+			type: 'ListViewItem',
+			title: `${nameA} & ${nameB}`,
+			subtitle: new Date(intro.created_at).toLocaleDateString(),
+			children,
+		}
+	})
+
+	return {
+		type: 'Card',
+		title: 'Introductions',
+		children: [{ type: 'ListView', items }],
+	}
+}
+
+export function buildIntroductionCard(
+	intro: Introduction,
+	personA: Person | null,
+	personB: Person | null
+): ChatKitNode {
+	let nameA = personA?.name ?? intro.person_a_id.slice(0, 8)
+	let nameB = personB?.name ?? intro.person_b_id.slice(0, 8)
+
+	let children: ChatKitNode[] = []
+
+	children.push(statusBadge(intro.status))
+
+	// Person details side by side
+	if (personA) children.push(personSummary(personA))
+	if (personB) children.push(personSummary(personB))
+
+	if (intro.notes) {
+		children.push({ type: 'Text', content: intro.notes })
+	}
+
+	children.push({ type: 'Text', content: `Created: ${new Date(intro.created_at).toLocaleDateString()}` })
+
+	return {
+		type: 'Card',
+		title: `${nameA} & ${nameB}`,
+		children,
 	}
 }
 

@@ -5,8 +5,10 @@ import {
 	personSummary,
 	buildPersonCard,
 	buildMatchList,
+	buildIntroductionList,
+	buildIntroductionCard,
 } from '../src/widgets'
-import type { Person, Match } from '../src/api'
+import type { Person, Match, Introduction } from '../src/api'
 
 describe('statusBadge', () => {
 	test('pending returns warning variant', () => {
@@ -289,5 +291,144 @@ describe('buildMatchList', () => {
 
 		let items = listView?.items as Array<{ title?: string }>
 		expect(items[0]?.title).toBe('Unknown')
+	})
+})
+
+describe('buildIntroductionList', () => {
+	let personMap = new Map<string, string>([
+		['pa', 'Alice'],
+		['pb', 'Bob'],
+	])
+
+	test('empty list returns no-introductions message', () => {
+		let card = buildIntroductionList([], personMap)
+		expect(card.type).toBe('Card')
+
+		let children = card.children as Array<{ type: string; content?: string }>
+		expect(children[0]?.content).toBe('No introductions')
+	})
+
+	test('introductions return ListView with status badges and person names', () => {
+		let intros: Introduction[] = [
+			{
+				id: 'i1',
+				matchmaker_id: 'mm1',
+				person_a_id: 'pa',
+				person_b_id: 'pb',
+				status: 'pending',
+				notes: 'Both like hiking',
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+		]
+
+		let card = buildIntroductionList(intros, personMap)
+		expect(card.type).toBe('Card')
+
+		let children = card.children as Array<{ type: string; items?: unknown[] }>
+		let listView = children.find(c => c.type === 'ListView')
+		expect(listView).toBeDefined()
+
+		let items = listView?.items as Array<{
+			type: string
+			title?: string
+			subtitle?: string
+			children?: Array<{ type: string; label?: string }>
+		}>
+		expect(items[0]?.title).toBe('Alice & Bob')
+		expect(items[0]?.children?.some(c => c.type === 'Badge' && c.label === 'Pending')).toBe(
+			true
+		)
+	})
+
+	test('unknown person IDs fall back to truncated ID', () => {
+		let intros: Introduction[] = [
+			{
+				id: 'i2',
+				matchmaker_id: 'mm1',
+				person_a_id: 'unknown-uuid-1234',
+				person_b_id: 'pb',
+				status: 'accepted',
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+		]
+
+		let card = buildIntroductionList(intros, personMap)
+		let children = card.children as Array<{ type: string; items?: unknown[] }>
+		let listView = children.find(c => c.type === 'ListView')
+		let items = listView?.items as Array<{ title?: string }>
+		expect(items[0]?.title).toContain('unknown-')
+		expect(items[0]?.title).toContain('& Bob')
+	})
+})
+
+describe('buildIntroductionCard', () => {
+	test('enriched introduction returns Card with person details and status', () => {
+		let intro: Introduction = {
+			id: 'i1',
+			matchmaker_id: 'mm1',
+			person_a_id: 'pa',
+			person_b_id: 'pb',
+			status: 'dating',
+			notes: 'Going well!',
+			created_at: '2024-06-15T00:00:00Z',
+			updated_at: '2024-06-15T00:00:00Z',
+		}
+		let personA: Person = {
+			id: 'pa',
+			name: 'Alice',
+			matchmaker_id: 'mm1',
+			age: 28,
+			location: 'NYC',
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let personB: Person = {
+			id: 'pb',
+			name: 'Bob',
+			matchmaker_id: 'mm1',
+			age: 32,
+			location: 'NYC',
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+
+		let card = buildIntroductionCard(intro, personA, personB)
+		expect(card.type).toBe('Card')
+		expect(card.title).toBe('Alice & Bob')
+
+		let children = card.children as Array<{
+			type: string
+			label?: string
+			content?: string
+			variant?: string
+		}>
+		// Should have status badge
+		let badge = children.find(c => c.type === 'Badge')
+		expect(badge?.label).toBe('Dating')
+		expect(badge?.variant).toBe('success')
+
+		// Should have notes
+		let notesText = children.find(c => c.type === 'Text' && c.content === 'Going well!')
+		expect(notesText).toBeDefined()
+	})
+
+	test('falls back to IDs when persons are null', () => {
+		let intro: Introduction = {
+			id: 'i1',
+			matchmaker_id: 'mm1',
+			person_a_id: 'uuid-a',
+			person_b_id: 'uuid-b',
+			status: 'pending',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+
+		let card = buildIntroductionCard(intro, null, null)
+		expect(card.title).toContain('uuid-a')
+		expect(card.title).toContain('uuid-b')
 	})
 })
