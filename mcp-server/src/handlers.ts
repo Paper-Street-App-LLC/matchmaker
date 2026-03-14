@@ -17,6 +17,7 @@ import {
 type ToolResult = {
 	content: Array<{ type: 'text'; text: string }>
 	isError?: boolean
+	structuredContent?: Record<string, unknown>
 }
 
 type ToolHandler = (args: unknown) => Promise<ToolResult>
