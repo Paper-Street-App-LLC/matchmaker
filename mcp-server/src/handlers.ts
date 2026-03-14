@@ -4,6 +4,7 @@ import {
 	buildMatchList,
 	buildIntroductionList,
 	buildIntroductionCard,
+	buildFeedbackList,
 	widgetResult,
 } from './widgets.js'
 import type { ToolName } from './tools.js'
@@ -124,8 +125,21 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 
 		list_feedback: async args => {
 			let validated = validateListFeedbackArgs(args)
-			let result = await apiClient.listFeedback(validated.introduction_id)
-			return successResult(result)
+			let feedbackList = await apiClient.listFeedback(validated.introduction_id)
+
+			// Deduplicate person IDs and resolve names
+			let uniquePersonIds = [...new Set(feedbackList.map(f => f.from_person_id))]
+			let results = await Promise.allSettled(
+				uniquePersonIds.map(id => apiClient.getPerson(id))
+			)
+			let personMap = new Map<string, string>()
+			results.forEach((result, i) => {
+				if (result.status === 'fulfilled') {
+					personMap.set(uniquePersonIds[i]!, result.value.name)
+				}
+			})
+
+			return widgetResult(feedbackList, buildFeedbackList(feedbackList, personMap))
 		},
 
 		get_feedback: async args => {

@@ -1,4 +1,4 @@
-import type { Person, Match, Introduction } from './api.js'
+import type { Person, Match, Introduction, Feedback } from './api.js'
 
 export type ChatKitNode = {
 	type: string
@@ -226,6 +226,35 @@ export function buildIntroductionCard(
 		type: 'Card',
 		title: `${nameA} & ${nameB}`,
 		children,
+	}
+}
+
+export function buildFeedbackList(
+	feedback: Feedback[],
+	personMap: Map<string, string>
+): ChatKitNode {
+	if (feedback.length === 0) {
+		return {
+			type: 'Card',
+			title: 'Feedback',
+			children: [{ type: 'Text', content: 'No feedback' }],
+		}
+	}
+
+	let items = feedback.map(fb => {
+		let name = personLabel(fb.from_person_id, personMap)
+		return {
+			type: 'ListViewItem',
+			title: name,
+			subtitle: fb.content,
+			children: [sentimentBadge(fb.sentiment)],
+		}
+	})
+
+	return {
+		type: 'Card',
+		title: 'Feedback',
+		children: [{ type: 'ListView', items }],
 	}
 }
 

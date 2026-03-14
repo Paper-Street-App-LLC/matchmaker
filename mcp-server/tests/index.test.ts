@@ -769,4 +769,72 @@ describe('Handler structuredContent', () => {
 		// personB failed, so title should contain truncated ID for personB
 		expect(result.structuredContent?.title).toContain('Alice')
 	})
+
+	test('list_feedback resolves person names with deduplication', async () => {
+		let feedbackList: Feedback[] = [
+			{
+				id: 'f1',
+				introduction_id: 'i1',
+				from_person_id: 'p1',
+				content: 'Great!',
+				sentiment: 'positive',
+				created_at: '2024-01-01T00:00:00Z',
+			},
+			{
+				id: 'f2',
+				introduction_id: 'i1',
+				from_person_id: 'p1',
+				content: 'Still great!',
+				sentiment: 'positive',
+				created_at: '2024-01-02T00:00:00Z',
+			},
+		]
+		let mockGetPerson = mock(
+			async (id: string): Promise<Person> => ({
+				id,
+				name: 'Alice',
+				matchmaker_id: 'mm1',
+				active: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			})
+		)
+		let mockClient = createMockApiClient({
+			listFeedback: mock(async () => feedbackList),
+			getPerson: mockGetPerson,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_feedback({ introduction_id: 'i1' })
+
+		// Should only call getPerson once since both feedback items are from p1
+		expect(mockGetPerson).toHaveBeenCalledTimes(1)
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+	})
+
+	test('list_feedback gracefully handles getPerson failure', async () => {
+		let feedbackList: Feedback[] = [
+			{
+				id: 'f1',
+				introduction_id: 'i1',
+				from_person_id: 'unknown-person',
+				content: 'Test',
+				sentiment: null,
+				created_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let mockClient = createMockApiClient({
+			listFeedback: mock(async () => feedbackList),
+			getPerson: mock(async () => {
+				throw new Error('Not found')
+			}),
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_feedback({ introduction_id: 'i1' })
+
+		// Should still return successfully with fallback to ID
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		expect(result.isError).toBeUndefined()
+	})
 })

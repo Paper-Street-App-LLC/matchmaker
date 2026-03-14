@@ -7,8 +7,9 @@ import {
 	buildMatchList,
 	buildIntroductionList,
 	buildIntroductionCard,
+	buildFeedbackList,
 } from '../src/widgets'
-import type { Person, Match, Introduction } from '../src/api'
+import type { Person, Match, Introduction, Feedback } from '../src/api'
 
 describe('statusBadge', () => {
 	test('pending returns warning variant', () => {
@@ -430,5 +431,80 @@ describe('buildIntroductionCard', () => {
 		let card = buildIntroductionCard(intro, null, null)
 		expect(card.title).toContain('uuid-a')
 		expect(card.title).toContain('uuid-b')
+	})
+})
+
+describe('buildFeedbackList', () => {
+	let personMap = new Map<string, string>([['p1', 'Alice']])
+
+	test('empty list returns no-feedback message', () => {
+		let card = buildFeedbackList([], personMap)
+		expect(card.type).toBe('Card')
+
+		let children = card.children as Array<{ type: string; content?: string }>
+		expect(children[0]?.content).toBe('No feedback')
+	})
+
+	test('feedback list returns ListView with person name, sentiment, content', () => {
+		let feedback: Feedback[] = [
+			{
+				id: 'f1',
+				introduction_id: 'i1',
+				from_person_id: 'p1',
+				content: 'Great match!',
+				sentiment: 'positive',
+				created_at: '2024-01-15T00:00:00Z',
+			},
+			{
+				id: 'f2',
+				introduction_id: 'i1',
+				from_person_id: 'unknown-id',
+				content: 'Not my type',
+				sentiment: 'negative',
+				created_at: '2024-01-16T00:00:00Z',
+			},
+		]
+
+		let card = buildFeedbackList(feedback, personMap)
+		expect(card.type).toBe('Card')
+
+		let children = card.children as Array<{ type: string; items?: unknown[] }>
+		let listView = children.find(c => c.type === 'ListView')
+		expect(listView).toBeDefined()
+
+		let items = listView?.items as Array<{
+			type: string
+			title?: string
+			subtitle?: string
+			children?: Array<{ type: string; label?: string; variant?: string }>
+		}>
+		expect(items.length).toBe(2)
+		expect(items[0]?.title).toBe('Alice')
+		expect(items[0]?.subtitle).toBe('Great match!')
+		expect(items[0]?.children?.some(c => c.label === 'Positive' && c.variant === 'success')).toBe(true)
+
+		// Second item falls back to truncated ID
+		expect(items[1]?.title).toBe('unknown-')
+	})
+
+	test('null sentiment handled gracefully', () => {
+		let feedback: Feedback[] = [
+			{
+				id: 'f1',
+				introduction_id: 'i1',
+				from_person_id: 'p1',
+				content: 'No opinion',
+				sentiment: null,
+				created_at: '2024-01-15T00:00:00Z',
+			},
+		]
+
+		let card = buildFeedbackList(feedback, personMap)
+		let children = card.children as Array<{ type: string; items?: unknown[] }>
+		let listView = children.find(c => c.type === 'ListView')
+		let items = listView?.items as Array<{
+			children?: Array<{ type: string; label?: string; variant?: string }>
+		}>
+		expect(items[0]?.children?.some(c => c.label === 'Unknown' && c.variant === 'outline')).toBe(true)
 	})
 })
