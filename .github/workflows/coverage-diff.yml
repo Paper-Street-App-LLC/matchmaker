@@ -46,12 +46,19 @@ jobs:
       - name: Run tests with coverage (base - mcp-server)
         run: cd __base/mcp-server && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/mcp-server || true
 
+      - name: Run tests with coverage (PR - scripts)
+        run: cd scripts && bun test --coverage --coverage-reporter=lcov --coverage-dir=../coverage/pr/scripts || true
+
+      - name: Run tests with coverage (base - scripts)
+        run: cd __base/scripts && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/scripts || true
+
       - name: Generate coverage diff
         id: diff
         run: |
           REPORT=$(bun run scripts/coverage-diff.ts \
             "backend:coverage/base/backend/lcov.info:coverage/pr/backend/lcov.info" \
-            "mcp-server:coverage/base/mcp-server/lcov.info:coverage/pr/mcp-server/lcov.info")
+            "mcp-server:coverage/base/mcp-server/lcov.info:coverage/pr/mcp-server/lcov.info" \
+            "scripts:coverage/base/scripts/lcov.info:coverage/pr/scripts/lcov.info")
           echo "report<<EOF" >> "$GITHUB_OUTPUT"
           echo "$REPORT" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
