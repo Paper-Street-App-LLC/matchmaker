@@ -78,7 +78,7 @@ async function handleAuthorizationCodeGrant(
 	// Validate request body using Zod schema
 	let parseResult = authorizationCodeGrantSchema.safeParse(body)
 	if (!parseResult.success) {
-		let firstError = parseResult.error.errors[0]
+		let firstError = parseResult.error.issues[0]
 		return oauthError(c, 'invalid_request', firstError?.message || 'Invalid request')
 	}
 
@@ -124,7 +124,7 @@ async function handleRefreshTokenGrant(
 	// Validate request body using Zod schema
 	let parseResult = refreshTokenGrantSchema.safeParse(body)
 	if (!parseResult.success) {
-		let firstError = parseResult.error.errors[0]
+		let firstError = parseResult.error.issues[0]
 		return oauthError(c, 'invalid_request', firstError?.message || 'Invalid request')
 	}
 
