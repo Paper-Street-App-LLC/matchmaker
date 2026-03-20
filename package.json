@@ -6,7 +6,8 @@
 		"test": "bun run test:backend && bun run test:mcp",
 		"test:backend": "cd backend && bun test",
 		"test:mcp": "cd mcp-server && bun run test",
-		"get-jwt": "bun run scripts/get-jwt.ts"
+		"get-jwt": "bun run scripts/get-jwt.ts",
+		"playground": "cd playground && bun run dev"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.39.0"
