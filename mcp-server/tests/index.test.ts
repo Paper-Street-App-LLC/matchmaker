@@ -1,6 +1,7 @@
 import { describe, test, expect, mock } from 'bun:test'
+import { createToolHandlers } from '../src/handlers'
 import type {
-	ApiClient,
+	IApiClient,
 	Person,
 	Introduction,
 	Match,
@@ -9,7 +10,7 @@ import type {
 	PersonPersonality,
 } from '../src/api'
 
-function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
+function createMockApiClient(overrides?: Partial<IApiClient>): IApiClient {
 	return {
 		addPerson: mock(
 			async (_name: string): Promise<Person> => ({
@@ -148,7 +149,7 @@ function createMockApiClient(overrides?: Partial<ApiClient>): ApiClient {
 			})
 		),
 		...overrides,
-	} as unknown as ApiClient
+	} as IApiClient
 }
 
 describe('MCP Server', () => {
@@ -186,7 +187,7 @@ describe('MCP Server', () => {
 		let mockApiClient = {
 			addPerson: mockAddPerson,
 			listPeople: mock(async (): Promise<Person[]> => []),
-		} as unknown as ApiClient
+		} as IApiClient
 
 		// Simulate what the handler does
 		let personName = 'John Doe'
@@ -231,7 +232,7 @@ describe('MCP Server', () => {
 				})
 			),
 			listPeople: mockListPeople,
-		} as unknown as ApiClient
+		} as IApiClient
 
 		let result = await mockApiClient.listPeople()
 
@@ -640,5 +641,200 @@ describe('MCP Server', () => {
 		expect(result.from_person_id).toBe('person-uuid')
 		expect(result.content).toBe('Great match! We had a wonderful time.')
 		expect(result.sentiment).toBe('positive')
+	})
+})
+
+describe('Handler structuredContent', () => {
+	test('get_person returns both content and structuredContent', async () => {
+		let person: Person = {
+			id: 'p1',
+			name: 'Alice',
+			matchmaker_id: 'mm1',
+			age: 28,
+			location: 'New York',
+			gender: 'female',
+			personality: { interests: ['hiking'], traits: ['kind'] },
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let mockClient = createMockApiClient({
+			getPerson: mock(async () => person),
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.get_person({ id: 'p1' })
+
+		expect(result.content[0]?.text).toBe(JSON.stringify(person, null, 2))
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		expect(result.structuredContent?.title).toBe('Alice')
+	})
+
+	test('find_matches returns structuredContent', async () => {
+		let matches: Match[] = [
+			{
+				person: { id: 'p1', name: 'Alice', age: 28, location: 'NYC' },
+				compatibility_score: 85,
+				match_reasons: ['Similar interests'],
+			},
+		]
+		let mockClient = createMockApiClient({
+			findMatches: mock(async () => matches),
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.find_matches({ person_id: 'p2' })
+
+		expect(result.content[0]?.text).toBe(JSON.stringify(matches, null, 2))
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		expect(result.structuredContent?.title).toBe('Match Results')
+	})
+
+	test('list_introductions fetches people for enrichment', async () => {
+		let intros: Introduction[] = [
+			{
+				id: 'i1',
+				matchmaker_id: 'mm1',
+				person_a_id: 'pa',
+				person_b_id: 'pb',
+				status: 'pending',
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let people: Person[] = [
+			{
+				id: 'pa',
+				name: 'Alice',
+				matchmaker_id: 'mm1',
+				active: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+			{
+				id: 'pb',
+				name: 'Bob',
+				matchmaker_id: 'mm1',
+				active: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let mockListPeople = mock(async () => people)
+		let mockClient = createMockApiClient({
+			listIntroductions: mock(async () => intros),
+			listPeople: mockListPeople,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_introductions({})
+
+		expect(mockListPeople).toHaveBeenCalled()
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+	})
+
+	test('get_introduction fetches both persons for enrichment', async () => {
+		let intro: Introduction = {
+			id: 'i1',
+			matchmaker_id: 'mm1',
+			person_a_id: 'pa',
+			person_b_id: 'pb',
+			status: 'dating',
+			notes: 'Going great',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let personA: Person = {
+			id: 'pa',
+			name: 'Alice',
+			matchmaker_id: 'mm1',
+			active: true,
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z',
+		}
+		let mockGetPerson = mock(async (id: string) => {
+			if (id === 'pa') return personA
+			throw new Error('Not found')
+		})
+		let mockClient = createMockApiClient({
+			getIntroduction: mock(async () => intro),
+			getPerson: mockGetPerson,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.get_introduction({ id: 'i1' })
+
+		expect(mockGetPerson).toHaveBeenCalledTimes(2)
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		// personB failed, so title should contain truncated ID for personB
+		expect(result.structuredContent?.title).toContain('Alice')
+	})
+
+	test('list_feedback resolves person names with deduplication', async () => {
+		let feedbackList: Feedback[] = [
+			{
+				id: 'f1',
+				introduction_id: 'i1',
+				from_person_id: 'p1',
+				content: 'Great!',
+				sentiment: 'positive',
+				created_at: '2024-01-01T00:00:00Z',
+			},
+			{
+				id: 'f2',
+				introduction_id: 'i1',
+				from_person_id: 'p1',
+				content: 'Still great!',
+				sentiment: 'positive',
+				created_at: '2024-01-02T00:00:00Z',
+			},
+		]
+		let mockGetPerson = mock(
+			async (id: string): Promise<Person> => ({
+				id,
+				name: 'Alice',
+				matchmaker_id: 'mm1',
+				active: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z',
+			})
+		)
+		let mockClient = createMockApiClient({
+			listFeedback: mock(async () => feedbackList),
+			getPerson: mockGetPerson,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_feedback({ introduction_id: 'i1' })
+
+		// Should only call getPerson once since both feedback items are from p1
+		expect(mockGetPerson).toHaveBeenCalledTimes(1)
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+	})
+
+	test('list_feedback gracefully handles getPerson failure', async () => {
+		let feedbackList: Feedback[] = [
+			{
+				id: 'f1',
+				introduction_id: 'i1',
+				from_person_id: 'unknown-person',
+				content: 'Test',
+				sentiment: null,
+				created_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let mockClient = createMockApiClient({
+			listFeedback: mock(async () => feedbackList),
+			getPerson: mock(async () => {
+				throw new Error('Not found')
+			}),
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_feedback({ introduction_id: 'i1' })
+
+		// Should still return successfully with fallback to ID
+		expect(result.structuredContent).toBeDefined()
+		expect(result.structuredContent?.type).toBe('Card')
+		expect(result.isError).toBeUndefined()
 	})
 })

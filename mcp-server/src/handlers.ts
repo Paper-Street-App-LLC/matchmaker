@@ -1,4 +1,12 @@
-import type { ApiClient } from './api.js'
+import type { IApiClient } from './api.js'
+import {
+	buildPersonCard,
+	buildMatchList,
+	buildIntroductionList,
+	buildIntroductionCard,
+	buildFeedbackList,
+	widgetResult,
+} from './widgets.js'
 import type { ToolName } from './tools.js'
 import {
 	validateAddPersonArgs,
@@ -17,6 +25,7 @@ import {
 type ToolResult = {
 	content: Array<{ type: 'text'; text: string }>
 	isError?: boolean
+	structuredContent?: Record<string, unknown>
 }
 
 type ToolHandler = (args: unknown) => Promise<ToolResult>
@@ -27,7 +36,7 @@ function successResult(data: unknown): ToolResult {
 	}
 }
 
-export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolHandler> {
+export function createToolHandlers(apiClient: IApiClient): Record<ToolName, ToolHandler> {
 	return {
 		add_person: async args => {
 			let validated = validateAddPersonArgs(args)
@@ -43,7 +52,7 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 		get_person: async args => {
 			let validated = validateGetPersonArgs(args)
 			let result = await apiClient.getPerson(validated.id)
-			return successResult(result)
+			return widgetResult(result, buildPersonCard(result))
 		},
 
 		update_person: async args => {
@@ -64,8 +73,12 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 		},
 
 		list_introductions: async () => {
-			let result = await apiClient.listIntroductions()
-			return successResult(result)
+			let [intros, people] = await Promise.all([
+				apiClient.listIntroductions(),
+				apiClient.listPeople(),
+			])
+			let personMap = new Map(people.map(p => [p.id, p.name]))
+			return widgetResult(intros, buildIntroductionList(intros, personMap))
 		},
 
 		update_introduction: async args => {
@@ -78,7 +91,7 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 		find_matches: async args => {
 			let validated = validateFindMatchesArgs(args)
 			let result = await apiClient.findMatches(validated.person_id)
-			return successResult(result)
+			return widgetResult(result, buildMatchList(result))
 		},
 
 		delete_person: async args => {
@@ -89,8 +102,14 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		get_introduction: async args => {
 			let validated = validateGetIntroductionArgs(args)
-			let result = await apiClient.getIntroduction(validated.id)
-			return successResult(result)
+			let intro = await apiClient.getIntroduction(validated.id)
+			let [personAResult, personBResult] = await Promise.allSettled([
+				apiClient.getPerson(intro.person_a_id),
+				apiClient.getPerson(intro.person_b_id),
+			])
+			let personA = personAResult.status === 'fulfilled' ? personAResult.value : null
+			let personB = personBResult.status === 'fulfilled' ? personBResult.value : null
+			return widgetResult(intro, buildIntroductionCard(intro, personA, personB))
 		},
 
 		submit_feedback: async args => {
@@ -106,8 +125,21 @@ export function createToolHandlers(apiClient: ApiClient): Record<ToolName, ToolH
 
 		list_feedback: async args => {
 			let validated = validateListFeedbackArgs(args)
-			let result = await apiClient.listFeedback(validated.introduction_id)
-			return successResult(result)
+			let feedbackList = await apiClient.listFeedback(validated.introduction_id)
+
+			// Deduplicate person IDs and resolve names
+			let uniquePersonIds = [...new Set(feedbackList.map(f => f.from_person_id))]
+			let results = await Promise.allSettled(
+				uniquePersonIds.map(id => apiClient.getPerson(id))
+			)
+			let personMap = new Map<string, string>()
+			results.forEach((result, i) => {
+				if (result.status === 'fulfilled') {
+					personMap.set(uniquePersonIds[i]!, result.value.name)
+				}
+			})
+
+			return widgetResult(feedbackList, buildFeedbackList(feedbackList, personMap))
 		},
 
 		get_feedback: async args => {
