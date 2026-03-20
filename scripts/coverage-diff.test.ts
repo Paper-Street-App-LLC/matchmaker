@@ -65,7 +65,7 @@ describe("generateReport", () => {
 
     const report = generateReport([{ name: "backend", base, head }]);
 
-    expect(report).toContain("## Coverage Report");
+    expect(report).toContain("## Test Coverage Report");
     expect(report).toContain("### backend");
     expect(report).toContain("80.0%"); // base
     expect(report).toContain("90.0%"); // head
@@ -112,7 +112,7 @@ describe("generateReport", () => {
 
   it("handles empty coverage data", () => {
     const report = generateReport([{ name: "pkg", base: {}, head: {} }]);
-    expect(report).toContain("No coverage data");
+    expect(report).toContain("No test coverage data available.");
   });
 
   it("only shows changed files in the details section", () => {

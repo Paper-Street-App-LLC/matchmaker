@@ -73,7 +73,12 @@ function totalCoverage(map: CoverageMap): { found: number; hit: number } {
  * Generate a markdown coverage diff report for one or more packages.
  */
 export function generateReport(packages: PackageCoverage[]): string {
-  const lines: string[] = ["## Coverage Report", ""];
+  const lines: string[] = [
+    "## Test Coverage Report",
+    "",
+    "Compared against `main`. Coverage collected via `bun test --coverage`.",
+    "",
+  ];
 
   for (const pkg of packages) {
     lines.push(`### ${pkg.name}`, "");
@@ -82,7 +87,7 @@ export function generateReport(packages: PackageCoverage[]): string {
     const headTotal = totalCoverage(pkg.head);
 
     if (baseTotal.found === 0 && headTotal.found === 0) {
-      lines.push("No coverage data", "");
+      lines.push("No test coverage data available.", "");
       continue;
     }
 
@@ -91,9 +96,9 @@ export function generateReport(packages: PackageCoverage[]): string {
     const deltaPct = headPct - basePct;
 
     lines.push(
-      "| Metric | main | PR | Delta |",
-      "|--------|-----:|---:|------:|",
-      `| Lines  | ${baseTotal.found > 0 ? fmtPct(basePct) : "—"} | ${headTotal.found > 0 ? fmtPct(headPct) : "—"} | ${fmtDelta(deltaPct)} |`,
+      "| Metric | main | this PR | +/- |",
+      "|--------|-----:|--------:|----:|",
+      `| Statements | ${baseTotal.found > 0 ? fmtPct(basePct) : "—"} | ${headTotal.found > 0 ? fmtPct(headPct) : "—"} | ${fmtDelta(deltaPct)} |`,
       ""
     );
 
@@ -145,10 +150,10 @@ export function generateReport(packages: PackageCoverage[]): string {
 
     if (changedFiles.length > 0) {
       lines.push(
-        "<details><summary>Changed files</summary>",
+        "<details><summary>Files with coverage changes</summary>",
         "",
-        "| File | main | PR | Delta |",
-        "|------|-----:|---:|------:|"
+        "| File | main | this PR | +/- |",
+        "|------|-----:|--------:|----:|"
       );
       for (const cf of changedFiles) {
         lines.push(
