@@ -3,9 +3,10 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"test": "bun run test:backend && bun run test:mcp",
+		"test": "bun run test:backend && bun run test:mcp && bun run test:gateway",
 		"test:backend": "cd backend && bun test",
 		"test:mcp": "cd mcp-server && bun run test",
+		"test:gateway": "cd gateway && bun test",
 		"get-jwt": "bun run scripts/get-jwt.ts"
 	},
 	"dependencies": {
