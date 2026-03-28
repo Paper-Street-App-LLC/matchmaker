@@ -28,6 +28,14 @@ jobs:
         working-directory: ./mcp-server
         run: bun install --frozen-lockfile
 
+      - name: Install shared dependencies
+        working-directory: ./packages/shared
+        run: bun install --frozen-lockfile
+
+      - name: Run shared tests
+        working-directory: ./packages/shared
+        run: bun test
+
       - name: Run backend tests
         working-directory: ./backend
         run: bun test
