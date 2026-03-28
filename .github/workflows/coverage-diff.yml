@@ -27,14 +27,16 @@ jobs:
       - name: Install dependencies (PR)
         run: |
           cd backend && bun install --frozen-lockfile
-          cd ../mcp-server && bun install --frozen-lockfile
-          cd ../packages/shared && bun install --frozen-lockfile
+          cd "$GITHUB_WORKSPACE/mcp-server" && bun install --frozen-lockfile
+          cd "$GITHUB_WORKSPACE/packages/shared" && bun install --frozen-lockfile
 
       - name: Install dependencies (base)
         run: |
           cd __base/backend && bun install --frozen-lockfile
-          cd ../mcp-server && bun install --frozen-lockfile
-          cd ../packages/shared && bun install --frozen-lockfile
+          cd "$GITHUB_WORKSPACE/__base/mcp-server" && bun install --frozen-lockfile
+          if [ -d "$GITHUB_WORKSPACE/__base/packages/shared" ]; then
+            cd "$GITHUB_WORKSPACE/__base/packages/shared" && bun install --frozen-lockfile
+          fi
 
       - name: Run tests with coverage (PR - backend)
         run: cd backend && bun test --coverage --coverage-reporter=lcov --coverage-dir=../coverage/pr/backend || true
@@ -58,7 +60,10 @@ jobs:
         run: cd packages/shared && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/pr/shared || true
 
       - name: Run tests with coverage (base - shared)
-        run: cd __base/packages/shared && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/shared || true
+        run: |
+          if [ -d __base/packages/shared ]; then
+            cd __base/packages/shared && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/shared || true
+          fi
 
       - name: Generate coverage diff
         id: diff
