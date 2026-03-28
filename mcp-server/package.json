@@ -14,6 +14,7 @@
 		"format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.json\""
 	},
 	"dependencies": {
+		"@matchmaker/shared": "workspace:*",
 		"@modelcontextprotocol/sdk": "^1.0.0",
 		"@supabase/supabase-js": "^2.39.0",
 		"zod": "^3.22.4"
