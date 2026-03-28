@@ -28,3 +28,12 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/). 
 
 [optional footer(s)]
 ```
+
+### New Package Checklist
+
+When adding a new package to the monorepo:
+
+1. Add it to `workspaces` in root `package.json` (if not covered by a glob)
+2. Add `test:<name>` script to root `package.json`
+3. Add install + test steps in `.github/workflows/test.yml`
+4. Add coverage collection + diff entry in `.github/workflows/coverage-diff.yml`
