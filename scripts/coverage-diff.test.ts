@@ -115,6 +115,20 @@ describe("generateReport", () => {
     expect(report).toContain("No test coverage data available.");
   });
 
+  it("shows absolute coverage for a new package with no base", () => {
+    const base = {};
+    const head = {
+      "src/index.ts": { linesFound: 10, linesHit: 9 },
+      "src/prompts.ts": { linesFound: 20, linesHit: 18 },
+    };
+
+    const report = generateReport([{ name: "shared", base, head }]);
+    expect(report).toContain("### shared");
+    expect(report).toContain("New package");
+    expect(report).toContain("90.0%");
+    expect(report).not.toContain("+/-");
+  });
+
   it("only shows changed files in the details section", () => {
     const base = {
       "src/unchanged.ts": { linesFound: 10, linesHit: 8 },
