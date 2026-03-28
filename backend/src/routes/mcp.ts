@@ -11,7 +11,7 @@ import {
 	GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
-import { prompts, getPrompt } from '../prompts'
+import { prompts, getPrompt } from '@matchmaker/shared'
 import { parsePreferences } from '../schemas/preferences'
 import { matchFinder } from '../services/matchFinder'
 import { createIntroduction } from '../services/introductions'

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { prompts, getPrompt } from '../src/prompts'
+import { prompts, getPrompt } from '@matchmaker/shared'
 
 describe('Prompts', () => {
 	describe('prompts list', () => {

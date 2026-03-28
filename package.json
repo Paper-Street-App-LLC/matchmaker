@@ -2,8 +2,10 @@
 	"name": "matchmaker-monorepo",
 	"version": "0.1.0",
 	"private": true,
+	"workspaces": ["backend", "mcp-server", "packages/*"],
 	"scripts": {
-		"test": "bun run test:backend && bun run test:mcp",
+		"test": "bun run test:shared && bun run test:backend && bun run test:mcp",
+		"test:shared": "cd packages/shared && bun test",
 		"test:backend": "cd backend && bun test",
 		"test:mcp": "cd mcp-server && bun run test",
 		"get-jwt": "bun run scripts/get-jwt.ts"
