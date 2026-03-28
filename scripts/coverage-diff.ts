@@ -93,14 +93,23 @@ export function generateReport(packages: PackageCoverage[]): string {
 
     const basePct = pct(baseTotal.hit, baseTotal.found);
     const headPct = pct(headTotal.hit, headTotal.found);
-    const deltaPct = headPct - basePct;
+    const isNewPackage = baseTotal.found === 0 && headTotal.found > 0;
 
-    lines.push(
-      "| Metric | main | this PR | +/- |",
-      "|--------|-----:|--------:|----:|",
-      `| Statements | ${baseTotal.found > 0 ? fmtPct(basePct) : "—"} | ${headTotal.found > 0 ? fmtPct(headPct) : "—"} | ${fmtDelta(deltaPct)} |`,
-      ""
-    );
+    if (isNewPackage) {
+      lines.push(
+        `New package — **${fmtPct(headPct)}** line coverage (${headTotal.hit}/${headTotal.found} lines)`,
+        ""
+      );
+    } else {
+      const deltaPct = headPct - basePct;
+
+      lines.push(
+        "| Metric | main | this PR | +/- |",
+        "|--------|-----:|--------:|----:|",
+        `| Statements | ${baseTotal.found > 0 ? fmtPct(basePct) : "—"} | ${headTotal.found > 0 ? fmtPct(headPct) : "—"} | ${fmtDelta(deltaPct)} |`,
+        ""
+      );
+    }
 
     // Collect changed files
     const allFiles = new Set([
@@ -149,16 +158,28 @@ export function generateReport(packages: PackageCoverage[]): string {
     }
 
     if (changedFiles.length > 0) {
-      lines.push(
-        "<details><summary>Files with coverage changes</summary>",
-        "",
-        "| File | main | this PR | +/- |",
-        "|------|-----:|--------:|----:|"
-      );
-      for (const cf of changedFiles) {
+      if (isNewPackage) {
         lines.push(
-          `| ${cf.file} | ${cf.baseStr} | ${cf.headStr} | ${cf.deltaStr} |`
+          "<details><summary>File coverage</summary>",
+          "",
+          "| File | Coverage |",
+          "|------|--------:|"
         );
+        for (const cf of changedFiles) {
+          lines.push(`| ${cf.file} | ${cf.headStr} |`);
+        }
+      } else {
+        lines.push(
+          "<details><summary>Files with coverage changes</summary>",
+          "",
+          "| File | main | this PR | +/- |",
+          "|------|-----:|--------:|----:|"
+        );
+        for (const cf of changedFiles) {
+          lines.push(
+            `| ${cf.file} | ${cf.baseStr} | ${cf.headStr} | ${cf.deltaStr} |`
+          );
+        }
       }
       lines.push("", "</details>", "");
     }
