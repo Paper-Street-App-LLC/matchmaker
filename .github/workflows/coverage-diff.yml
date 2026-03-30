@@ -29,6 +29,7 @@ jobs:
           cd backend && bun install --frozen-lockfile
           cd "$GITHUB_WORKSPACE/mcp-server" && bun install --frozen-lockfile
           cd "$GITHUB_WORKSPACE/packages/shared" && bun install --frozen-lockfile
+          cd "$GITHUB_WORKSPACE/gateway" && bun install --frozen-lockfile
 
       - name: Install dependencies (base)
         run: |
@@ -36,6 +37,9 @@ jobs:
           cd "$GITHUB_WORKSPACE/__base/mcp-server" && bun install --frozen-lockfile
           if [ -d "$GITHUB_WORKSPACE/__base/packages/shared" ]; then
             cd "$GITHUB_WORKSPACE/__base/packages/shared" && bun install --frozen-lockfile
+          fi
+          if [ -d "$GITHUB_WORKSPACE/__base/gateway" ]; then
+            cd "$GITHUB_WORKSPACE/__base/gateway" && bun install --frozen-lockfile
           fi
 
       - name: Run tests with coverage (PR - backend)
@@ -65,6 +69,15 @@ jobs:
             cd __base/packages/shared && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/shared || true
           fi
 
+      - name: Run tests with coverage (PR - gateway)
+        run: cd gateway && bun test --coverage --coverage-reporter=lcov --coverage-dir=../coverage/pr/gateway || true
+
+      - name: Run tests with coverage (base - gateway)
+        run: |
+          if [ -d __base/gateway ]; then
+            cd __base/gateway && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/gateway || true
+          fi
+
       - name: Generate coverage diff
         id: diff
         run: |
@@ -72,7 +85,8 @@ jobs:
             "backend:coverage/base/backend/lcov.info:coverage/pr/backend/lcov.info" \
             "mcp-server:coverage/base/mcp-server/lcov.info:coverage/pr/mcp-server/lcov.info" \
             "scripts:coverage/base/scripts/lcov.info:coverage/pr/scripts/lcov.info" \
-            "shared:coverage/base/shared/lcov.info:coverage/pr/shared/lcov.info")
+            "shared:coverage/base/shared/lcov.info:coverage/pr/shared/lcov.info" \
+            "gateway:coverage/base/gateway/lcov.info:coverage/pr/gateway/lcov.info")
           echo "report<<EOF" >> "$GITHUB_OUTPUT"
           echo "$REPORT" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
