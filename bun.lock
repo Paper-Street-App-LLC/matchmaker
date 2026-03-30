@@ -29,6 +29,19 @@
         "typescript": "^5.3.3",
       },
     },
+    "gateway": {
+      "name": "@matchmaker/gateway",
+      "version": "0.1.0",
+      "dependencies": {
+        "@hono/zod-validator": "^0.7.6",
+        "hono": "^4.0.0",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.0.0",
+        "typescript": "^5.3.3",
+      },
+    },
     "mcp-server": {
       "name": "@matchmaker/mcp-server",
       "version": "0.1.0",
@@ -73,6 +86,8 @@
     "@inquirer/type": ["@inquirer/type@3.0.10", "", { "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-BvziSRxfz5Ov8ch0z/n3oijRSEcEsHnhggm4xFZe93DHcUCTlutlq9Ox4SVENAfcRD22UQq7T/atg9Wr3k09eA=="],
 
     "@matchmaker/backend": ["@matchmaker/backend@workspace:backend"],
+
+    "@matchmaker/gateway": ["@matchmaker/gateway@workspace:gateway"],
 
     "@matchmaker/mcp-server": ["@matchmaker/mcp-server@workspace:mcp-server"],
 
