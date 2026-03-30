@@ -66,7 +66,7 @@ jobs:
       - name: Run tests with coverage (base - shared)
         run: |
           if [ -d __base/packages/shared ]; then
-            cd __base/packages/shared && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/base/shared || true
+            cd __base/packages/shared && bun test --coverage --coverage-reporter=lcov --coverage-dir=../../../coverage/base/shared || true
           fi
 
       - name: Run tests with coverage (PR - gateway)
