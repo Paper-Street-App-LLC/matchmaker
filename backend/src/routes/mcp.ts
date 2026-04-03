@@ -50,7 +50,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 	app.use(
 		'*',
 		cors({
-			origin: 'https://claude.ai',
+			origin: origin => (origin === 'https://claude.ai' || !origin ? origin || '*' : null),
 			allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
 			allowHeaders: ['Authorization', 'Content-Type', 'Accept', 'Mcp-Session-Id'],
 			exposeHeaders: ['Mcp-Session-Id'],
@@ -784,7 +784,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 		// Create transport in stateless mode (no session ID generator)
 		let transport = new WebStandardStreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
-			enableJsonResponse: false,
+			enableJsonResponse: true,
 		})
 
 		// Create and connect MCP server

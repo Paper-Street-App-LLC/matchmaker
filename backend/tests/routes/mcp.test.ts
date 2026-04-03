@@ -83,7 +83,7 @@ describe('MCP Routes', () => {
 			expect(res.status).toBe(401)
 		})
 
-		test('accepts valid MCP initialize request and returns SSE stream', async () => {
+		test('accepts valid MCP initialize request and returns JSON response', async () => {
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
 				headers: {
@@ -107,7 +107,7 @@ describe('MCP Routes', () => {
 			expect(res.status).toBe(200)
 
 			let contentType = res.headers.get('Content-Type')
-			expect(contentType).toContain('text/event-stream')
+			expect(contentType).toContain('application/json')
 		})
 
 		test('returns 400 for malformed JSON-RPC request', async () => {
@@ -149,9 +149,9 @@ describe('MCP Routes', () => {
 			let initRes = await app.fetch(initReq)
 			expect(initRes.status).toBe(200)
 
-			// Read the SSE response to get initialization result
-			let initBody = await initRes.text()
-			expect(initBody).toContain('matchmaker-mcp')
+			// Parse JSON response to get initialization result
+			let initBody = await initRes.json()
+			expect(initBody.result.serverInfo.name).toBe('matchmaker-mcp')
 		})
 	})
 
@@ -171,6 +171,38 @@ describe('MCP Routes', () => {
 
 			let allowOrigin = res.headers.get('Access-Control-Allow-Origin')
 			expect(allowOrigin).toBe('https://claude.ai')
+		})
+
+		test('allows requests with no Origin header (React Native)', async () => {
+			let req = new Request('http://localhost/mcp', {
+				method: 'OPTIONS',
+				headers: {
+					'Access-Control-Request-Method': 'POST',
+					'Access-Control-Request-Headers': 'Authorization, Content-Type',
+				},
+			})
+
+			let res = await app.fetch(req)
+			expect(res.status).toBe(204)
+
+			let allowOrigin = res.headers.get('Access-Control-Allow-Origin')
+			expect(allowOrigin).toBe('*')
+		})
+
+		test('blocks requests from unknown origins', async () => {
+			let req = new Request('http://localhost/mcp', {
+				method: 'OPTIONS',
+				headers: {
+					Origin: 'https://evil.com',
+					'Access-Control-Request-Method': 'POST',
+					'Access-Control-Request-Headers': 'Authorization, Content-Type',
+				},
+			})
+
+			let res = await app.fetch(req)
+
+			let allowOrigin = res.headers.get('Access-Control-Allow-Origin')
+			expect(allowOrigin).toBeNull()
 		})
 
 		test('includes necessary CORS headers in response', async () => {
@@ -382,25 +414,8 @@ describe('MCP Routes', () => {
 				let res = await app.fetch(req)
 				expect(res.status).toBe(200)
 
-				let body = await res.text()
-				let lines = body.split('\n')
-				let promptsListResult = null
-
-				for (let line of lines) {
-					if (line.startsWith('data:')) {
-						try {
-							let jsonStr = line.slice(5).trim()
-							if (!jsonStr) continue
-							let data = JSON.parse(jsonStr)
-							if (data.result?.prompts) {
-								promptsListResult = data.result
-								break
-							}
-						} catch {
-							// Skip non-JSON lines
-						}
-					}
-				}
+				let body = await res.json()
+				let promptsListResult = body.result
 
 				expect(promptsListResult).not.toBeNull()
 				expect(promptsListResult.prompts).toBeArray()
@@ -436,25 +451,8 @@ describe('MCP Routes', () => {
 				let res = await app.fetch(req)
 				expect(res.status).toBe(200)
 
-				let body = await res.text()
-				let lines = body.split('\n')
-				let promptResult = null
-
-				for (let line of lines) {
-					if (line.startsWith('data:')) {
-						try {
-							let jsonStr = line.slice(5).trim()
-							if (!jsonStr) continue
-							let data = JSON.parse(jsonStr)
-							if (data.result?.messages) {
-								promptResult = data.result
-								break
-							}
-						} catch {
-							// Skip non-JSON lines
-						}
-					}
-				}
+				let body = await res.json()
+				let promptResult = body.result
 
 				expect(promptResult).not.toBeNull()
 				expect(promptResult.messages).toBeArray()
@@ -487,28 +485,9 @@ describe('MCP Routes', () => {
 				let res = await app.fetch(req)
 				expect(res.status).toBe(200) // MCP returns 200 with error in body
 
-				let body = await res.text()
-				let lines = body.split('\n')
-				let errorResult = null
-
-				for (let line of lines) {
-					if (line.startsWith('data:')) {
-						try {
-							let jsonStr = line.slice(5).trim()
-							if (!jsonStr) continue
-							let data = JSON.parse(jsonStr)
-							if (data.error) {
-								errorResult = data.error
-								break
-							}
-						} catch {
-							// Skip non-JSON lines
-						}
-					}
-				}
-
-				expect(errorResult).not.toBeNull()
-				expect(errorResult.message).toContain('unknown_prompt')
+				let body = await res.json()
+				expect(body.error).not.toBeNull()
+				expect(body.error.message).toContain('unknown_prompt')
 			})
 		})
 	})
@@ -637,26 +616,9 @@ describe('MCP Routes', () => {
 			let res = await notFoundApp.fetch(req)
 			expect(res.status).toBe(200)
 
-			let body = await res.text()
-			let lines = body.split('\n')
-			let hasNotFoundError = false
-			for (let line of lines) {
-				if (line.startsWith('data:')) {
-					try {
-						let data = JSON.parse(line.slice(5).trim())
-						if (
-							data.result?.isError === true &&
-							data.result?.content?.[0]?.text === 'Error: Introduction not found'
-						) {
-							hasNotFoundError = true
-							break
-						}
-					} catch {
-						// Skip non-JSON lines
-					}
-				}
-			}
-			expect(hasNotFoundError).toBe(true)
+			let body = await res.json()
+			expect(body.result?.isError).toBe(true)
+			expect(body.result?.content?.[0]?.text).toBe('Error: Introduction not found')
 		})
 
 		test('MCP tool error responses follow specification format', async () => {
@@ -715,35 +677,15 @@ describe('MCP Routes', () => {
 			let res = await errorApp.fetch(toolReq)
 			expect(res.status).toBe(200) // MCP returns 200 with error in body
 
-			let body = await res.text()
+			let body = await res.json()
 
-			// Parse SSE response to find the tool result
-			// SSE format: "data: {...}\n\n"
-			let hasErrorResponse = false
-			let lines = body.split('\n')
-			for (let line of lines) {
-				if (line.startsWith('data:')) {
-					try {
-						let jsonStr = line.slice(5).trim()
-						if (!jsonStr) continue
-						let data = JSON.parse(jsonStr)
-						// MCP error format: isError: true with content array containing error message
-						if (data.result?.isError === true && Array.isArray(data.result?.content)) {
-							let textContent = data.result.content.find(
-								(c: { type: string; text?: string }) => c.type === 'text'
-							)
-							if (textContent && textContent.text.startsWith('Error:')) {
-								hasErrorResponse = true
-								break
-							}
-						}
-					} catch {
-						// Skip non-JSON lines
-					}
-				}
-			}
-
-			expect(hasErrorResponse).toBe(true)
+			// JSON response contains the tool result directly
+			expect(body.result?.isError).toBe(true)
+			expect(Array.isArray(body.result?.content)).toBe(true)
+			let textContent = body.result.content.find(
+				(c: { type: string; text?: string }) => c.type === 'text'
+			)
+			expect(textContent?.text).toMatch(/^Error:/)
 		})
 
 		test('authentication errors return 401 status', async () => {
