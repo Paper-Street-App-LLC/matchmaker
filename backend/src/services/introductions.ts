@@ -24,12 +24,15 @@ export let createIntroduction = async (
 	introductionRepo: IIntroductionRepository,
 	params: CreateIntroductionParams,
 ): Promise<IntroductionResult> => {
-	let personA = await personRepo.findById(params.person_a_id)
+	let [personA, personB] = await Promise.all([
+		personRepo.findById(params.person_a_id),
+		personRepo.findById(params.person_b_id),
+	])
+
 	if (!personA) {
 		return { data: null, error: { message: 'Person A not found', status: 404 } }
 	}
 
-	let personB = await personRepo.findById(params.person_b_id)
 	if (!personB) {
 		return { data: null, error: { message: 'Person B not found', status: 404 } }
 	}
