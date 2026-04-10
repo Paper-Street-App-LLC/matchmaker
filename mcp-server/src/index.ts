@@ -69,7 +69,60 @@ export function createServer(apiClient: ApiClient) {
 						age: { type: 'number', description: 'Person age' },
 						location: { type: 'string', description: 'Person location' },
 						gender: { type: 'string', description: 'Person gender' },
-						preferences: { type: 'object', description: 'Person preferences' },
+						preferences: {
+							type: 'object',
+							properties: {
+								aboutMe: {
+									type: 'object',
+									properties: {
+										height: { type: 'number', description: 'Height in cm' },
+										build: { type: 'string', enum: ['slim', 'average', 'athletic', 'heavy'] },
+										fitnessLevel: { type: 'string', enum: ['active', 'average', 'sedentary'] },
+										ethnicity: { type: 'string' },
+										religion: { type: 'string' },
+										hasChildren: { type: 'boolean' },
+										numberOfChildren: { type: 'number' },
+										isDivorced: { type: 'boolean' },
+										hasTattoos: { type: 'boolean' },
+										hasPiercings: { type: 'boolean' },
+										isSmoker: { type: 'boolean' },
+										occupation: { type: 'string' },
+										income: { type: 'string', enum: ['high', 'moderate', 'low'] },
+									},
+								},
+								lookingFor: {
+									type: 'object',
+									properties: {
+										ageRange: {
+											type: 'object',
+											properties: {
+												min: { type: 'number' },
+												max: { type: 'number' },
+											},
+										},
+										heightRange: {
+											type: 'object',
+											properties: {
+												min: { type: 'number' },
+												max: { type: 'number' },
+											},
+										},
+										fitnessPreference: { type: 'string', enum: ['active', 'average', 'any'] },
+										ethnicityPreference: { type: 'array', items: { type: 'string' } },
+										incomePreference: { type: 'string', enum: ['high', 'moderate', 'any'] },
+										religionRequired: { type: 'string' },
+										wantsChildren: { type: 'boolean' },
+									},
+								},
+								dealBreakers: {
+									type: 'array',
+									items: {
+										type: 'string',
+										enum: ['isDivorced', 'hasChildren', 'hasTattoos', 'hasPiercings', 'isSmoker'],
+									},
+								},
+							},
+						},
 						personality: { type: 'object', description: 'Person personality traits' },
 						notes: { type: 'string', description: 'Notes about the person' },
 					},
