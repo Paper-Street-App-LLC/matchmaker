@@ -18,21 +18,14 @@ export let createIntroduction = async (
 	let { person_a_id, person_b_id, notes, userId } = params
 
 	// Look up both people to get their matchmaker IDs
-	let { data: personA, error: personAError } = await supabaseClient
-		.from('people')
-		.select('id, matchmaker_id')
-		.eq('id', person_a_id)
-		.single()
+	let [{ data: personA, error: personAError }, { data: personB, error: personBError }] = await Promise.all([
+		supabaseClient.from('people').select('id, matchmaker_id').eq('id', person_a_id).single(),
+		supabaseClient.from('people').select('id, matchmaker_id').eq('id', person_b_id).single(),
+	])
 
 	if (personAError || !personA) {
 		return { data: null, error: { message: 'Person A not found', status: 404 } }
 	}
-
-	let { data: personB, error: personBError } = await supabaseClient
-		.from('people')
-		.select('id, matchmaker_id')
-		.eq('id', person_b_id)
-		.single()
 
 	if (personBError || !personB) {
 		return { data: null, error: { message: 'Person B not found', status: 404 } }
