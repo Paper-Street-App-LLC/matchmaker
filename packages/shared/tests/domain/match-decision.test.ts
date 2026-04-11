@@ -100,16 +100,39 @@ describe('createMatchDecision', () => {
 			).toThrow(InvalidMatchDecisionError)
 		})
 
-		test('throws InvalidMatchDecisionError when decision is declined and declineReason is an empty string', () => {
-			expect(() =>
-				createMatchDecision(baseInput({ decision: 'declined', declineReason: '' })),
-			).toThrow(InvalidMatchDecisionError)
+		test('normalizes empty-string declineReason to null on an accepted decision', () => {
+			let result = createMatchDecision(
+				baseInput({ decision: 'accepted', declineReason: '' }),
+			)
+			expect(result.declineReason).toBeNull()
 		})
 
-		test('throws InvalidMatchDecisionError when decision is declined and declineReason is whitespace', () => {
-			expect(() =>
-				createMatchDecision(baseInput({ decision: 'declined', declineReason: '   ' })),
-			).toThrow(InvalidMatchDecisionError)
+		test('normalizes whitespace declineReason to null on an accepted decision', () => {
+			let result = createMatchDecision(
+				baseInput({ decision: 'accepted', declineReason: '   ' }),
+			)
+			expect(result.declineReason).toBeNull()
+		})
+
+		test('normalizes empty-string declineReason to null on a declined decision', () => {
+			let result = createMatchDecision(
+				baseInput({ decision: 'declined', declineReason: '' }),
+			)
+			expect(result.declineReason).toBeNull()
+		})
+
+		test('normalizes whitespace declineReason to null on a declined decision', () => {
+			let result = createMatchDecision(
+				baseInput({ decision: 'declined', declineReason: '   ' }),
+			)
+			expect(result.declineReason).toBeNull()
+		})
+
+		test('trims surrounding whitespace on a non-empty declineReason', () => {
+			let result = createMatchDecision(
+				baseInput({ decision: 'declined', declineReason: '  incompatible schedules  ' }),
+			)
+			expect(result.declineReason).toBe('incompatible schedules')
 		})
 
 		test('accepts a declined decision with a non-empty declineReason', () => {
