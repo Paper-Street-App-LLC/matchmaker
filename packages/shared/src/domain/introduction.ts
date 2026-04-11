@@ -1,11 +1,6 @@
-/**
- * Introduction domain entity.
- *
- * Links two people across (possibly distinct) matchmakers and tracks the
- * lifecycle status of the match. Framework-free; the adapter layer maps
- * DB rows and Zod shapes into this type.
- */
+/** Introduction domain entity — links two people across matchmakers and tracks match lifecycle. */
 import { DomainError } from './errors.js'
+import { requireNonEmptyString, assertValidDate } from './validators.js'
 
 export class InvalidIntroductionError extends DomainError {
 	constructor(code: string, message: string) {
@@ -48,78 +43,85 @@ const STATUSES: readonly IntroductionStatus[] = [
 	'ended',
 ]
 
-function invalid(code: string, message: string): never {
-	throw new InvalidIntroductionError(code, message)
-}
-
-function requireNonEmptyString(value: string, field: string, code: string): void {
-	if (typeof value !== 'string' || value.trim().length === 0) {
-		invalid(code, `${field} must be a non-empty string`)
-	}
-}
-
-function validateDate(value: Date, field: string, code: string): Date {
-	if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-		invalid(code, `${field} must be a valid Date`)
-	}
-	return value
-}
-
 export function createIntroduction(input: IntroductionInput): Introduction {
-	requireNonEmptyString(input.id, 'id', 'INVALID_INTRODUCTION_ID')
-	requireNonEmptyString(
+	const id = requireNonEmptyString(
+		input.id,
+		'id',
+		'INVALID_INTRODUCTION_ID',
+		InvalidIntroductionError,
+	)
+	// matchmakerAId === matchmakerBId is intentionally allowed: a single matchmaker may
+	// introduce two of their own people without involving a second matchmaker.
+	const matchmakerAId = requireNonEmptyString(
 		input.matchmakerAId,
 		'matchmakerAId',
 		'INVALID_INTRODUCTION_MATCHMAKER_A_ID',
+		InvalidIntroductionError,
 	)
-	requireNonEmptyString(
+	const matchmakerBId = requireNonEmptyString(
 		input.matchmakerBId,
 		'matchmakerBId',
 		'INVALID_INTRODUCTION_MATCHMAKER_B_ID',
+		InvalidIntroductionError,
 	)
-	requireNonEmptyString(input.personAId, 'personAId', 'INVALID_INTRODUCTION_PERSON_A_ID')
-	requireNonEmptyString(input.personBId, 'personBId', 'INVALID_INTRODUCTION_PERSON_B_ID')
+	const personAId = requireNonEmptyString(
+		input.personAId,
+		'personAId',
+		'INVALID_INTRODUCTION_PERSON_A_ID',
+		InvalidIntroductionError,
+	)
+	const personBId = requireNonEmptyString(
+		input.personBId,
+		'personBId',
+		'INVALID_INTRODUCTION_PERSON_B_ID',
+		InvalidIntroductionError,
+	)
 
-	if (input.personAId === input.personBId) {
-		invalid(
+	if (personAId === personBId) {
+		throw new InvalidIntroductionError(
 			'INVALID_INTRODUCTION_SELF',
 			'personAId and personBId must refer to different people',
 		)
 	}
 
-	let status: IntroductionStatus = input.status ?? 'pending'
+	const status: IntroductionStatus = input.status ?? 'pending'
 	if (!STATUSES.includes(status)) {
-		invalid(
+		throw new InvalidIntroductionError(
 			'INVALID_INTRODUCTION_STATUS',
 			`status must be one of ${STATUSES.join(', ')}`,
 		)
 	}
 
-	let createdAt = validateDate(
+	assertValidDate(
 		input.createdAt,
 		'createdAt',
 		'INVALID_INTRODUCTION_CREATED_AT',
+		InvalidIntroductionError,
 	)
-	let updatedAt = validateDate(
+	assertValidDate(
 		input.updatedAt,
 		'updatedAt',
 		'INVALID_INTRODUCTION_UPDATED_AT',
+		InvalidIntroductionError,
 	)
 
-	if (updatedAt.getTime() < createdAt.getTime()) {
-		invalid('INVALID_INTRODUCTION_TIMESTAMPS', 'updatedAt must be >= createdAt')
+	if (input.updatedAt.getTime() < input.createdAt.getTime()) {
+		throw new InvalidIntroductionError(
+			'INVALID_INTRODUCTION_TIMESTAMPS',
+			'updatedAt must be >= createdAt',
+		)
 	}
 
-	let introduction: Introduction = {
-		id: input.id,
-		matchmakerAId: input.matchmakerAId,
-		matchmakerBId: input.matchmakerBId,
-		personAId: input.personAId,
-		personBId: input.personBId,
+	const introduction: Introduction = {
+		id,
+		matchmakerAId,
+		matchmakerBId,
+		personAId,
+		personBId,
 		status,
 		notes: input.notes ?? null,
-		createdAt,
-		updatedAt,
+		createdAt: input.createdAt,
+		updatedAt: input.updatedAt,
 	}
 
 	return Object.freeze(introduction)
