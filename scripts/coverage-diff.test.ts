@@ -56,6 +56,51 @@ end_of_record
       "src/foo.ts": { linesFound: 5, linesHit: 0 },
     });
   });
+
+  it("excludes records whose path escapes the package root", () => {
+    const lcov = `SF:src/local.ts
+LF:10
+LH:8
+end_of_record
+SF:../packages/shared/src/domain/person.ts
+LF:20
+LH:20
+end_of_record
+`;
+    expect(parseLcov(lcov)).toEqual({
+      "src/local.ts": { linesFound: 10, linesHit: 8 },
+    });
+  });
+
+  it("does not contaminate a later local record with an excluded record's counts", () => {
+    const lcov = `SF:../packages/shared/src/domain/person.ts
+LF:100
+LH:100
+end_of_record
+SF:src/local.ts
+LF:10
+LH:3
+end_of_record
+`;
+    expect(parseLcov(lcov)).toEqual({
+      "src/local.ts": { linesFound: 10, linesHit: 3 },
+    });
+  });
+
+  it("applies the cross-workspace exclusion after stripPrefix", () => {
+    const lcov = `SF:/checkout/__base/backend/src/local.ts
+LF:10
+LH:8
+end_of_record
+SF:/checkout/__base/backend/../packages/shared/src/foo.ts
+LF:20
+LH:20
+end_of_record
+`;
+    expect(parseLcov(lcov, "/checkout/__base/backend/")).toEqual({
+      "src/local.ts": { linesFound: 10, linesHit: 8 },
+    });
+  });
 });
 
 describe("generateReport", () => {
@@ -127,6 +172,38 @@ describe("generateReport", () => {
     expect(report).toContain("New package");
     expect(report).toContain("90.0%");
     expect(report).not.toContain("+/-");
+  });
+
+  it("ignores cross-workspace files when computing consumer totals", () => {
+    const baseLcov = `SF:src/local.ts
+LF:10
+LH:8
+end_of_record
+SF:../packages/shared/src/domain/person.ts
+LF:100
+LH:5
+end_of_record
+`;
+    const headLcov = `SF:src/local.ts
+LF:10
+LH:8
+end_of_record
+SF:../packages/shared/src/domain/person.ts
+LF:100
+LH:5
+end_of_record
+`;
+
+    const report = generateReport([
+      {
+        name: "backend",
+        base: parseLcov(baseLcov),
+        head: parseLcov(headLcov),
+      },
+    ]);
+
+    expect(report).toContain("80.0%");
+    expect(report).not.toContain("shared/src/domain/person.ts");
   });
 
   it("only shows changed files in the details section", () => {
