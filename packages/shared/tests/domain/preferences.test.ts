@@ -71,7 +71,16 @@ describe('createPreferences', () => {
 		test('drops unknown top-level keys silently', () => {
 			// @ts-expect-error — deliberately providing an extra key
 			let result = createPreferences({ aboutMe: { height: 170 }, bogus: 'ignored' })
-			expect((result as Record<string, unknown>).bogus).toBeUndefined()
+			expect(Object.prototype.hasOwnProperty.call(result, 'bogus')).toBe(false)
+			expect(result.aboutMe?.height).toBe(170)
+		})
+
+		test('drops unknown keys inside aboutMe silently', () => {
+			let result = createPreferences({
+				// @ts-expect-error — deliberately providing an extra key inside aboutMe
+				aboutMe: { height: 170, rogue: 'nope' },
+			})
+			expect(Object.prototype.hasOwnProperty.call(result.aboutMe, 'rogue')).toBe(false)
 			expect(result.aboutMe?.height).toBe(170)
 		})
 	})
