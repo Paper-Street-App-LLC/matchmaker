@@ -144,6 +144,18 @@ describe('createPreferences', () => {
 			).toThrow(InvalidPreferencesError)
 		})
 
+		test('throws InvalidPreferencesError when ageRange.max is negative', () => {
+			expect(() =>
+				createPreferences({ lookingFor: { ageRange: { max: -5 } } }),
+			).toThrow(InvalidPreferencesError)
+		})
+
+		test('throws InvalidPreferencesError when heightRange.max is NaN', () => {
+			expect(() =>
+				createPreferences({ lookingFor: { heightRange: { max: Number.NaN } } }),
+			).toThrow(InvalidPreferencesError)
+		})
+
 		test('throws InvalidPreferencesError when fitnessPreference is not a known literal', () => {
 			expect(() =>
 				// @ts-expect-error — testing runtime rejection of invalid literal
