@@ -73,25 +73,22 @@ export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
 		)
 	}
 
-	let declineReason: string | null = null
+	// Empty/whitespace declineReason normalizes to null on both branches.
+	// Adapters often coerce missing form fields to '' — treat that as "absent"
+	// rather than a validation error. A meaningful (non-empty) reason on an
+	// accepted decision is still a caller bug and throws.
 	const rawReason = input.declineReason
+	const trimmedReason =
+		typeof rawReason === 'string' && rawReason.trim().length > 0 ? rawReason.trim() : null
 
-	if (input.decision === 'accepted') {
-		if (rawReason !== undefined && rawReason !== null) {
-			throw new InvalidMatchDecisionError(
-				'INVALID_MATCH_DECISION_ACCEPTED_REASON',
-				'declineReason must be null when decision is accepted',
-			)
-		}
-	} else if (rawReason !== undefined && rawReason !== null) {
-		if (typeof rawReason !== 'string' || rawReason.trim().length === 0) {
-			throw new InvalidMatchDecisionError(
-				'INVALID_MATCH_DECISION_DECLINE_REASON',
-				'declineReason must be a non-empty string when provided',
-			)
-		}
-		declineReason = rawReason
+	if (input.decision === 'accepted' && trimmedReason !== null) {
+		throw new InvalidMatchDecisionError(
+			'INVALID_MATCH_DECISION_ACCEPTED_REASON',
+			'declineReason must be null when decision is accepted',
+		)
 	}
+
+	const declineReason = input.decision === 'declined' ? trimmedReason : null
 
 	assertValidDate(
 		input.createdAt,
