@@ -31,7 +31,7 @@ describe("FAQ", () => {
 
 	it("renders existing FAQs", () => {
 		render(<FAQ />);
-		expect(screen.getByText("What is Matchlight?")).toBeInTheDocument();
+		expect(screen.getByText("What is Matchmaker?")).toBeInTheDocument();
 		expect(
 			screen.getByText("How is this different from apps?"),
 		).toBeInTheDocument();

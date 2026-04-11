@@ -37,7 +37,7 @@ export function HowItWorks() {
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-2xl text-center">
 					<h2 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
-						How Matchlight works
+						How Matchmaker works
 					</h2>
 					<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
 						Your matchmaker is someone who already knows you - a friend, family member, or

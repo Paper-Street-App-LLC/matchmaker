@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Matchlight — Human matchmaking, powered by AI";
+export const alt = "Matchmaker — Human matchmaking, powered by AI";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
