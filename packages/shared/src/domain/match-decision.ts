@@ -1,11 +1,6 @@
-/**
- * MatchDecision domain entity.
- *
- * Records a matchmaker's accept/decline decision for a candidate in
- * relation to a primary person. Has one cross-field rule: declineReason
- * is only meaningful when decision === 'declined'.
- */
+/** MatchDecision domain entity — records a matchmaker's accept/decline decision for a candidate. */
 import { DomainError } from './errors.js'
+import { requireNonEmptyString, assertValidDate } from './validators.js'
 
 export class InvalidMatchDecisionError extends DomainError {
 	constructor(code: string, message: string) {
@@ -38,64 +33,59 @@ export interface MatchDecisionInput {
 
 const DECISIONS: readonly Decision[] = ['accepted', 'declined']
 
-function invalid(code: string, message: string): never {
-	throw new InvalidMatchDecisionError(code, message)
-}
-
-function requireNonEmptyString(value: string, field: string, code: string): void {
-	if (typeof value !== 'string' || value.trim().length === 0) {
-		invalid(code, `${field} must be a non-empty string`)
-	}
-}
-
-function validateDate(value: Date, field: string, code: string): Date {
-	if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-		invalid(code, `${field} must be a valid Date`)
-	}
-	return value
-}
-
 export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
-	requireNonEmptyString(input.id, 'id', 'INVALID_MATCH_DECISION_ID')
-	requireNonEmptyString(
+	const id = requireNonEmptyString(
+		input.id,
+		'id',
+		'INVALID_MATCH_DECISION_ID',
+		InvalidMatchDecisionError,
+	)
+	const matchmakerId = requireNonEmptyString(
 		input.matchmakerId,
 		'matchmakerId',
 		'INVALID_MATCH_DECISION_MATCHMAKER_ID',
+		InvalidMatchDecisionError,
 	)
-	requireNonEmptyString(input.personId, 'personId', 'INVALID_MATCH_DECISION_PERSON_ID')
-	requireNonEmptyString(
+	const personId = requireNonEmptyString(
+		input.personId,
+		'personId',
+		'INVALID_MATCH_DECISION_PERSON_ID',
+		InvalidMatchDecisionError,
+	)
+	const candidateId = requireNonEmptyString(
 		input.candidateId,
 		'candidateId',
 		'INVALID_MATCH_DECISION_CANDIDATE_ID',
+		InvalidMatchDecisionError,
 	)
 
-	if (input.personId === input.candidateId) {
-		invalid(
+	if (personId === candidateId) {
+		throw new InvalidMatchDecisionError(
 			'INVALID_MATCH_DECISION_SELF',
 			'personId and candidateId must refer to different people',
 		)
 	}
 
 	if (!DECISIONS.includes(input.decision)) {
-		invalid(
+		throw new InvalidMatchDecisionError(
 			'INVALID_MATCH_DECISION_DECISION',
 			`decision must be one of ${DECISIONS.join(', ')}`,
 		)
 	}
 
 	let declineReason: string | null = null
-	let rawReason = input.declineReason
+	const rawReason = input.declineReason
 
 	if (input.decision === 'accepted') {
 		if (rawReason !== undefined && rawReason !== null) {
-			invalid(
+			throw new InvalidMatchDecisionError(
 				'INVALID_MATCH_DECISION_ACCEPTED_REASON',
 				'declineReason must be null when decision is accepted',
 			)
 		}
 	} else if (rawReason !== undefined && rawReason !== null) {
 		if (typeof rawReason !== 'string' || rawReason.trim().length === 0) {
-			invalid(
+			throw new InvalidMatchDecisionError(
 				'INVALID_MATCH_DECISION_DECLINE_REASON',
 				'declineReason must be a non-empty string when provided',
 			)
@@ -103,20 +93,21 @@ export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
 		declineReason = rawReason
 	}
 
-	let createdAt = validateDate(
+	assertValidDate(
 		input.createdAt,
 		'createdAt',
 		'INVALID_MATCH_DECISION_CREATED_AT',
+		InvalidMatchDecisionError,
 	)
 
-	let decision: MatchDecision = {
-		id: input.id,
-		matchmakerId: input.matchmakerId,
-		personId: input.personId,
-		candidateId: input.candidateId,
+	const decision: MatchDecision = {
+		id,
+		matchmakerId,
+		personId,
+		candidateId,
 		decision: input.decision,
 		declineReason,
-		createdAt,
+		createdAt: input.createdAt,
 	}
 
 	return Object.freeze(decision)

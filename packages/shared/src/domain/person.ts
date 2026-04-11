@@ -1,16 +1,6 @@
-/**
- * Person domain entity.
- *
- * Framework-free representation of a person tracked by a matchmaker.
- * Snake_case DB columns map to camelCase here; ISO timestamp strings
- * map to `Date`. Adapter layer owns the mapping — this module speaks
- * only in domain types.
- *
- * `preferences` stays typed as `Record<string, unknown> | null` in this
- * issue. A later issue in the Clean Architecture epic will tighten it
- * to the `Preferences` value object once existing rows are audited.
- */
+/** Person domain entity — framework-free representation of a person tracked by a matchmaker. */
 import { DomainError } from './errors.js'
+import { requireNonEmptyString, assertValidDate } from './validators.js'
 
 export class InvalidPersonError extends DomainError {
 	constructor(code: string, message: string) {
@@ -49,24 +39,6 @@ export interface PersonInput {
 	readonly updatedAt: Date
 }
 
-function invalid(code: string, message: string): never {
-	throw new InvalidPersonError(code, message)
-}
-
-function requireNonEmptyString(value: string, field: string, code: string): string {
-	if (typeof value !== 'string' || value.trim().length === 0) {
-		invalid(code, `${field} must be a non-empty string`)
-	}
-	return value
-}
-
-function validateDate(value: Date, field: string, code: string): Date {
-	if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-		invalid(code, `${field} must be a valid Date`)
-	}
-	return value
-}
-
 function freezeRecord(
 	value: Record<string, unknown> | null | undefined,
 ): Readonly<Record<string, unknown>> | null {
@@ -75,8 +47,8 @@ function freezeRecord(
 }
 
 export function createPerson(input: PersonInput): Person {
-	requireNonEmptyString(input.id, 'id', 'INVALID_PERSON_ID')
-	requireNonEmptyString(input.name, 'name', 'INVALID_PERSON_NAME')
+	const id = requireNonEmptyString(input.id, 'id', 'INVALID_PERSON_ID', InvalidPersonError)
+	const name = requireNonEmptyString(input.name, 'name', 'INVALID_PERSON_NAME', InvalidPersonError)
 
 	let age: number | null = null
 	if (input.age !== undefined && input.age !== null) {
@@ -86,32 +58,35 @@ export function createPerson(input: PersonInput): Person {
 			!Number.isInteger(input.age) ||
 			input.age < 18
 		) {
-			invalid('INVALID_PERSON_AGE', 'age must be an integer >= 18 when provided')
+			throw new InvalidPersonError(
+				'INVALID_PERSON_AGE',
+				'age must be an integer >= 18 when provided',
+			)
 		}
 		age = input.age
 	}
 
 	let matchmakerId: string | null = null
 	if (input.matchmakerId !== undefined && input.matchmakerId !== null) {
-		requireNonEmptyString(
+		matchmakerId = requireNonEmptyString(
 			input.matchmakerId,
 			'matchmakerId',
 			'INVALID_PERSON_MATCHMAKER_ID',
+			InvalidPersonError,
 		)
-		matchmakerId = input.matchmakerId
 	}
 
-	let createdAt = validateDate(input.createdAt, 'createdAt', 'INVALID_PERSON_CREATED_AT')
-	let updatedAt = validateDate(input.updatedAt, 'updatedAt', 'INVALID_PERSON_UPDATED_AT')
+	assertValidDate(input.createdAt, 'createdAt', 'INVALID_PERSON_CREATED_AT', InvalidPersonError)
+	assertValidDate(input.updatedAt, 'updatedAt', 'INVALID_PERSON_UPDATED_AT', InvalidPersonError)
 
-	if (updatedAt.getTime() < createdAt.getTime()) {
-		invalid('INVALID_PERSON_TIMESTAMPS', 'updatedAt must be >= createdAt')
+	if (input.updatedAt.getTime() < input.createdAt.getTime()) {
+		throw new InvalidPersonError('INVALID_PERSON_TIMESTAMPS', 'updatedAt must be >= createdAt')
 	}
 
-	let person: Person = {
-		id: input.id,
+	const person: Person = {
+		id,
 		matchmakerId,
-		name: input.name,
+		name,
 		age,
 		location: input.location ?? null,
 		gender: input.gender ?? null,
@@ -119,8 +94,8 @@ export function createPerson(input: PersonInput): Person {
 		personality: freezeRecord(input.personality),
 		notes: input.notes ?? null,
 		active: input.active ?? true,
-		createdAt,
-		updatedAt,
+		createdAt: input.createdAt,
+		updatedAt: input.updatedAt,
 	}
 
 	return Object.freeze(person)
