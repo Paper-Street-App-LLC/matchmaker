@@ -1,14 +1,4 @@
-/**
- * Preferences value object for the domain layer.
- *
- * Framework-free representation of a person's self-description (aboutMe),
- * candidate preferences (lookingFor), and deal breakers. Part of Clean
- * Architecture — no Zod, Supabase, or Hono imports here.
- *
- * Nullability convention: `lookingFor.religionRequired` and `lookingFor.wantsChildren`
- * explicitly allow `null` to encode "no requirement." All other fields use optional
- * (`?`) — omitted means "not specified."
- */
+/** Preferences value object — framework-free aboutMe / lookingFor / dealBreakers shape. */
 import { DomainError } from './errors.js'
 
 export class InvalidPreferencesError extends DomainError {
@@ -69,6 +59,8 @@ export interface Preferences {
 
 export type PreferencesInput = Preferences
 
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }
+
 const BUILDS: readonly Build[] = ['slim', 'average', 'athletic', 'heavy']
 const FITNESS_LEVELS: readonly FitnessLevel[] = ['active', 'average', 'sedentary']
 const INCOMES: readonly Income[] = ['high', 'moderate', 'low']
@@ -98,10 +90,7 @@ function validateAboutMe(aboutMe: AboutMe): AboutMe {
 	}
 
 	if (aboutMe.numberOfChildren !== undefined) {
-		if (
-			!Number.isInteger(aboutMe.numberOfChildren) ||
-			(aboutMe.numberOfChildren as number) < 0
-		) {
+		if (!Number.isInteger(aboutMe.numberOfChildren) || aboutMe.numberOfChildren < 0) {
 			invalid(
 				'INVALID_PREFERENCES_NUMBER_OF_CHILDREN',
 				'aboutMe.numberOfChildren must be a non-negative integer',
@@ -124,11 +113,27 @@ function validateAboutMe(aboutMe: AboutMe): AboutMe {
 		invalid('INVALID_PREFERENCES_INCOME', `aboutMe.income must be one of ${INCOMES.join(', ')}`)
 	}
 
-	return Object.freeze({ ...aboutMe })
+	// Whitelist-copy known keys so unknown runtime keys are dropped (symmetric with
+	// the top-level behavior in createPreferences).
+	const out: Mutable<AboutMe> = {}
+	if (aboutMe.height !== undefined) out.height = aboutMe.height
+	if (aboutMe.build !== undefined) out.build = aboutMe.build
+	if (aboutMe.fitnessLevel !== undefined) out.fitnessLevel = aboutMe.fitnessLevel
+	if (aboutMe.ethnicity !== undefined) out.ethnicity = aboutMe.ethnicity
+	if (aboutMe.religion !== undefined) out.religion = aboutMe.religion
+	if (aboutMe.hasChildren !== undefined) out.hasChildren = aboutMe.hasChildren
+	if (aboutMe.numberOfChildren !== undefined) out.numberOfChildren = aboutMe.numberOfChildren
+	if (aboutMe.isDivorced !== undefined) out.isDivorced = aboutMe.isDivorced
+	if (aboutMe.hasTattoos !== undefined) out.hasTattoos = aboutMe.hasTattoos
+	if (aboutMe.hasPiercings !== undefined) out.hasPiercings = aboutMe.hasPiercings
+	if (aboutMe.isSmoker !== undefined) out.isSmoker = aboutMe.isSmoker
+	if (aboutMe.occupation !== undefined) out.occupation = aboutMe.occupation
+	if (aboutMe.income !== undefined) out.income = aboutMe.income
+	return Object.freeze(out)
 }
 
 function validateRange(range: Range, label: string): Range {
-	let { min, max } = range
+	const { min, max } = range
 
 	if (min !== undefined) {
 		if (!isFiniteNumber(min) || min < 0) {
@@ -152,19 +157,14 @@ function validateRange(range: Range, label: string): Range {
 		invalid('INVALID_PREFERENCES_RANGE_ORDER', `${label}.min must be <= ${label}.max`)
 	}
 
-	return Object.freeze({ ...range })
+	const out: Mutable<Range> = {}
+	if (min !== undefined) out.min = min
+	if (max !== undefined) out.max = max
+	return Object.freeze(out)
 }
 
 function validateLookingFor(lookingFor: LookingFor): LookingFor {
-	let out: {
-		ageRange?: Range
-		heightRange?: Range
-		fitnessPreference?: FitnessPreference
-		ethnicityPreference?: readonly string[]
-		incomePreference?: IncomePreference
-		religionRequired?: string | null
-		wantsChildren?: boolean | null
-	} = {}
+	const out: Mutable<LookingFor> = {}
 
 	if (lookingFor.ageRange !== undefined) {
 		out.ageRange = validateRange(lookingFor.ageRange, 'lookingFor.ageRange')
@@ -195,7 +195,7 @@ function validateLookingFor(lookingFor: LookingFor): LookingFor {
 	}
 
 	if (lookingFor.ethnicityPreference !== undefined) {
-		for (let entry of lookingFor.ethnicityPreference) {
+		for (const entry of lookingFor.ethnicityPreference) {
 			if (typeof entry !== 'string') {
 				invalid(
 					'INVALID_PREFERENCES_ETHNICITY_PREFERENCE',
@@ -218,8 +218,8 @@ function validateLookingFor(lookingFor: LookingFor): LookingFor {
 }
 
 function validateDealBreakers(dealBreakers: readonly DealBreaker[]): readonly DealBreaker[] {
-	let seen = new Set<DealBreaker>()
-	for (let entry of dealBreakers) {
+	const seen = new Set<DealBreaker>()
+	for (const entry of dealBreakers) {
 		if (!DEAL_BREAKERS.includes(entry)) {
 			invalid(
 				'INVALID_PREFERENCES_DEAL_BREAKER',
@@ -238,11 +238,7 @@ function validateDealBreakers(dealBreakers: readonly DealBreaker[]): readonly De
 }
 
 export function createPreferences(input: PreferencesInput): Preferences {
-	let out: {
-		aboutMe?: AboutMe
-		lookingFor?: LookingFor
-		dealBreakers?: readonly DealBreaker[]
-	} = {}
+	const out: Mutable<Preferences> = {}
 
 	if (input.aboutMe !== undefined) {
 		out.aboutMe = validateAboutMe(input.aboutMe)
