@@ -47,8 +47,8 @@ function freezeRecord(
 }
 
 export function createPerson(input: PersonInput): Person {
-	const id = requireNonEmptyString(input.id, 'id', 'INVALID_PERSON_ID', InvalidPersonError)
-	const name = requireNonEmptyString(input.name, 'name', 'INVALID_PERSON_NAME', InvalidPersonError)
+	let id = requireNonEmptyString(input.id, 'id', 'INVALID_PERSON_ID', InvalidPersonError)
+	let name = requireNonEmptyString(input.name, 'name', 'INVALID_PERSON_NAME', InvalidPersonError)
 
 	let age: number | null = null
 	if (input.age !== undefined && input.age !== null) {
@@ -83,7 +83,7 @@ export function createPerson(input: PersonInput): Person {
 		throw new InvalidPersonError('INVALID_PERSON_TIMESTAMPS', 'updatedAt must be >= createdAt')
 	}
 
-	const person: Person = {
+	let person: Person = {
 		id,
 		matchmakerId,
 		name,
