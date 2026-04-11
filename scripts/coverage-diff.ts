@@ -29,7 +29,9 @@ export function parseLcov(content: string, stripPrefix?: string): CoverageMap {
       if (stripPrefix && filePath.startsWith(stripPrefix)) {
         filePath = filePath.slice(stripPrefix.length);
       }
-      currentFile = filePath;
+      // Paths escaping the package root belong to a sibling workspace;
+      // drop the record so it doesn't inflate this package's totals.
+      currentFile = filePath.startsWith("../") ? null : filePath;
       linesFound = 0;
       linesHit = 0;
     } else if (trimmed.startsWith("LF:")) {
