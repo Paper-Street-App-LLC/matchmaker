@@ -35,7 +35,7 @@ export interface IntroductionInput {
 	readonly updatedAt: Date
 }
 
-const STATUSES: readonly IntroductionStatus[] = [
+let STATUSES: readonly IntroductionStatus[] = [
 	'pending',
 	'accepted',
 	'declined',
@@ -44,7 +44,7 @@ const STATUSES: readonly IntroductionStatus[] = [
 ]
 
 export function createIntroduction(input: IntroductionInput): Introduction {
-	const id = requireNonEmptyString(
+	let id = requireNonEmptyString(
 		input.id,
 		'id',
 		'INVALID_INTRODUCTION_ID',
@@ -52,25 +52,25 @@ export function createIntroduction(input: IntroductionInput): Introduction {
 	)
 	// matchmakerAId === matchmakerBId is intentionally allowed: a single matchmaker may
 	// introduce two of their own people without involving a second matchmaker.
-	const matchmakerAId = requireNonEmptyString(
+	let matchmakerAId = requireNonEmptyString(
 		input.matchmakerAId,
 		'matchmakerAId',
 		'INVALID_INTRODUCTION_MATCHMAKER_A_ID',
 		InvalidIntroductionError,
 	)
-	const matchmakerBId = requireNonEmptyString(
+	let matchmakerBId = requireNonEmptyString(
 		input.matchmakerBId,
 		'matchmakerBId',
 		'INVALID_INTRODUCTION_MATCHMAKER_B_ID',
 		InvalidIntroductionError,
 	)
-	const personAId = requireNonEmptyString(
+	let personAId = requireNonEmptyString(
 		input.personAId,
 		'personAId',
 		'INVALID_INTRODUCTION_PERSON_A_ID',
 		InvalidIntroductionError,
 	)
-	const personBId = requireNonEmptyString(
+	let personBId = requireNonEmptyString(
 		input.personBId,
 		'personBId',
 		'INVALID_INTRODUCTION_PERSON_B_ID',
@@ -84,7 +84,7 @@ export function createIntroduction(input: IntroductionInput): Introduction {
 		)
 	}
 
-	const status: IntroductionStatus = input.status ?? 'pending'
+	let status: IntroductionStatus = input.status ?? 'pending'
 	if (!STATUSES.includes(status)) {
 		throw new InvalidIntroductionError(
 			'INVALID_INTRODUCTION_STATUS',
@@ -112,7 +112,7 @@ export function createIntroduction(input: IntroductionInput): Introduction {
 		)
 	}
 
-	const introduction: Introduction = {
+	let introduction: Introduction = {
 		id,
 		matchmakerAId,
 		matchmakerBId,

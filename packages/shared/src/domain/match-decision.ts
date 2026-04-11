@@ -31,28 +31,28 @@ export interface MatchDecisionInput {
 	readonly createdAt: Date
 }
 
-const DECISIONS: readonly Decision[] = ['accepted', 'declined']
+let DECISIONS: readonly Decision[] = ['accepted', 'declined']
 
 export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
-	const id = requireNonEmptyString(
+	let id = requireNonEmptyString(
 		input.id,
 		'id',
 		'INVALID_MATCH_DECISION_ID',
 		InvalidMatchDecisionError,
 	)
-	const matchmakerId = requireNonEmptyString(
+	let matchmakerId = requireNonEmptyString(
 		input.matchmakerId,
 		'matchmakerId',
 		'INVALID_MATCH_DECISION_MATCHMAKER_ID',
 		InvalidMatchDecisionError,
 	)
-	const personId = requireNonEmptyString(
+	let personId = requireNonEmptyString(
 		input.personId,
 		'personId',
 		'INVALID_MATCH_DECISION_PERSON_ID',
 		InvalidMatchDecisionError,
 	)
-	const candidateId = requireNonEmptyString(
+	let candidateId = requireNonEmptyString(
 		input.candidateId,
 		'candidateId',
 		'INVALID_MATCH_DECISION_CANDIDATE_ID',
@@ -77,8 +77,8 @@ export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
 	// Adapters often coerce missing form fields to '' — treat that as "absent"
 	// rather than a validation error. A meaningful (non-empty) reason on an
 	// accepted decision is still a caller bug and throws.
-	const rawReason = input.declineReason
-	const trimmedReason =
+	let rawReason = input.declineReason
+	let trimmedReason =
 		typeof rawReason === 'string' && rawReason.trim().length > 0 ? rawReason.trim() : null
 
 	if (input.decision === 'accepted' && trimmedReason !== null) {
@@ -88,7 +88,7 @@ export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
 		)
 	}
 
-	const declineReason = input.decision === 'declined' ? trimmedReason : null
+	let declineReason = input.decision === 'declined' ? trimmedReason : null
 
 	assertValidDate(
 		input.createdAt,
@@ -97,7 +97,7 @@ export function createMatchDecision(input: MatchDecisionInput): MatchDecision {
 		InvalidMatchDecisionError,
 	)
 
-	const decision: MatchDecision = {
+	let decision: MatchDecision = {
 		id,
 		matchmakerId,
 		personId,

@@ -61,12 +61,12 @@ export type PreferencesInput = Preferences
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
-const BUILDS: readonly Build[] = ['slim', 'average', 'athletic', 'heavy']
-const FITNESS_LEVELS: readonly FitnessLevel[] = ['active', 'average', 'sedentary']
-const INCOMES: readonly Income[] = ['high', 'moderate', 'low']
-const FITNESS_PREFERENCES: readonly FitnessPreference[] = ['active', 'average', 'any']
-const INCOME_PREFERENCES: readonly IncomePreference[] = ['high', 'moderate', 'any']
-const DEAL_BREAKERS: readonly DealBreaker[] = [
+let BUILDS: readonly Build[] = ['slim', 'average', 'athletic', 'heavy']
+let FITNESS_LEVELS: readonly FitnessLevel[] = ['active', 'average', 'sedentary']
+let INCOMES: readonly Income[] = ['high', 'moderate', 'low']
+let FITNESS_PREFERENCES: readonly FitnessPreference[] = ['active', 'average', 'any']
+let INCOME_PREFERENCES: readonly IncomePreference[] = ['high', 'moderate', 'any']
+let DEAL_BREAKERS: readonly DealBreaker[] = [
 	'isDivorced',
 	'hasChildren',
 	'hasTattoos',
@@ -115,7 +115,7 @@ function validateAboutMe(aboutMe: AboutMe): AboutMe {
 
 	// Whitelist-copy known keys so unknown runtime keys are dropped (symmetric with
 	// the top-level behavior in createPreferences).
-	const out: Mutable<AboutMe> = {}
+	let out: Mutable<AboutMe> = {}
 	if (aboutMe.height !== undefined) out.height = aboutMe.height
 	if (aboutMe.build !== undefined) out.build = aboutMe.build
 	if (aboutMe.fitnessLevel !== undefined) out.fitnessLevel = aboutMe.fitnessLevel
@@ -133,7 +133,7 @@ function validateAboutMe(aboutMe: AboutMe): AboutMe {
 }
 
 function validateRange(range: Range, label: string): Range {
-	const { min, max } = range
+	let { min, max } = range
 
 	if (min !== undefined) {
 		if (!isFiniteNumber(min) || min < 0) {
@@ -157,14 +157,14 @@ function validateRange(range: Range, label: string): Range {
 		invalid('INVALID_PREFERENCES_RANGE_ORDER', `${label}.min must be <= ${label}.max`)
 	}
 
-	const out: Mutable<Range> = {}
+	let out: Mutable<Range> = {}
 	if (min !== undefined) out.min = min
 	if (max !== undefined) out.max = max
 	return Object.freeze(out)
 }
 
 function validateLookingFor(lookingFor: LookingFor): LookingFor {
-	const out: Mutable<LookingFor> = {}
+	let out: Mutable<LookingFor> = {}
 
 	if (lookingFor.ageRange !== undefined) {
 		out.ageRange = validateRange(lookingFor.ageRange, 'lookingFor.ageRange')
@@ -195,7 +195,7 @@ function validateLookingFor(lookingFor: LookingFor): LookingFor {
 	}
 
 	if (lookingFor.ethnicityPreference !== undefined) {
-		for (const entry of lookingFor.ethnicityPreference) {
+		for (let entry of lookingFor.ethnicityPreference) {
 			if (typeof entry !== 'string') {
 				invalid(
 					'INVALID_PREFERENCES_ETHNICITY_PREFERENCE',
@@ -218,8 +218,8 @@ function validateLookingFor(lookingFor: LookingFor): LookingFor {
 }
 
 function validateDealBreakers(dealBreakers: readonly DealBreaker[]): readonly DealBreaker[] {
-	const seen = new Set<DealBreaker>()
-	for (const entry of dealBreakers) {
+	let seen = new Set<DealBreaker>()
+	for (let entry of dealBreakers) {
 		if (!DEAL_BREAKERS.includes(entry)) {
 			invalid(
 				'INVALID_PREFERENCES_DEAL_BREAKER',
@@ -238,7 +238,7 @@ function validateDealBreakers(dealBreakers: readonly DealBreaker[]): readonly De
 }
 
 export function createPreferences(input: PreferencesInput): Preferences {
-	const out: Mutable<Preferences> = {}
+	let out: Mutable<Preferences> = {}
 
 	if (input.aboutMe !== undefined) {
 		out.aboutMe = validateAboutMe(input.aboutMe)
