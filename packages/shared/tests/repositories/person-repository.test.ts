@@ -51,7 +51,7 @@ describe('IPersonRepository (contract)', () => {
 		expect(Array.isArray(list)).toBe(true)
 	})
 
-	test('PersonUpdate accepts a partial patch without id or createdAt', () => {
+	test('PersonUpdate accepts a partial patch without identity or timestamp fields', () => {
 		let patch: PersonUpdate = { name: 'Renamed', notes: 'updated' }
 		expect(patch.name).toBe('Renamed')
 
@@ -62,6 +62,14 @@ describe('IPersonRepository (contract)', () => {
 		// @ts-expect-error — createdAt must not appear in PersonUpdate
 		let badCreatedAt: PersonUpdate = { createdAt: new Date() }
 		expect(badCreatedAt).toBeDefined()
+
+		// @ts-expect-error — updatedAt is owned by the repository, not the caller
+		let badUpdatedAt: PersonUpdate = { updatedAt: new Date() }
+		expect(badUpdatedAt).toBeDefined()
+
+		// @ts-expect-error — ownership reassignment is not a patch capability
+		let badMatchmaker: PersonUpdate = { matchmakerId: 'mm-2' }
+		expect(badMatchmaker).toBeDefined()
 	})
 
 	test('update returns a Promise<Person> and delete returns Promise<void>', async () => {
