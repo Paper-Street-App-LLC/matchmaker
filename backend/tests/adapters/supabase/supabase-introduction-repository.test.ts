@@ -10,10 +10,10 @@ import { createFakeSupabase } from './helpers'
 
 let validIntroRow = {
 	id: 'aaa-111',
-	person_a_id: 'pa-111',
-	person_b_id: 'pb-222',
-	matchmaker_a_id: 'ma-111',
-	matchmaker_b_id: 'mb-222',
+	person_a_id: 'a1a1-111',
+	person_b_id: 'b2b2-222',
+	matchmaker_a_id: 'aa-111',
+	matchmaker_b_id: 'bb-222',
 	status: 'pending',
 	notes: null,
 	created_at: '2026-01-01T00:00:00.000Z',
@@ -43,10 +43,10 @@ describe('SupabaseIntroductionRepository.findById', () => {
 
 		expect(result).not.toBeNull()
 		expect(result?.id).toBe(validIntroRow.id)
-		expect(result?.matchmakerAId).toBe('ma-111')
-		expect(result?.matchmakerBId).toBe('mb-222')
-		expect(result?.personAId).toBe('pa-111')
-		expect(result?.personBId).toBe('pb-222')
+		expect(result?.matchmakerAId).toBe('aa-111')
+		expect(result?.matchmakerBId).toBe('bb-222')
+		expect(result?.personAId).toBe('a1a1-111')
+		expect(result?.personBId).toBe('b2b2-222')
 		expect(result?.status).toBe('pending')
 		expect(result?.createdAt).toBeInstanceOf(Date)
 		expect(Object.isFrozen(result)).toBe(true)
@@ -81,19 +81,41 @@ describe('SupabaseIntroductionRepository.findByMatchmaker', () => {
 		let { client, calls } = createFakeSupabase({ data: [validIntroRow], error: null })
 		let repo = new SupabaseIntroductionRepository(client)
 
-		let result = await repo.findByMatchmaker('ma-111')
+		let result = await repo.findByMatchmaker('aa-111')
 
 		expect(result).toHaveLength(1)
-		expect(result[0]?.matchmakerAId).toBe('ma-111')
+		expect(result[0]?.matchmakerAId).toBe('aa-111')
 		let orCall = calls.find(c => c.method === 'or')
-		expect(orCall?.args[0]).toBe('matchmaker_a_id.eq.ma-111,matchmaker_b_id.eq.ma-111')
+		expect(orCall?.args[0]).toBe('matchmaker_a_id.eq.aa-111,matchmaker_b_id.eq.aa-111')
+	})
+
+	test('rejects matchmakerId containing PostgREST filter syntax', async () => {
+		let { client, calls } = createFakeSupabase({ data: [], error: null })
+		let repo = new SupabaseIntroductionRepository(client)
+
+		let malicious = 'x]],person_a_id.eq.target-id,matchmaker_a_id.eq.[x'
+		await expect(repo.findByMatchmaker(malicious)).rejects.toBeInstanceOf(RepositoryError)
+		await expect(repo.findByMatchmaker(malicious)).rejects.toMatchObject({
+			code: 'INVALID_ARGUMENT',
+		})
+		// Must not reach the query at all
+		expect(calls.filter(c => c.method === 'from')).toHaveLength(0)
+	})
+
+	test('rejects matchmakerId with embedded commas', async () => {
+		let { client } = createFakeSupabase({ data: [], error: null })
+		let repo = new SupabaseIntroductionRepository(client)
+
+		await expect(
+			repo.findByMatchmaker('aaa,matchmaker_b_id.eq.bbb'),
+		).rejects.toBeInstanceOf(RepositoryError)
 	})
 
 	test('returns empty array when no rows match', async () => {
 		let { client } = createFakeSupabase({ data: [], error: null })
 		let repo = new SupabaseIntroductionRepository(client)
 
-		let result = await repo.findByMatchmaker('nobody')
+		let result = await repo.findByMatchmaker('dead-beef')
 
 		expect(result).toEqual([])
 	})
@@ -105,7 +127,7 @@ describe('SupabaseIntroductionRepository.findByMatchmaker', () => {
 		})
 		let repo = new SupabaseIntroductionRepository(client)
 
-		await expect(repo.findByMatchmaker('any')).rejects.toBeInstanceOf(RepositoryError)
+		await expect(repo.findByMatchmaker('aaa-bbb')).rejects.toBeInstanceOf(RepositoryError)
 	})
 })
 
@@ -132,10 +154,10 @@ describe('SupabaseIntroductionRepository.create', () => {
 		expect(insertCall).toBeDefined()
 		let inserted = insertCall?.args[0]
 		expect(inserted).toMatchObject({
-			person_a_id: 'pa-111',
-			person_b_id: 'pb-222',
-			matchmaker_a_id: 'ma-111',
-			matchmaker_b_id: 'mb-222',
+			person_a_id: 'a1a1-111',
+			person_b_id: 'b2b2-222',
+			matchmaker_a_id: 'aa-111',
+			matchmaker_b_id: 'bb-222',
 		})
 		expect(inserted).not.toHaveProperty('matchmakerAId')
 	})

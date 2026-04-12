@@ -8,7 +8,7 @@ import {
 	type Introduction,
 	type IntroductionUpdate,
 } from '@matchmaker/shared'
-import { translateSupabaseError } from './errors.js'
+import { assertSafeFilterValue, translateSupabaseError } from './errors.js'
 
 let introRowSchema = z.object({
 	id: z.string().min(1),
@@ -80,6 +80,7 @@ export class SupabaseIntroductionRepository implements IIntroductionRepository {
 	}
 
 	async findByMatchmaker(matchmakerId: string): Promise<readonly Introduction[]> {
+		assertSafeFilterValue(matchmakerId, 'matchmakerId')
 		let { data, error } = await this.client
 			.from('introductions')
 			.select('*')
