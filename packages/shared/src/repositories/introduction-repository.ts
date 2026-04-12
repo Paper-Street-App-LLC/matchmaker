@@ -5,7 +5,16 @@ export type IntroductionUpdate = Partial<Pick<IntroductionInput, 'status' | 'not
 
 export interface IIntroductionRepository {
 	findById(id: string): Promise<Introduction | null>
-	/** Returns introductions where the matchmaker owns either side (matchmakerAId or matchmakerBId). */
+	/**
+	 * Returns introductions where the matchmaker is on either side
+	 * (`matchmakerAId` or `matchmakerBId`).
+	 *
+	 * This OR is query shape, not an ownership check. `Person` has one
+	 * matchmaker (a single column filter); `Introduction` has two
+	 * (`matchmakerAId` and `matchmakerBId`), so "find by matchmaker" requires
+	 * an OR by schema alone. Authorization is still a use-case concern —
+	 * this method does not enforce it.
+	 */
 	findByMatchmaker(matchmakerId: string): Promise<readonly Introduction[]>
 	create(introduction: Introduction): Promise<Introduction>
 	/** Throws IntroductionNotFoundError when no row matches `id`. */
