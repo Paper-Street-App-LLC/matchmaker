@@ -1,5 +1,9 @@
 import { describe, test, expect } from 'bun:test'
-import { InboundMessageSchema, OutboundMessageSchema } from '../../src/types/messages'
+import {
+	InboundMessageSchema,
+	OutboundMessageSchema,
+	RawInboundMessageSchema,
+} from '../../src/types/messages'
 
 describe('InboundMessageSchema', () => {
 	test('valid payload passes validation', () => {
@@ -64,6 +68,37 @@ describe('InboundMessageSchema', () => {
 		let result = InboundMessageSchema.safeParse(invalid)
 
 		expect(result.success).toBe(false)
+	})
+})
+
+describe('RawInboundMessageSchema', () => {
+	test('valid payload without userId passes validation', () => {
+		let valid = {
+			provider: 'telegram',
+			senderId: '12345',
+			text: 'Hello matchmaker',
+			threadId: 'thread-abc',
+			timestamp: 1711900000000,
+		}
+
+		let result = RawInboundMessageSchema.safeParse(valid)
+
+		expect(result.success).toBe(true)
+	})
+
+	test('userId field is not part of raw schema', () => {
+		let result = RawInboundMessageSchema.safeParse({
+			provider: 'telegram',
+			senderId: '12345',
+			text: 'Hello',
+			threadId: 'thread-abc',
+			timestamp: 1711900000000,
+		})
+		expect(result.success).toBe(true)
+		if (result.success) {
+			// @ts-expect-error userId should not exist on RawInboundMessage
+			let _hasUserId = result.data.userId
+		}
 	})
 })
 

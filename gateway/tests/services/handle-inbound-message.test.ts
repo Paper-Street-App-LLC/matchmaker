@@ -1,16 +1,17 @@
 import { describe, test, expect } from 'bun:test'
 import type { ChatAdapter } from '../../src/types/adapter'
-import type { InboundMessage, OutboundMessage } from '../../src/types/messages'
+import type { OutboundMessage, RawInboundMessage } from '../../src/types/messages'
 import { HandleInboundMessage } from '../../src/services/handle-inbound-message'
 
-let validInbound: InboundMessage = {
+let validRaw: RawInboundMessage = {
 	provider: 'test',
 	senderId: 'sender-123',
-	userId: '550e8400-e29b-41d4-a716-446655440000',
 	text: 'hello',
 	threadId: 'thread-456',
-	timestamp: Date.now(),
+	timestamp: 1711900000000,
 }
+
+let resolvedUserId = '550e8400-e29b-41d4-a716-446655440000'
 
 function createMockAdapter(overrides: Partial<ChatAdapter> = {}) {
 	let parseInboundCalls: unknown[] = []
@@ -21,14 +22,14 @@ function createMockAdapter(overrides: Partial<ChatAdapter> = {}) {
 		provider: 'test',
 		parseInbound: async (raw: unknown) => {
 			parseInboundCalls.push(raw)
-			return validInbound
+			return validRaw
 		},
 		sendReply: async (msg: OutboundMessage) => {
 			sendReplyCalls.push(msg)
 		},
 		resolveUser: async (senderId: string) => {
 			resolveUserCalls.push(senderId)
-			return { userId: validInbound.userId }
+			return { userId: resolvedUserId }
 		},
 		verifyWebhook: async () => true,
 		...overrides,
@@ -72,13 +73,18 @@ describe('HandleInboundMessage', () => {
 		expect(sendReplyCalls[0].text.length).toBeGreaterThan(0)
 	})
 
-	test('returns the parsed InboundMessage', async () => {
+	test('returns a fully-hydrated InboundMessage with resolved userId', async () => {
 		let { adapter } = createMockAdapter()
 		let service = new HandleInboundMessage()
 
 		let result = await service.execute(adapter, {})
 
-		expect(result).toEqual(validInbound)
+		expect(result.provider).toBe(validRaw.provider)
+		expect(result.senderId).toBe(validRaw.senderId)
+		expect(result.text).toBe(validRaw.text)
+		expect(result.threadId).toBe(validRaw.threadId)
+		expect(result.timestamp).toBe(validRaw.timestamp)
+		expect(result.userId).toBe(resolvedUserId)
 	})
 
 	test('propagates error when parseInbound throws', async () => {
