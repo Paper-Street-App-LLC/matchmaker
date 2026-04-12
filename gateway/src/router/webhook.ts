@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { ChatAdapter } from '../types/adapter'
 import type { HandleInboundMessage } from '../services/handle-inbound-message'
+import { InboundParseError } from '../services/errors'
 
 export function createWebhookRouter(
 	adapters: Map<string, ChatAdapter>,
@@ -35,8 +36,11 @@ export function createWebhookRouter(
 		try {
 			let message = await service.execute(adapter, parsed)
 			return c.json({ ok: true, threadId: message.threadId })
-		} catch {
-			return c.json({ error: 'Bad request' }, 400)
+		} catch (err) {
+			if (err instanceof InboundParseError) {
+				return c.json({ error: 'Bad request' }, 400)
+			}
+			throw err
 		}
 	})
 

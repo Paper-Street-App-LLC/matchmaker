@@ -115,7 +115,7 @@ describe('webhook router', () => {
 		expect(seenSignature).toBe('sig-xyz')
 	})
 
-	test('POST /webhook/:provider returns 400 when service throws parse error', async () => {
+	test('POST /webhook/:provider returns 400 when parseInbound throws', async () => {
 		let adapter = createMockAdapter({
 			parseInbound: async () => {
 				throw new Error('invalid payload')
@@ -134,5 +134,49 @@ describe('webhook router', () => {
 		)
 
 		expect(res.status).toBe(400)
+	})
+
+	test('POST /webhook/:provider does not return 400 when sendReply fails', async () => {
+		let adapter = createMockAdapter({
+			sendReply: async () => {
+				throw new Error('upstream chat provider is down')
+			},
+		})
+		let adapters = new Map([['test', adapter]])
+		let service = new HandleInboundMessage()
+		let app = buildApp(adapters, service)
+		app.onError((_err, c) => c.json({ error: 'Internal server error' }, 500))
+
+		let res = await app.fetch(
+			new Request('http://localhost/webhook/test', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			}),
+		)
+
+		expect(res.status).toBe(500)
+	})
+
+	test('POST /webhook/:provider does not return 400 when resolveUser fails', async () => {
+		let adapter = createMockAdapter({
+			resolveUser: async () => {
+				throw new Error('user directory unavailable')
+			},
+		})
+		let adapters = new Map([['test', adapter]])
+		let service = new HandleInboundMessage()
+		let app = buildApp(adapters, service)
+		app.onError((_err, c) => c.json({ error: 'Internal server error' }, 500))
+
+		let res = await app.fetch(
+			new Request('http://localhost/webhook/test', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			}),
+		)
+
+		expect(res.status).toBe(500)
 	})
 })
