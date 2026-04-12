@@ -8,6 +8,8 @@ export type PersonUpdate = Partial<
 export interface IPersonRepository {
 	findById(id: string): Promise<Person | null>
 	findByMatchmakerId(matchmakerId: string): Promise<readonly Person[]>
+	/** Returns every active person across all matchmakers — the cross-matchmaker candidate pool. */
+	findAllActive(): Promise<readonly Person[]>
 	create(person: Person): Promise<Person>
 	/** Throws PersonNotFoundError when no row matches `id`. */
 	update(id: string, patch: PersonUpdate): Promise<Person>
