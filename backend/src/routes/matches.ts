@@ -1,5 +1,9 @@
 import { Hono } from 'hono'
 import type { SupabaseClient } from '../lib/supabase'
+import {
+	SupabaseMatchDecisionRepository,
+	SupabasePersonRepository,
+} from '../adapters/supabase'
 import { matchFinder } from '../services/matchFinder'
 
 type Variables = {
@@ -32,7 +36,9 @@ export let createMatchesRoutes = (
 		}
 
 		try {
-			let matches = await matchFinder(personId, userId, supabaseClient)
+			let personRepo = new SupabasePersonRepository(supabaseClient)
+			let matchDecisionRepo = new SupabaseMatchDecisionRepository(supabaseClient)
+			let matches = await matchFinder(personId, userId, personRepo, matchDecisionRepo)
 			return c.json(matches, 200)
 		} catch (error) {
 			let message = error instanceof Error ? error.message : 'Failed to find matches'

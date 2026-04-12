@@ -13,6 +13,10 @@ import {
 import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '@matchmaker/shared'
 import { parsePreferences } from '../schemas/preferences'
+import {
+	SupabaseMatchDecisionRepository,
+	SupabasePersonRepository,
+} from '../adapters/supabase'
 import { matchFinder } from '../services/matchFinder'
 import { createIntroduction } from '../services/introductions'
 
@@ -566,7 +570,14 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					if (personError) throw new Error(personError.message)
 					if (!person) throw new Error('Person not found')
 
-					let matches = await matchFinder(args.person_id, userId, supabaseClient)
+					let personRepo = new SupabasePersonRepository(supabaseClient)
+					let matchDecisionRepo = new SupabaseMatchDecisionRepository(supabaseClient)
+					let matches = await matchFinder(
+						args.person_id,
+						userId,
+						personRepo,
+						matchDecisionRepo,
+					)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
 					}
