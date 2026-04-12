@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
 	createIntroduction,
 	IntroductionNotFoundError,
+	RepositoryError,
 	type IIntroductionRepository,
 	type Introduction,
 	type IntroductionUpdate,
@@ -36,7 +37,16 @@ let rowToIntroduction = (row: IntroRow): Introduction =>
 		updatedAt: row.updated_at,
 	})
 
-let parseIntroRow = (raw: unknown): Introduction => rowToIntroduction(introRowSchema.parse(raw))
+let parseIntroRow = (raw: unknown): Introduction => {
+	try {
+		return rowToIntroduction(introRowSchema.parse(raw))
+	} catch (err) {
+		if (err instanceof z.ZodError) {
+			throw new RepositoryError('INVALID_ROW', `Invalid introductions row: ${err.message}`)
+		}
+		throw err
+	}
+}
 
 let introToInsertRow = (intro: Introduction) => ({
 	id: intro.id,

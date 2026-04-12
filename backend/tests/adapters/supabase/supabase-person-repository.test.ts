@@ -63,14 +63,17 @@ describe('SupabasePersonRepository.findById', () => {
 		await expect(repo.findById('any')).rejects.toBeInstanceOf(RepositoryError)
 	})
 
-	test('rejects invalid row via Zod (schema drift surfaces as a throw)', async () => {
+	test('wraps invalid row as RepositoryError (not raw ZodError)', async () => {
 		let { client } = createFake({
 			data: { ...validPersonRow, age: 'thirty-six' },
 			error: null,
 		})
 		let repo = new SupabasePersonRepository(client)
 
-		await expect(repo.findById(validPersonRow.id)).rejects.toBeDefined()
+		await expect(repo.findById(validPersonRow.id)).rejects.toBeInstanceOf(RepositoryError)
+		await expect(repo.findById(validPersonRow.id)).rejects.toMatchObject({
+			code: 'INVALID_ROW',
+		})
 	})
 })
 
