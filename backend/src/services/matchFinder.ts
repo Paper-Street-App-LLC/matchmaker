@@ -7,6 +7,10 @@ import { findMatches } from './matchingAlgorithm'
 import type { MatchResponse } from '../schemas/matches'
 import type { PersonResponse } from '../schemas/people'
 
+// TODO(#71): remove once matchingAlgorithm accepts domain Person entities.
+// This mapper only exists because findMatches still consumes the snake_case
+// PersonResponse schema shape — a layer leak between the use case and the
+// otherwise framework-free algorithmic core.
 let toPersonResponse = (p: Person): PersonResponse => ({
 	id: p.id,
 	matchmaker_id: p.matchmakerId,
