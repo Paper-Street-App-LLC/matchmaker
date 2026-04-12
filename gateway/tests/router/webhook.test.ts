@@ -84,6 +84,37 @@ describe('webhook router', () => {
 		expect(res.status).toBe(401)
 	})
 
+	test('verifyWebhook receives headers and body buffer without consuming the request stream', async () => {
+		let seenBodyText: string | null = null
+		let seenSignature: string | null = null
+		let adapter = createMockAdapter({
+			verifyWebhook: async ({ headers, body }) => {
+				seenBodyText = new TextDecoder().decode(body)
+				seenSignature = headers.get('x-signature')
+				return true
+			},
+		})
+		let adapters = new Map([['test', adapter]])
+		let service = new HandleInboundMessage()
+		let app = buildApp(adapters, service)
+
+		let payload = JSON.stringify({ some: 'data' })
+		let res = await app.fetch(
+			new Request('http://localhost/webhook/test', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Signature': 'sig-xyz',
+				},
+				body: payload,
+			}),
+		)
+
+		expect(res.status).toBe(200)
+		expect(seenBodyText).toBe(payload)
+		expect(seenSignature).toBe('sig-xyz')
+	})
+
 	test('POST /webhook/:provider returns 400 when service throws parse error', async () => {
 		let adapter = createMockAdapter({
 			parseInbound: async () => {
