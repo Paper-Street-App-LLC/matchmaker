@@ -1,25 +1,26 @@
 import { describe, test, expect } from 'bun:test'
 import { Hono } from 'hono'
 import type { ChatAdapter } from '../../src/types/adapter'
-import type { InboundMessage, OutboundMessage } from '../../src/types/messages'
+import type { RawInboundMessage } from '../../src/types/messages'
 import { HandleInboundMessage } from '../../src/services/handle-inbound-message'
 import { createWebhookRouter } from '../../src/router/webhook'
 
-let validInbound: InboundMessage = {
+let validRaw: RawInboundMessage = {
 	provider: 'test',
 	senderId: 'sender-123',
-	userId: '550e8400-e29b-41d4-a716-446655440000',
 	text: 'hello',
 	threadId: 'thread-456',
-	timestamp: Date.now(),
+	timestamp: 1711900000000,
 }
+
+let resolvedUserId = '550e8400-e29b-41d4-a716-446655440000'
 
 function createMockAdapter(overrides: Partial<ChatAdapter> = {}): ChatAdapter {
 	return {
 		provider: 'test',
-		parseInbound: async () => validInbound,
+		parseInbound: async () => validRaw,
 		sendReply: async () => {},
-		resolveUser: async () => ({ userId: validInbound.userId }),
+		resolveUser: async () => ({ userId: resolvedUserId }),
 		verifyWebhook: async () => true,
 		...overrides,
 	}

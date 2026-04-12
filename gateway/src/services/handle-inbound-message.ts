@@ -3,8 +3,10 @@ import type { InboundMessage } from '../types/messages'
 
 export class HandleInboundMessage {
 	async execute(adapter: ChatAdapter, raw: unknown): Promise<InboundMessage> {
-		let message = await adapter.parseInbound(raw)
-		let { userId } = await adapter.resolveUser(message.senderId)
+		let rawMessage = await adapter.parseInbound(raw)
+		let { userId } = await adapter.resolveUser(rawMessage.senderId)
+
+		let message: InboundMessage = { ...rawMessage, userId }
 
 		await adapter.sendReply({
 			provider: message.provider,
