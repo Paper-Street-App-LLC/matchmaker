@@ -11,6 +11,8 @@ export function canMatchmakerRecordDecision(matchmakerId: string, person: Person
 	return canMatchmakerAccessPerson(matchmakerId, person)
 }
 
+// Introduction matchmaker ids are non-nullable at the entity level
+// (see createIntroduction), so no null guard is needed here.
 export function canMatchmakerEditIntroduction(
 	matchmakerId: string,
 	introduction: Introduction,
