@@ -104,6 +104,16 @@ export class SupabasePersonRepository implements IPersonRepository {
 		return rows.map(parsePersonRow)
 	}
 
+	async findAllActive(): Promise<readonly Person[]> {
+		let { data, error } = await this.client
+			.from('people')
+			.select('*')
+			.eq('active', true)
+		if (error) throw translateSupabaseError(error)
+		let rows: unknown[] = data ?? []
+		return rows.map(parsePersonRow)
+	}
+
 	async create(person: Person): Promise<Person> {
 		let { data, error } = await this.client
 			.from('people')
