@@ -1,1 +1,1 @@
-// Webhook router
+export { createWebhookRouter } from './webhook'
