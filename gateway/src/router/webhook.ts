@@ -15,14 +15,25 @@ export function createWebhookRouter(
 			return c.json({ error: 'Unknown provider' }, 404)
 		}
 
-		let verified = await adapter.verifyWebhook(c.req.raw)
+		let body = await c.req.arrayBuffer()
+
+		let verified = await adapter.verifyWebhook({
+			headers: c.req.raw.headers,
+			body,
+		})
 		if (!verified) {
 			return c.json({ error: 'Webhook verification failed' }, 401)
 		}
 
+		let parsed: unknown
 		try {
-			let body = await c.req.json()
-			let message = await service.execute(adapter, body)
+			parsed = JSON.parse(new TextDecoder().decode(body))
+		} catch {
+			return c.json({ error: 'Invalid JSON' }, 400)
+		}
+
+		try {
+			let message = await service.execute(adapter, parsed)
 			return c.json({ ok: true, threadId: message.threadId })
 		} catch {
 			return c.json({ error: 'Bad request' }, 400)
