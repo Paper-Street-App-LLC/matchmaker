@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import type { ChatAdapter } from '../../src/types/adapter'
 import type { OutboundMessage, RawInboundMessage } from '../../src/types/messages'
 import { HandleInboundMessage } from '../../src/services/handle-inbound-message'
+import { InboundParseError } from '../../src/services/errors'
 
 let validRaw: RawInboundMessage = {
 	provider: 'test',
@@ -87,7 +88,7 @@ describe('HandleInboundMessage', () => {
 		expect(result.userId).toBe(resolvedUserId)
 	})
 
-	test('propagates error when parseInbound throws', async () => {
+	test('wraps parseInbound failures in InboundParseError', async () => {
 		let { adapter } = createMockAdapter({
 			parseInbound: async () => {
 				throw new Error('bad payload')
@@ -95,6 +96,44 @@ describe('HandleInboundMessage', () => {
 		})
 		let service = new HandleInboundMessage()
 
-		await expect(service.execute(adapter, {})).rejects.toThrow('bad payload')
+		await expect(service.execute(adapter, {})).rejects.toBeInstanceOf(InboundParseError)
+	})
+
+	test('propagates resolveUser failures untouched (not as InboundParseError)', async () => {
+		let { adapter } = createMockAdapter({
+			resolveUser: async () => {
+				throw new Error('user directory down')
+			},
+		})
+		let service = new HandleInboundMessage()
+
+		let caught: unknown = null
+		try {
+			await service.execute(adapter, {})
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught).toBeInstanceOf(Error)
+		expect(caught).not.toBeInstanceOf(InboundParseError)
+	})
+
+	test('propagates sendReply failures untouched (not as InboundParseError)', async () => {
+		let { adapter } = createMockAdapter({
+			sendReply: async () => {
+				throw new Error('chat provider timeout')
+			},
+		})
+		let service = new HandleInboundMessage()
+
+		let caught: unknown = null
+		try {
+			await service.execute(adapter, {})
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught).toBeInstanceOf(Error)
+		expect(caught).not.toBeInstanceOf(InboundParseError)
 	})
 })
