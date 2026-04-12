@@ -113,6 +113,43 @@ describe('SupabasePersonRepository.findByMatchmakerId', () => {
 	})
 })
 
+describe('SupabasePersonRepository.findAllActive', () => {
+	test('returns empty array when no rows match', async () => {
+		let { client } = createFake({ data: [], error: null })
+		let repo = new SupabasePersonRepository(client)
+
+		let result = await repo.findAllActive()
+
+		expect(result).toEqual([])
+	})
+
+	test('queries people filtered by active=true and returns frozen Person entities', async () => {
+		let rowB = { ...validPersonRow, id: '33333333-3333-3333-3333-333333333333', name: 'Grace Hopper' }
+		let { client, calls } = createFake({ data: [validPersonRow, rowB], error: null })
+		let repo = new SupabasePersonRepository(client)
+
+		let result = await repo.findAllActive()
+
+		expect(result).toHaveLength(2)
+		expect(result[0]?.name).toBe('Ada Lovelace')
+		expect(result[1]?.name).toBe('Grace Hopper')
+		expect(Object.isFrozen(result[0])).toBe(true)
+		expect(calls.find(c => c.method === 'from')?.args[0]).toBe('people')
+		let eqCall = calls.find(c => c.method === 'eq')
+		expect(eqCall?.args).toEqual(['active', true])
+	})
+
+	test('throws RepositoryError on supabase error', async () => {
+		let { client } = createFake({
+			data: null,
+			error: { code: 'XX000', message: 'db down', details: '', hint: '', name: 'PostgrestError' },
+		})
+		let repo = new SupabasePersonRepository(client)
+
+		await expect(repo.findAllActive()).rejects.toBeInstanceOf(RepositoryError)
+	})
+})
+
 let buildPersonFromValidRow = () =>
 	createPerson({
 		id: validPersonRow.id,
