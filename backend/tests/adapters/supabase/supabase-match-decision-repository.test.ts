@@ -52,6 +52,19 @@ describe('SupabaseMatchDecisionRepository.findByPerson', () => {
 
 		await expect(repo.findByPerson('any')).rejects.toBeInstanceOf(RepositoryError)
 	})
+
+	test('wraps invalid row as RepositoryError (not raw ZodError)', async () => {
+		let { client } = createFakeSupabase({
+			data: [{ ...validDecisionRow, decision: 'GARBAGE' }],
+			error: null,
+		})
+		let repo = new SupabaseMatchDecisionRepository(client)
+
+		await expect(repo.findByPerson('p-111')).rejects.toBeInstanceOf(RepositoryError)
+		await expect(repo.findByPerson('p-111')).rejects.toMatchObject({
+			code: 'INVALID_ROW',
+		})
+	})
 })
 
 describe('SupabaseMatchDecisionRepository.findByCandidatePair', () => {

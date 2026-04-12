@@ -61,6 +61,19 @@ describe('SupabaseIntroductionRepository.findById', () => {
 
 		await expect(repo.findById('any')).rejects.toBeInstanceOf(RepositoryError)
 	})
+
+	test('wraps invalid row as RepositoryError (not raw ZodError)', async () => {
+		let { client } = createFakeSupabase({
+			data: { ...validIntroRow, status: 'INVALID_STATUS' },
+			error: null,
+		})
+		let repo = new SupabaseIntroductionRepository(client)
+
+		await expect(repo.findById(validIntroRow.id)).rejects.toBeInstanceOf(RepositoryError)
+		await expect(repo.findById(validIntroRow.id)).rejects.toMatchObject({
+			code: 'INVALID_ROW',
+		})
+	})
 })
 
 describe('SupabaseIntroductionRepository.findByMatchmaker', () => {

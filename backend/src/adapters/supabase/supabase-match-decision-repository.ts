@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import {
 	createMatchDecision,
+	RepositoryError,
 	type IMatchDecisionRepository,
 	type MatchDecision,
 } from '@matchmaker/shared'
@@ -30,8 +31,16 @@ let rowToDecision = (row: DecisionRow): MatchDecision =>
 		createdAt: row.created_at,
 	})
 
-let parseDecisionRow = (raw: unknown): MatchDecision =>
-	rowToDecision(decisionRowSchema.parse(raw))
+let parseDecisionRow = (raw: unknown): MatchDecision => {
+	try {
+		return rowToDecision(decisionRowSchema.parse(raw))
+	} catch (err) {
+		if (err instanceof z.ZodError) {
+			throw new RepositoryError('INVALID_ROW', `Invalid match_decisions row: ${err.message}`)
+		}
+		throw err
+	}
+}
 
 let decisionToInsertRow = (d: MatchDecision) => ({
 	id: d.id,

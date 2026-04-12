@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
 	createPerson,
 	PersonNotFoundError,
+	RepositoryError,
 	type IPersonRepository,
 	type Person,
 	type PersonUpdate,
@@ -42,7 +43,16 @@ let rowToPerson = (row: PersonRow): Person =>
 		updatedAt: row.updated_at,
 	})
 
-let parsePersonRow = (raw: unknown): Person => rowToPerson(personRowSchema.parse(raw))
+let parsePersonRow = (raw: unknown): Person => {
+	try {
+		return rowToPerson(personRowSchema.parse(raw))
+	} catch (err) {
+		if (err instanceof z.ZodError) {
+			throw new RepositoryError('INVALID_ROW', `Invalid people row: ${err.message}`)
+		}
+		throw err
+	}
+}
 
 let personToInsertRow = (person: Person) => ({
 	id: person.id,
