@@ -12,6 +12,8 @@ import {
 	InvalidPersonError,
 	InvalidIntroductionError,
 	InvalidMatchDecisionError,
+	AuthorizationService,
+	AuthorizationError,
 } from '../src/index'
 
 describe('@matchmaker/shared barrel exports', () => {
@@ -43,5 +45,11 @@ describe('domain barrel', () => {
 		expect(typeof InvalidPersonError).toBe('function')
 		expect(typeof InvalidIntroductionError).toBe('function')
 		expect(typeof InvalidMatchDecisionError).toBe('function')
+	})
+
+	test('re-exports AuthorizationService and AuthorizationError', () => {
+		expect(typeof AuthorizationService).toBe('object')
+		expect(typeof AuthorizationService.canMatchmakerAccessPerson).toBe('function')
+		expect(typeof AuthorizationError).toBe('function')
 	})
 })
