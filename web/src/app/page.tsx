@@ -39,8 +39,38 @@ export default function Home() {
 						</p>
 					</div>
 					<div className="mx-auto mt-12 max-w-md" id="waitlist">
-						<Card variant="elevated">
-							<div className="p-8">
+						<Card variant="elevated" className="!pt-2">
+							<div className="px-8 pb-10 pt-3">
+								{/* Segmented control */}
+								<div className="mb-8 flex justify-center">
+									<div className="flex rounded-lg bg-gray-200 p-1 dark:bg-gray-700" role="tablist">
+										<button
+											role="tab"
+											aria-selected={activeForm === "matchmaker"}
+											onClick={() => setActiveForm("matchmaker")}
+											className={`rounded-md px-5 py-2 text-sm font-medium transition-all ${
+												activeForm === "matchmaker"
+													? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-gray-100"
+													: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+											}`}
+										>
+											I&apos;m a Matchmaker
+										</button>
+										<button
+											role="tab"
+											aria-selected={activeForm === "single"}
+											onClick={() => setActiveForm("single")}
+											className={`rounded-md px-5 py-2 text-sm font-medium transition-all ${
+												activeForm === "single"
+													? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-gray-100"
+													: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+											}`}
+										>
+											I&apos;m looking for love
+										</button>
+									</div>
+								</div>
+
 								{activeForm === "matchmaker" ? (
 									<>
 										<div className="text-center">
@@ -68,14 +98,6 @@ export default function Home() {
 										</div>
 										<div className="mt-8">
 											<WaitlistForm />
-										</div>
-										<div className="mt-6 text-center">
-											<button
-												onClick={() => setActiveForm("single")}
-												className="text-sm font-medium text-gray-500 transition-colors hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400"
-											>
-												Ready to be matched?
-											</button>
 										</div>
 									</>
 								) : (
@@ -106,14 +128,6 @@ export default function Home() {
 										</div>
 										<div className="mt-8">
 											<ReferralForm />
-										</div>
-										<div className="mt-6 text-center">
-											<button
-												onClick={() => setActiveForm("matchmaker")}
-												className="text-sm font-medium text-gray-500 transition-colors hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400"
-											>
-												Are you a matchmaker?
-											</button>
 										</div>
 									</>
 								)}
