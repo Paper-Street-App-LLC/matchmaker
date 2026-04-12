@@ -1,7 +1,9 @@
 /** Persistence port for the Person aggregate. Implementations live in adapter packages. */
 import type { Person, PersonInput } from '../domain/person.js'
 
-export type PersonUpdate = Partial<Omit<PersonInput, 'id' | 'createdAt'>>
+export type PersonUpdate = Partial<
+	Omit<PersonInput, 'id' | 'createdAt' | 'updatedAt' | 'matchmakerId'>
+>
 
 export interface IPersonRepository {
 	findById(id: string): Promise<Person | null>
