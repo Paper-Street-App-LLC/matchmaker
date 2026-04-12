@@ -171,19 +171,24 @@ describe('GET /api/matches/:personId', () => {
 			},
 		]
 
+		let declinedDecisionRow = {
+			id: '950e8400-e29b-41d4-a716-446655440009',
+			matchmaker_id: mockUserId,
+			person_id: mockPersonId,
+			candidate_id: declinedCandidateId,
+			decision: 'declined',
+			decline_reason: 'not a fit',
+			created_at: new Date().toISOString(),
+		}
+
 		let mockClient = createMockSupabaseClient({
 			from: mock((table: string) => {
 				if (table === 'match_decisions') {
 					return {
 						select: mock((_columns: string) => ({
 							eq: mock((_col: string, _val: unknown) => ({
-								eq: mock((_col2: string, _val2: unknown) => ({
-									eq: mock((_col3: string, _val3: unknown) => ({
-										// Only declined decisions are returned by the query
-										data: [{ candidate_id: declinedCandidateId }],
-										error: null,
-									})),
-								})),
+								data: [declinedDecisionRow],
+								error: null,
 							})),
 						})),
 					}
