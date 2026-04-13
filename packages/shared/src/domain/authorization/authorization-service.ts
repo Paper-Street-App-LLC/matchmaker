@@ -22,8 +22,20 @@ export function canMatchmakerEditIntroduction(
 	)
 }
 
+export function canMatchmakerCreateIntroduction(
+	matchmakerId: string,
+	personA: Person,
+	personB: Person,
+): boolean {
+	return (
+		canMatchmakerAccessPerson(matchmakerId, personA) ||
+		canMatchmakerAccessPerson(matchmakerId, personB)
+	)
+}
+
 export let AuthorizationService = Object.freeze({
 	canMatchmakerAccessPerson,
 	canMatchmakerRecordDecision,
 	canMatchmakerEditIntroduction,
+	canMatchmakerCreateIntroduction,
 })
