@@ -13,44 +13,86 @@ let otherMatchmakerId = '999e8400-e29b-41d4-a716-446655440099'
 let personAId = '750e8400-e29b-41d4-a716-446655440002'
 let personBId = '850e8400-e29b-41d4-a716-446655440003'
 
+let buildPersonRow = (id: string, matchmakerId: string) => ({
+	id,
+	matchmaker_id: matchmakerId,
+	name: `Person ${id}`,
+	age: 30,
+	location: null,
+	gender: null,
+	preferences: null,
+	personality: null,
+	notes: null,
+	active: true,
+	created_at: new Date().toISOString(),
+	updated_at: new Date().toISOString(),
+})
+
+let buildIntroRow = (overrides: {
+	id: string
+	matchmakerAId: string
+	matchmakerBId: string
+	personAId: string
+	personBId: string
+	notes?: string | null
+}) => ({
+	id: overrides.id,
+	matchmaker_a_id: overrides.matchmakerAId,
+	matchmaker_b_id: overrides.matchmakerBId,
+	person_a_id: overrides.personAId,
+	person_b_id: overrides.personBId,
+	status: 'pending',
+	notes: overrides.notes ?? null,
+	created_at: new Date().toISOString(),
+	updated_at: new Date().toISOString(),
+})
+
 describe('POST /api/introductions', () => {
 	test('should create cross-matchmaker introduction with both matchmaker IDs', async () => {
-		let mockIntroduction = {
+		let mockIntroduction = buildIntroRow({
 			id: '650e8400-e29b-41d4-a716-446655440001',
-			matchmaker_a_id: mockUserId,
-			matchmaker_b_id: otherMatchmakerId,
-			person_a_id: personAId,
-			person_b_id: personBId,
-			status: 'pending',
-			notes: null,
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
-		}
+			matchmakerAId: mockUserId,
+			matchmakerBId: otherMatchmakerId,
+			personAId,
+			personBId,
+		})
 
 		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((column: string, value: unknown) => ({
-						single: mock(() => {
-							if (value === personAId) {
-								return { data: { id: personAId, matchmaker_id: mockUserId }, error: null }
-							}
-							if (value === personBId) {
-								return { data: { id: personBId, matchmaker_id: otherMatchmakerId }, error: null }
-							}
-							return { data: null, error: null }
-						}),
-					})),
-				})),
-				insert: mock((_data: any) => ({
-					select: mock(() => ({
-						single: mock(() => ({
-							data: mockIntroduction,
-							error: null,
+			from: mock((table: string) => {
+				if (table === 'people') {
+					return {
+						select: mock((_columns: string) => ({
+							eq: mock((_column: string, value: unknown) => ({
+								maybeSingle: mock(() => {
+									if (value === personAId) {
+										return { data: buildPersonRow(personAId, mockUserId), error: null }
+									}
+									if (value === personBId) {
+										return {
+											data: buildPersonRow(personBId, otherMatchmakerId),
+											error: null,
+										}
+									}
+									return { data: null, error: null }
+								}),
+							})),
 						})),
-					})),
-				})),
-			})),
+					}
+				}
+				if (table === 'introductions') {
+					return {
+						insert: mock((_data: any) => ({
+							select: mock(() => ({
+								single: mock(() => ({
+									data: mockIntroduction,
+									error: null,
+								})),
+							})),
+						})),
+					}
+				}
+				throw new Error(`unexpected table: ${table}`)
+			}),
 		})
 
 		let app = new Hono<{ Variables: Variables }>()
@@ -106,21 +148,32 @@ describe('POST /api/introductions', () => {
 		let thirdPartyMatchmaker = '333e8400-e29b-41d4-a716-446655440033'
 
 		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_column: string, value: unknown) => ({
-						single: mock(() => {
-							if (value === personAId) {
-								return { data: { id: personAId, matchmaker_id: otherMatchmakerId }, error: null }
-							}
-							if (value === personBId) {
-								return { data: { id: personBId, matchmaker_id: thirdPartyMatchmaker }, error: null }
-							}
-							return { data: null, error: null }
-						}),
-					})),
-				})),
-			})),
+			from: mock((table: string) => {
+				if (table === 'people') {
+					return {
+						select: mock((_columns: string) => ({
+							eq: mock((_column: string, value: unknown) => ({
+								maybeSingle: mock(() => {
+									if (value === personAId) {
+										return {
+											data: buildPersonRow(personAId, otherMatchmakerId),
+											error: null,
+										}
+									}
+									if (value === personBId) {
+										return {
+											data: buildPersonRow(personBId, thirdPartyMatchmaker),
+											error: null,
+										}
+									}
+									return { data: null, error: null }
+								}),
+							})),
+						})),
+					}
+				}
+				throw new Error(`unexpected table: ${table}`)
+			}),
 		})
 
 		let app = new Hono<{ Variables: Variables }>()

@@ -1,12 +1,29 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
+import type { Introduction } from '@matchmaker/shared'
 import type { SupabaseClient } from '../lib/supabase'
+import {
+	SupabaseIntroductionRepository,
+	SupabasePersonRepository,
+} from '../adapters/supabase'
 import { createIntroductionSchema, updateIntroductionSchema } from '../schemas/introductions'
 import { createIntroduction } from '../services/introductions'
 
 type Variables = {
 	userId: string
 }
+
+let introductionToResponse = (intro: Introduction) => ({
+	id: intro.id,
+	matchmaker_a_id: intro.matchmakerAId,
+	matchmaker_b_id: intro.matchmakerBId,
+	person_a_id: intro.personAId,
+	person_b_id: intro.personBId,
+	status: intro.status,
+	notes: intro.notes,
+	created_at: intro.createdAt.toISOString(),
+	updated_at: intro.updatedAt.toISOString(),
+})
 
 export let createIntroductionsRoutes = (
 	supabaseClient: SupabaseClient
@@ -17,18 +34,29 @@ export let createIntroductionsRoutes = (
 		let userId = c.get('userId')
 		let data = c.req.valid('json')
 
-		let result = await createIntroduction(supabaseClient, {
-			person_a_id: data.person_a_id,
-			person_b_id: data.person_b_id,
-			notes: data.notes,
-			userId,
-		})
+		let personRepo = new SupabasePersonRepository(supabaseClient)
+		let introductionRepo = new SupabaseIntroductionRepository(supabaseClient)
 
-		if (result.error) {
-			return c.json({ error: result.error.message }, result.error.status as 403 | 404 | 500)
+		try {
+			let result = await createIntroduction(personRepo, introductionRepo, {
+				person_a_id: data.person_a_id,
+				person_b_id: data.person_b_id,
+				notes: data.notes,
+				userId,
+			})
+
+			if (result.error) {
+				return c.json(
+					{ error: result.error.message },
+					result.error.status as 403 | 404 | 422 | 500,
+				)
+			}
+
+			return c.json(introductionToResponse(result.data), 201)
+		} catch (err) {
+			let message = err instanceof Error ? err.message : 'Failed to create introduction'
+			return c.json({ error: message }, 500)
 		}
-
-		return c.json(result.data, 201)
 	})
 
 	app.get('/', async c => {
