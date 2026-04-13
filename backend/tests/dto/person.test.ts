@@ -1,11 +1,12 @@
 import { describe, test, expect } from 'bun:test'
+import { createPerson } from '@matchmaker/shared'
 import {
 	fromCreatePersonRequestDTO,
 	fromUpdatePersonRequestDTO,
 	toPersonResponseDTO,
 } from '../../src/dto/person'
 import { personResponseSchema } from '../../src/schemas/people'
-import { makePerson } from '../usecases/fixtures'
+import { FIXED_NOW, makePerson } from '../usecases/fixtures'
 
 describe('toPersonResponseDTO', () => {
 	test('maps a fully populated Person to the snake_case response shape', () => {
@@ -41,13 +42,20 @@ describe('toPersonResponseDTO', () => {
 	})
 
 	test('preserves null optional fields', () => {
-		// Arrange
-		let person = makePerson({
+		// Arrange — bypass the fixture so null overrides are not coerced
+		let person = createPerson({
 			id: '650e8400-e29b-41d4-a716-446655440002',
+			matchmakerId: 'mm-user',
+			name: 'Alex',
 			age: null,
 			location: null,
 			gender: null,
+			preferences: null,
+			personality: null,
 			notes: null,
+			active: true,
+			createdAt: FIXED_NOW,
+			updatedAt: FIXED_NOW,
 		})
 
 		// Act
@@ -58,6 +66,8 @@ describe('toPersonResponseDTO', () => {
 		expect(dto.location).toBeNull()
 		expect(dto.gender).toBeNull()
 		expect(dto.notes).toBeNull()
+		expect(dto.preferences).toBeNull()
+		expect(dto.personality).toBeNull()
 	})
 
 	test('output validates against personResponseSchema', () => {
