@@ -1,119 +1,101 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
-import type { SupabaseClient } from '../lib/supabase'
 import { createPersonSchema, updatePersonSchema } from '../schemas/people'
+import {
+	fromCreatePersonRequestDTO,
+	fromUpdatePersonRequestDTO,
+	toPersonResponseDTO,
+	useCaseErrorToHttp,
+} from '../dto'
+import type {
+	CreatePerson,
+	DeletePerson,
+	GetPersonById,
+	ListPeopleForMatchmaker,
+	UpdatePerson,
+} from '../usecases'
 
 type Variables = {
 	userId: string
 }
 
+export type PeopleRouteDeps = {
+	createPerson: CreatePerson
+	getPersonById: GetPersonById
+	listPeopleForMatchmaker: ListPeopleForMatchmaker
+	updatePerson: UpdatePerson
+	deletePerson: DeletePerson
+}
+
 export let createPeopleRoutes = (
-	supabaseClient: SupabaseClient
+	deps: PeopleRouteDeps,
 ): Hono<{ Variables: Variables }> => {
 	let app = new Hono<{ Variables: Variables }>()
 
 	app.post('/', zValidator('json', createPersonSchema), async c => {
 		let userId = c.get('userId')
-		let data = c.req.valid('json')
-
-		let { data: person, error } = await supabaseClient
-			.from('people')
-			.insert({
-				...data,
-				matchmaker_id: userId,
-			})
-			.select()
-			.single()
-
-		if (error) {
-			return c.json({ error: error.message }, 500)
+		let body = c.req.valid('json')
+		let input = fromCreatePersonRequestDTO(body, userId)
+		let result = await deps.createPerson.execute(input)
+		if (!result.ok) {
+			let { status, body: errBody } = useCaseErrorToHttp(result.error)
+			return c.json(errBody, status)
 		}
-
-		return c.json(person, 201)
+		return c.json(toPersonResponseDTO(result.data), 201)
 	})
 
 	app.get('/', async c => {
 		let userId = c.get('userId')
-
-		let { data: people, error } = await supabaseClient
-			.from('people')
-			.select('*')
-			.eq('matchmaker_id', userId)
-
-		if (error) {
-			return c.json({ error: error.message }, 500)
+		let result = await deps.listPeopleForMatchmaker.execute({ matchmakerId: userId })
+		if (!result.ok) {
+			let { status, body } = useCaseErrorToHttp(result.error)
+			return c.json(body, status)
 		}
-
-		return c.json(people || [], 200)
+		return c.json(result.data.map(toPersonResponseDTO), 200)
 	})
 
 	app.get('/:id', async c => {
 		let userId = c.get('userId')
 		let personId = c.req.param('id')
-
-		let { data: person, error } = await supabaseClient
-			.from('people')
-			.select('*')
-			.eq('id', personId)
-			.eq('matchmaker_id', userId)
-			.maybeSingle()
-
-		if (error) {
-			return c.json({ error: error.message }, 500)
+		let result = await deps.getPersonById.execute({
+			matchmakerId: userId,
+			personId,
+		})
+		if (!result.ok) {
+			let { status, body } = useCaseErrorToHttp(result.error)
+			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : body
+			return c.json(friendly, status)
 		}
-
-		if (!person) {
-			return c.json({ error: 'Person not found' }, 404)
-		}
-
-		return c.json(person, 200)
+		return c.json(toPersonResponseDTO(result.data), 200)
 	})
 
 	app.put('/:id', zValidator('json', updatePersonSchema), async c => {
 		let userId = c.get('userId')
 		let personId = c.req.param('id')
-		let data = c.req.valid('json')
-
-		let { data: person, error } = await supabaseClient
-			.from('people')
-			.update(data)
-			.eq('id', personId)
-			.eq('matchmaker_id', userId)
-			.select()
-			.maybeSingle()
-
-		if (error) {
-			return c.json({ error: error.message }, 500)
+		let body = c.req.valid('json')
+		let input = fromUpdatePersonRequestDTO(body, userId, personId)
+		let result = await deps.updatePerson.execute(input)
+		if (!result.ok) {
+			let { status, body: errBody } = useCaseErrorToHttp(result.error)
+			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : errBody
+			return c.json(friendly, status)
 		}
-
-		if (!person) {
-			return c.json({ error: 'Person not found' }, 404)
-		}
-
-		return c.json(person, 200)
+		return c.json(toPersonResponseDTO(result.data), 200)
 	})
 
 	app.delete('/:id', async c => {
 		let userId = c.get('userId')
 		let personId = c.req.param('id')
-
-		let { data: person, error } = await supabaseClient
-			.from('people')
-			.update({ active: false })
-			.eq('id', personId)
-			.eq('matchmaker_id', userId)
-			.select()
-			.maybeSingle()
-
-		if (error) {
-			return c.json({ error: error.message }, 500)
+		let result = await deps.deletePerson.execute({
+			matchmakerId: userId,
+			personId,
+		})
+		if (!result.ok) {
+			let { status, body } = useCaseErrorToHttp(result.error)
+			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : body
+			return c.json(friendly, status)
 		}
-
-		if (!person) {
-			return c.json({ error: 'Person not found' }, 404)
-		}
-
-		return c.json(person, 200)
+		return c.json(toPersonResponseDTO(result.data), 200)
 	})
 
 	return app

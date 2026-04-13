@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { cors } from 'hono/cors'
+import { buildContainer } from './container'
 import { createSupabaseClient, createSupabaseAnonClient } from './lib/supabase'
 import { createAuthMiddleware } from './middleware/auth'
 import { createPeopleRoutes } from './routes/people'
@@ -57,10 +58,11 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 		url: process.env.SUPABASE_URL,
 		serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	})
+	let usecases = buildContainer(supabaseClient)
 
 	// Protected API routes
 	app.use('/api/*', createAuthMiddleware(supabaseClient))
-	app.route('/api/people', createPeopleRoutes(supabaseClient))
+	app.route('/api/people', createPeopleRoutes(usecases))
 	app.route('/api/introductions', createIntroductionsRoutes(supabaseClient))
 	app.route('/api/feedback', createFeedbackRoutes(supabaseClient))
 	app.route('/api/matches', createMatchesRoutes(supabaseClient))
