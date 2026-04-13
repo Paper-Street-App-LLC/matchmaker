@@ -8,6 +8,7 @@ import {
 	FindMatchesForPerson,
 	GetIntroductionById,
 	GetPersonById,
+	ListIntroductionsForMatchmaker,
 	ListMatchDecisions,
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
@@ -37,6 +38,9 @@ describe('buildContainer', () => {
 		expect(usecases.findMatchesForPerson).toBeInstanceOf(FindMatchesForPerson)
 		expect(usecases.createIntroduction).toBeInstanceOf(CreateIntroduction)
 		expect(usecases.getIntroductionById).toBeInstanceOf(GetIntroductionById)
+		expect(usecases.listIntroductionsForMatchmaker).toBeInstanceOf(
+			ListIntroductionsForMatchmaker,
+		)
 		expect(usecases.updateIntroductionStatus).toBeInstanceOf(UpdateIntroductionStatus)
 		expect(usecases.recordMatchDecision).toBeInstanceOf(RecordMatchDecision)
 		expect(usecases.listMatchDecisions).toBeInstanceOf(ListMatchDecisions)
