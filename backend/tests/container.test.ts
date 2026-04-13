@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import { createClient } from '@supabase/supabase-js'
 import { buildContainer } from '../src/container'
 import {
 	CreateIntroduction,
@@ -11,16 +12,19 @@ import {
 	UpdateIntroductionStatus,
 	UpdatePerson,
 } from '../src/usecases'
-import type { SupabaseClient } from '../src/lib/supabase'
+
+// A real SupabaseClient instance pointed at a non-resolvable URL. The
+// adapters only read this via .from(...) at method-call time, so
+// buildContainer never touches the network and no `as` cast is needed.
+let makeTestClient = () => createClient('https://fake.test.invalid', 'sb-test-key')
 
 describe('buildContainer', () => {
 	test('wires all 9 use cases to their concrete classes', () => {
-		// Arrange — the adapters only touch the client when methods run; object
-		// identity is enough for the wiring check.
-		let stubClient = {} as SupabaseClient
+		// Arrange
+		let client = makeTestClient()
 
 		// Act
-		let usecases = buildContainer(stubClient)
+		let usecases = buildContainer(client)
 
 		// Assert
 		expect(usecases.createPerson).toBeInstanceOf(CreatePerson)
@@ -36,10 +40,10 @@ describe('buildContainer', () => {
 
 	test('returns a frozen struct', () => {
 		// Arrange
-		let stubClient = {} as SupabaseClient
+		let client = makeTestClient()
 
 		// Act
-		let usecases = buildContainer(stubClient)
+		let usecases = buildContainer(client)
 
 		// Assert
 		expect(Object.isFrozen(usecases)).toBe(true)
