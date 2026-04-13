@@ -11,6 +11,7 @@ import {
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
+	GetIntroductionById,
 	GetPersonById,
 	ListMatchDecisions,
 	ListPeopleForMatchmaker,
@@ -31,6 +32,7 @@ export interface UseCases {
 	listPeopleForMatchmaker: ListPeopleForMatchmaker
 	findMatchesForPerson: FindMatchesForPerson
 	createIntroduction: CreateIntroduction
+	getIntroductionById: GetIntroductionById
 	updateIntroductionStatus: UpdateIntroductionStatus
 	recordMatchDecision: RecordMatchDecision
 	listMatchDecisions: ListMatchDecisions
@@ -68,6 +70,7 @@ export let buildContainer = (
 			introductionRepo,
 			createIntroductionService,
 		}),
+		getIntroductionById: new GetIntroductionById({ introductionRepo }),
 		updateIntroductionStatus: new UpdateIntroductionStatus({ introductionRepo }),
 		recordMatchDecision: new RecordMatchDecision({
 			personRepo,

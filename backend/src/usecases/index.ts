@@ -33,6 +33,11 @@ export {
 	type CreateIntroductionDeps,
 } from './create-introduction'
 export {
+	GetIntroductionById,
+	type GetIntroductionByIdInput,
+	type GetIntroductionByIdDeps,
+} from './get-introduction-by-id'
+export {
 	UpdateIntroductionStatus,
 	type UpdateIntroductionStatusInput,
 	type UpdateIntroductionStatusDeps,
