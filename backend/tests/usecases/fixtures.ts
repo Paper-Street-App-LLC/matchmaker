@@ -27,7 +27,7 @@ export type MakePersonOverrides = {
 export let makePerson = (overrides: MakePersonOverrides = {}): Person =>
 	createPerson({
 		id: overrides.id ?? 'p-1',
-		matchmakerId: overrides.matchmakerId ?? 'mm-user',
+		matchmakerId: 'matchmakerId' in overrides ? overrides.matchmakerId : 'mm-user',
 		name: overrides.name ?? 'Alex',
 		age: overrides.age ?? 30,
 		location: overrides.location ?? null,
