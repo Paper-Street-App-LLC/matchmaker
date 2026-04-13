@@ -14,7 +14,10 @@ import {
 	makePerson,
 } from './fixtures'
 
-let buildDeps = (people = [makePerson({ id: 'p-1', matchmakerId: 'mm-user' })], decisions = [] as ReturnType<typeof makeDecision>[]) => {
+let buildDeps = (
+	people = [makePerson({ id: 'p-1', matchmakerId: 'mm-user' })],
+	decisions: ReturnType<typeof makeDecision>[] = [],
+) => {
 	let personRepo = new InMemoryPersonRepository(people)
 	let matchDecisionRepo = new InMemoryMatchDecisionRepository(decisions)
 	return {
