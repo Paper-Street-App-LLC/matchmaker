@@ -18,7 +18,41 @@ export type DeletePersonDeps = {
 export class DeletePerson implements UseCase<DeletePersonInput, Person> {
 	constructor(private deps: DeletePersonDeps) {}
 
-	async execute(_input: DeletePersonInput): Promise<UseCaseResult<Person>> {
-		throw new Error('DeletePerson.execute not implemented')
+	async execute(input: DeletePersonInput): Promise<UseCaseResult<Person>> {
+		let existing = await this.deps.personRepo.findById(input.personId)
+		if (!existing) {
+			return {
+				ok: false,
+				error: {
+					code: 'not_found',
+					entity: 'person',
+					message: `Person ${input.personId} not found`,
+				},
+			}
+		}
+
+		if (!AuthorizationService.canMatchmakerAccessPerson(input.matchmakerId, existing)) {
+			return {
+				ok: false,
+				error: { code: 'forbidden', message: 'You do not own this person' },
+			}
+		}
+
+		try {
+			let deactivated = await this.deps.personRepo.update(input.personId, { active: false })
+			return { ok: true, data: deactivated }
+		} catch (error) {
+			if (error instanceof PersonNotFoundError) {
+				return {
+					ok: false,
+					error: {
+						code: 'not_found',
+						entity: 'person',
+						message: `Person ${input.personId} not found`,
+					},
+				}
+			}
+			throw error
+		}
 	}
 }
