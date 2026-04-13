@@ -4,6 +4,10 @@ import { join } from 'node:path'
 
 let USECASES_DIR = join(import.meta.dir, '..', '..', 'src', 'usecases')
 
+// Use cases may only depend on repository interfaces, domain entities,
+// authorization rules, and other use cases. Everything else — HTTP
+// frameworks, DB drivers, HTTP validation schemas, concrete adapters,
+// and sibling services — must be injected via the composition root.
 let BANNED_IMPORT_PATTERNS: readonly RegExp[] = [
 	/from ['"]hono['"]/,
 	/from ['"]@hono\//,
@@ -11,6 +15,12 @@ let BANNED_IMPORT_PATTERNS: readonly RegExp[] = [
 	/from ['"]zod['"]/,
 	/from ['"]\.\.\/schemas\//,
 	/from ['"]\.\.\/\.\.\/schemas\//,
+	/from ['"]\.\.\/adapters\//,
+	/from ['"]\.\.\/\.\.\/adapters\//,
+	/from ['"]\.\.\/services\//,
+	/from ['"]\.\.\/\.\.\/services\//,
+	/from ['"]\.\.\/lib\/supabase/,
+	/from ['"]\.\.\/\.\.\/lib\/supabase/,
 ]
 
 let listUseCaseFiles = (): readonly string[] =>
