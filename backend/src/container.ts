@@ -6,7 +6,7 @@ import {
 import type { SupabaseClient } from './lib/supabase.js'
 import { matchFinder } from './services/matchFinder.js'
 import {
-	CreateIntroductionUseCase,
+	CreateIntroduction,
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
@@ -27,7 +27,7 @@ export interface UseCases {
 	deletePerson: DeletePerson
 	listPeopleForMatchmaker: ListPeopleForMatchmaker
 	findMatchesForPerson: FindMatchesForPerson
-	createIntroduction: CreateIntroductionUseCase
+	createIntroduction: CreateIntroduction
 	updateIntroductionStatus: UpdateIntroductionStatus
 	recordMatchDecision: RecordMatchDecision
 	listMatchDecisions: ListMatchDecisions
@@ -59,7 +59,7 @@ export let buildContainer = (
 			matchDecisionRepo,
 			matchFinder,
 		}),
-		createIntroduction: new CreateIntroductionUseCase({ personRepo, introductionRepo }),
+		createIntroduction: new CreateIntroduction({ personRepo, introductionRepo }),
 		updateIntroductionStatus: new UpdateIntroductionStatus({ introductionRepo }),
 		recordMatchDecision: new RecordMatchDecision({
 			personRepo,

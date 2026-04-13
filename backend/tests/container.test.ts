@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { buildContainer } from '../src/container'
 import {
-	CreateIntroductionUseCase,
+	CreateIntroduction,
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
@@ -28,7 +28,7 @@ describe('buildContainer', () => {
 		expect(usecases.deletePerson).toBeInstanceOf(DeletePerson)
 		expect(usecases.listPeopleForMatchmaker).toBeInstanceOf(ListPeopleForMatchmaker)
 		expect(usecases.findMatchesForPerson).toBeInstanceOf(FindMatchesForPerson)
-		expect(usecases.createIntroduction).toBeInstanceOf(CreateIntroductionUseCase)
+		expect(usecases.createIntroduction).toBeInstanceOf(CreateIntroduction)
 		expect(usecases.updateIntroductionStatus).toBeInstanceOf(UpdateIntroductionStatus)
 		expect(usecases.recordMatchDecision).toBeInstanceOf(RecordMatchDecision)
 		expect(usecases.listMatchDecisions).toBeInstanceOf(ListMatchDecisions)

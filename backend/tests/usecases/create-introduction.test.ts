@@ -1,19 +1,19 @@
 import { describe, test, expect } from 'bun:test'
-import { CreateIntroductionUseCase } from '../../src/usecases/create-introduction'
+import { CreateIntroduction } from '../../src/usecases/create-introduction'
 import {
 	InMemoryIntroductionRepository,
 	InMemoryPersonRepository,
 } from '../fakes/in-memory-repositories'
 import { assertErr, assertOk, makePerson } from './fixtures'
 
-describe('CreateIntroductionUseCase', () => {
+describe('CreateIntroduction', () => {
 	test('creates an introduction when caller owns one person', async () => {
 		// Arrange
 		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-other' })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroductionUseCase({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
 
 		// Act
 		let result = await usecase.execute({
@@ -35,7 +35,7 @@ describe('CreateIntroductionUseCase', () => {
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-user' })
 		let personRepo = new InMemoryPersonRepository([personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroductionUseCase({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
 
 		// Act
 		let result = await usecase.execute({
@@ -58,7 +58,7 @@ describe('CreateIntroductionUseCase', () => {
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-b' })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroductionUseCase({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
 
 		// Act
 		let result = await usecase.execute({
@@ -78,7 +78,7 @@ describe('CreateIntroductionUseCase', () => {
 		let personB = makePerson({ id: 'p-b', matchmakerId: null })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroductionUseCase({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
 
 		// Act
 		let result = await usecase.execute({
