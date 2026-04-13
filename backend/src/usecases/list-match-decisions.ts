@@ -22,8 +22,28 @@ export class ListMatchDecisions
 	constructor(private deps: ListMatchDecisionsDeps) {}
 
 	async execute(
-		_input: ListMatchDecisionsInput,
+		input: ListMatchDecisionsInput,
 	): Promise<UseCaseResult<readonly MatchDecision[]>> {
-		throw new Error('ListMatchDecisions.execute not implemented')
+		let person = await this.deps.personRepo.findById(input.personId)
+		if (!person) {
+			return {
+				ok: false,
+				error: {
+					code: 'not_found',
+					entity: 'person',
+					message: `Person ${input.personId} not found`,
+				},
+			}
+		}
+
+		if (!AuthorizationService.canMatchmakerAccessPerson(input.matchmakerId, person)) {
+			return {
+				ok: false,
+				error: { code: 'forbidden', message: 'You do not own this person' },
+			}
+		}
+
+		let decisions = await this.deps.matchDecisionRepo.findByPerson(input.personId)
+		return { ok: true, data: decisions }
 	}
 }
