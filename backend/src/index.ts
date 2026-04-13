@@ -65,7 +65,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 	app.route('/api/people', createPeopleRoutes(usecases))
 	app.route('/api/introductions', createIntroductionsRoutes(usecases))
 	app.route('/api/feedback', createFeedbackRoutes(supabaseClient))
-	app.route('/api/matches', createMatchesRoutes(supabaseClient))
+	app.route('/api/matches', createMatchesRoutes(usecases))
 	app.route('/api/match-decisions', createMatchDecisionsRoutes(usecases))
 
 	// MCP Streamable HTTP endpoint (protected via route-level auth)
