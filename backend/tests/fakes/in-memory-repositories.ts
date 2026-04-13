@@ -1,8 +1,12 @@
 import {
+	IntroductionNotFoundError,
 	PersonNotFoundError,
 	RepositoryConflictError,
+	type IIntroductionRepository,
 	type IMatchDecisionRepository,
 	type IPersonRepository,
+	type Introduction,
+	type IntroductionUpdate,
 	type MatchDecision,
 	type Person,
 	type PersonUpdate,
@@ -88,5 +92,44 @@ export class InMemoryMatchDecisionRepository implements IMatchDecisionRepository
 		}
 		this.decisions.push(decision)
 		return decision
+	}
+}
+
+export class InMemoryIntroductionRepository implements IIntroductionRepository {
+	private introductions: Introduction[]
+
+	constructor(seed: readonly Introduction[] = []) {
+		this.introductions = [...seed]
+	}
+
+	async findById(id: string): Promise<Introduction | null> {
+		return this.introductions.find(i => i.id === id) ?? null
+	}
+
+	async findByMatchmaker(matchmakerId: string): Promise<readonly Introduction[]> {
+		return this.introductions.filter(
+			i => i.matchmakerAId === matchmakerId || i.matchmakerBId === matchmakerId,
+		)
+	}
+
+	async create(introduction: Introduction): Promise<Introduction> {
+		if (this.introductions.some(i => i.id === introduction.id)) {
+			throw new RepositoryConflictError(`Introduction already exists: ${introduction.id}`)
+		}
+		this.introductions.push(introduction)
+		return introduction
+	}
+
+	async update(id: string, patch: IntroductionUpdate): Promise<Introduction> {
+		let index = this.introductions.findIndex(i => i.id === id)
+		if (index === -1) throw new IntroductionNotFoundError(id)
+		let current = this.introductions[index]!
+		let updated: Introduction = Object.freeze({
+			...current,
+			...patch,
+			updatedAt: new Date(),
+		})
+		this.introductions[index] = updated
+		return updated
 	}
 }
