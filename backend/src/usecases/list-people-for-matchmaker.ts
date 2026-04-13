@@ -15,8 +15,9 @@ export class ListPeopleForMatchmaker
 	constructor(private deps: ListPeopleForMatchmakerDeps) {}
 
 	async execute(
-		_input: ListPeopleForMatchmakerInput,
+		input: ListPeopleForMatchmakerInput,
 	): Promise<UseCaseResult<readonly Person[]>> {
-		throw new Error('ListPeopleForMatchmaker.execute not implemented')
+		let people = await this.deps.personRepo.findByMatchmakerId(input.matchmakerId)
+		return { ok: true, data: people }
 	}
 }
