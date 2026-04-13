@@ -38,6 +38,11 @@ export {
 	type GetIntroductionByIdDeps,
 } from './get-introduction-by-id'
 export {
+	ListIntroductionsForMatchmaker,
+	type ListIntroductionsForMatchmakerInput,
+	type ListIntroductionsForMatchmakerDeps,
+} from './list-introductions-for-matchmaker'
+export {
 	UpdateIntroductionStatus,
 	type UpdateIntroductionStatusInput,
 	type UpdateIntroductionStatusDeps,
