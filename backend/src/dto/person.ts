@@ -73,15 +73,14 @@ export let fromUpdatePersonRequestDTO = (
 	matchmakerId: string,
 	personId: string,
 ): UpdatePersonInput => {
-	let patch: PersonUpdate = {}
-	if ('name' in body && body.name !== undefined) patch.name = body.name
-	if ('age' in body && body.age !== undefined) patch.age = body.age
-	if ('location' in body && body.location !== undefined) patch.location = body.location
-	if ('gender' in body && body.gender !== undefined) patch.gender = body.gender
-	if ('preferences' in body && body.preferences !== undefined)
-		patch.preferences = body.preferences
-	if ('personality' in body && body.personality !== undefined)
-		patch.personality = body.personality
-	if ('notes' in body && body.notes !== undefined) patch.notes = body.notes
+	let patch: PersonUpdate = {
+		...(body.name !== undefined && { name: body.name }),
+		...(body.age !== undefined && { age: body.age }),
+		...(body.location !== undefined && { location: body.location }),
+		...(body.gender !== undefined && { gender: body.gender }),
+		...(body.preferences !== undefined && { preferences: body.preferences }),
+		...(body.personality !== undefined && { personality: body.personality }),
+		...(body.notes !== undefined && { notes: body.notes }),
+	}
 	return { matchmakerId, personId, patch }
 }
