@@ -42,8 +42,33 @@ export class FindMatchesForPerson
 	constructor(private deps: FindMatchesForPersonDeps) {}
 
 	async execute(
-		_input: FindMatchesForPersonInput,
+		input: FindMatchesForPersonInput,
 	): Promise<UseCaseResult<readonly MatchSuggestion[]>> {
-		throw new Error('FindMatchesForPerson.execute not implemented')
+		let person = await this.deps.personRepo.findById(input.personId)
+		if (!person) {
+			return {
+				ok: false,
+				error: {
+					code: 'not_found',
+					entity: 'person',
+					message: `Person ${input.personId} not found`,
+				},
+			}
+		}
+
+		if (!AuthorizationService.canMatchmakerAccessPerson(input.matchmakerId, person)) {
+			return {
+				ok: false,
+				error: { code: 'forbidden', message: 'You do not own this person' },
+			}
+		}
+
+		let suggestions = await this.deps.matchFinder(
+			input.personId,
+			input.matchmakerId,
+			this.deps.personRepo,
+			this.deps.matchDecisionRepo,
+		)
+		return { ok: true, data: suggestions }
 	}
 }
