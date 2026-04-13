@@ -83,3 +83,45 @@ describe('AuthorizationService.canMatchmakerEditIntroduction', () => {
 		)
 	})
 })
+
+describe('AuthorizationService.canMatchmakerCreateIntroduction', () => {
+	test('allows when matchmaker owns person A only', () => {
+		let personA = buildPerson({ id: 'p-a', matchmakerId: 'mm-owner' })
+		let personB = buildPerson({ id: 'p-b', matchmakerId: 'mm-other' })
+		expect(
+			AuthorizationService.canMatchmakerCreateIntroduction('mm-owner', personA, personB),
+		).toBe(true)
+	})
+
+	test('allows when matchmaker owns person B only', () => {
+		let personA = buildPerson({ id: 'p-a', matchmakerId: 'mm-other' })
+		let personB = buildPerson({ id: 'p-b', matchmakerId: 'mm-owner' })
+		expect(
+			AuthorizationService.canMatchmakerCreateIntroduction('mm-owner', personA, personB),
+		).toBe(true)
+	})
+
+	test('allows when matchmaker owns both people', () => {
+		let personA = buildPerson({ id: 'p-a', matchmakerId: 'mm-owner' })
+		let personB = buildPerson({ id: 'p-b', matchmakerId: 'mm-owner' })
+		expect(
+			AuthorizationService.canMatchmakerCreateIntroduction('mm-owner', personA, personB),
+		).toBe(true)
+	})
+
+	test('denies when matchmaker owns neither person', () => {
+		let personA = buildPerson({ id: 'p-a', matchmakerId: 'mm-other-1' })
+		let personB = buildPerson({ id: 'p-b', matchmakerId: 'mm-other-2' })
+		expect(
+			AuthorizationService.canMatchmakerCreateIntroduction('mm-owner', personA, personB),
+		).toBe(false)
+	})
+
+	test('denies when both people have no matchmaker', () => {
+		let personA = buildPerson({ id: 'p-a', matchmakerId: null })
+		let personB = buildPerson({ id: 'p-b', matchmakerId: null })
+		expect(
+			AuthorizationService.canMatchmakerCreateIntroduction('mm-owner', personA, personB),
+		).toBe(false)
+	})
+})
