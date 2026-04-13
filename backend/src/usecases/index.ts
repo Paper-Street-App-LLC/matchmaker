@@ -23,7 +23,7 @@ export {
 	type MatchFinderFn,
 } from './find-matches-for-person'
 export {
-	CreateIntroductionUseCase,
+	CreateIntroduction,
 	type CreateIntroductionInput,
 	type CreateIntroductionDeps,
 } from './create-introduction'

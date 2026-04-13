@@ -14,7 +14,7 @@ export type CreateIntroductionDeps = {
 	introductionRepo: IIntroductionRepository
 }
 
-export class CreateIntroductionUseCase
+export class CreateIntroduction
 	implements UseCase<CreateIntroductionInput, Introduction>
 {
 	constructor(private deps: CreateIntroductionDeps) {}
