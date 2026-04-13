@@ -46,10 +46,7 @@ export let createIntroductionsRoutes = (
 			})
 
 			if (result.error) {
-				return c.json(
-					{ error: result.error.message },
-					result.error.status as 403 | 404 | 422 | 500,
-				)
+				return c.json({ error: result.error.message }, result.error.status)
 			}
 
 			return c.json(introductionToResponse(result.data), 201)
