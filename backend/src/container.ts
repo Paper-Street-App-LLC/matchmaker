@@ -4,6 +4,7 @@ import {
 	SupabasePersonRepository,
 } from './adapters/supabase/index.js'
 import type { SupabaseClient } from './lib/supabase.js'
+import { createIntroduction as createIntroductionService } from './services/introductions.js'
 import { matchFinder } from './services/matchFinder.js'
 import {
 	CreateIntroduction,
@@ -59,7 +60,11 @@ export let buildContainer = (
 			matchDecisionRepo,
 			matchFinder,
 		}),
-		createIntroduction: new CreateIntroduction({ personRepo, introductionRepo }),
+		createIntroduction: new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService,
+		}),
 		updateIntroductionStatus: new UpdateIntroductionStatus({ introductionRepo }),
 		recordMatchDecision: new RecordMatchDecision({
 			personRepo,

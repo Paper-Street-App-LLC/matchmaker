@@ -1,10 +1,15 @@
 import { describe, test, expect } from 'bun:test'
-import { CreateIntroduction } from '../../src/usecases/create-introduction'
+import {
+	CreateIntroduction,
+	type CreateIntroductionServiceFn,
+	type CreateIntroductionServiceResult,
+} from '../../src/usecases/create-introduction'
+import { createIntroduction as createIntroductionService } from '../../src/services/introductions'
 import {
 	InMemoryIntroductionRepository,
 	InMemoryPersonRepository,
 } from '../fakes/in-memory-repositories'
-import { assertErr, assertOk, makePerson } from './fixtures'
+import { assertErr, assertOk, makeIntroduction, makePerson } from './fixtures'
 
 describe('CreateIntroduction', () => {
 	test('creates an introduction when caller owns one person', async () => {
@@ -13,7 +18,11 @@ describe('CreateIntroduction', () => {
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-other' })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService,
+		})
 
 		// Act
 		let result = await usecase.execute({
@@ -35,7 +44,11 @@ describe('CreateIntroduction', () => {
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-user' })
 		let personRepo = new InMemoryPersonRepository([personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService,
+		})
 
 		// Act
 		let result = await usecase.execute({
@@ -58,7 +71,11 @@ describe('CreateIntroduction', () => {
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-b' })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService,
+		})
 
 		// Act
 		let result = await usecase.execute({
@@ -72,13 +89,67 @@ describe('CreateIntroduction', () => {
 		expect(result.error.code).toBe('forbidden')
 	})
 
+	test('throws when the injected service returns an unexpected 500', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let introductionRepo = new InMemoryIntroductionRepository()
+		let failingService: CreateIntroductionServiceFn = async () => {
+			let result: CreateIntroductionServiceResult = {
+				data: null,
+				error: { message: 'boom', status: 500 },
+			}
+			return result
+		}
+		let usecase = new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService: failingService,
+		})
+
+		// Act + Assert
+		await expect(
+			usecase.execute({ userId: 'mm-user', personAId: 'p-a', personBId: 'p-b' }),
+		).rejects.toThrow(/boom/)
+	})
+
+	test('passes through the data from the injected service on success', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let introductionRepo = new InMemoryIntroductionRepository()
+		let stubbedIntro = makeIntroduction({ id: 'intro-stub' })
+		let stubService: CreateIntroductionServiceFn = async () => ({
+			data: stubbedIntro,
+			error: null,
+		})
+		let usecase = new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService: stubService,
+		})
+
+		// Act
+		let result = await usecase.execute({
+			userId: 'mm-user',
+			personAId: 'p-a',
+			personBId: 'p-b',
+		})
+
+		// Assert
+		assertOk(result)
+		expect(result.data.id).toBe('intro-stub')
+	})
+
 	test('translates unassigned matchmaker to unprocessable', async () => {
 		// Arrange
 		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
 		let personB = makePerson({ id: 'p-b', matchmakerId: null })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({ personRepo, introductionRepo })
+		let usecase = new CreateIntroduction({
+			personRepo,
+			introductionRepo,
+			createIntroductionService,
+		})
 
 		// Act
 		let result = await usecase.execute({
