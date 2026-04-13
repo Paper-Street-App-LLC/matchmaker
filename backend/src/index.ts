@@ -63,7 +63,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 	// Protected API routes
 	app.use('/api/*', createAuthMiddleware(supabaseClient))
 	app.route('/api/people', createPeopleRoutes(usecases))
-	app.route('/api/introductions', createIntroductionsRoutes(supabaseClient))
+	app.route('/api/introductions', createIntroductionsRoutes(usecases))
 	app.route('/api/feedback', createFeedbackRoutes(supabaseClient))
 	app.route('/api/matches', createMatchesRoutes(supabaseClient))
 	app.route('/api/match-decisions', createMatchDecisionsRoutes(supabaseClient))
