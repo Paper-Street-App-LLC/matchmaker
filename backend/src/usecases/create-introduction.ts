@@ -1,5 +1,4 @@
 import type { IIntroductionRepository, IPersonRepository, Introduction } from '@matchmaker/shared'
-import { createIntroduction as createIntroductionService } from '../services/introductions'
 import type { UseCase, UseCaseResult } from './types'
 
 export type CreateIntroductionInput = {
@@ -9,18 +8,34 @@ export type CreateIntroductionInput = {
 	notes?: string | null
 }
 
+export type CreateIntroductionServiceParams = {
+	person_a_id: string
+	person_b_id: string
+	notes?: string | null
+	userId: string
+}
+
+export type CreateIntroductionServiceResult =
+	| { data: Introduction; error: null }
+	| { data: null; error: { message: string; status: 403 | 404 | 422 | 500 } }
+
+export type CreateIntroductionServiceFn = (
+	personRepo: IPersonRepository,
+	introductionRepo: IIntroductionRepository,
+	params: CreateIntroductionServiceParams,
+) => Promise<CreateIntroductionServiceResult>
+
 export type CreateIntroductionDeps = {
 	personRepo: IPersonRepository
 	introductionRepo: IIntroductionRepository
+	createIntroductionService: CreateIntroductionServiceFn
 }
 
-export class CreateIntroduction
-	implements UseCase<CreateIntroductionInput, Introduction>
-{
+export class CreateIntroduction implements UseCase<CreateIntroductionInput, Introduction> {
 	constructor(private deps: CreateIntroductionDeps) {}
 
 	async execute(input: CreateIntroductionInput): Promise<UseCaseResult<Introduction>> {
-		let serviceResult = await createIntroductionService(
+		let serviceResult = await this.deps.createIntroductionService(
 			this.deps.personRepo,
 			this.deps.introductionRepo,
 			{
