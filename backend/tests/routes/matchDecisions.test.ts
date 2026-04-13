@@ -1,349 +1,231 @@
-import { describe, test, expect, mock } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { Hono } from 'hono'
-import { createMatchDecisionsRoutes } from '../../src/routes/matchDecisions'
-import { createMockSupabaseClient } from '../mocks/supabase'
-import { decisionResponseSchema, type DecisionResponse } from '../../src/schemas/matchDecisions'
+import {
+	createMatchDecisionsRoutes,
+	type MatchDecisionsRouteDeps,
+} from '../../src/routes/matchDecisions'
+import {
+	InMemoryMatchDecisionRepository,
+	InMemoryPersonRepository,
+} from '../fakes/in-memory-repositories'
+import { ListMatchDecisions, RecordMatchDecision } from '../../src/usecases'
+import { fixedClock, fixedIds, makeDecision, makePerson } from '../usecases/fixtures'
+import {
+	decisionResponseSchema,
+	type DecisionResponse,
+} from '../../src/schemas/matchDecisions'
 
-type Variables = {
-	userId: string
+type Variables = { userId: string }
+
+let MM_USER = '550e8400-e29b-41d4-a716-446655440000'
+let PERSON_ID = '650e8400-e29b-41d4-a716-446655440001'
+let CANDIDATE_ID = '750e8400-e29b-41d4-a716-446655440002'
+let NEW_DECISION_ID = '850e8400-e29b-41d4-a716-446655440003'
+
+let buildDeps = (
+	personRepo: InMemoryPersonRepository,
+	matchDecisionRepo: InMemoryMatchDecisionRepository,
+): MatchDecisionsRouteDeps => ({
+	recordMatchDecision: new RecordMatchDecision({
+		personRepo,
+		matchDecisionRepo,
+		clock: fixedClock(),
+		ids: fixedIds([NEW_DECISION_ID]),
+	}),
+	listMatchDecisions: new ListMatchDecisions({ personRepo, matchDecisionRepo }),
+})
+
+let mountApp = (deps: MatchDecisionsRouteDeps, userId: string) => {
+	let app = new Hono<{ Variables: Variables }>()
+	app.use('*', async (c, next) => {
+		c.set('userId', userId)
+		await next()
+	})
+	app.route('/', createMatchDecisionsRoutes(deps))
+	return app
 }
 
-let mockUserId = '550e8400-e29b-41d4-a716-446655440000'
-let mockPersonId = '650e8400-e29b-41d4-a716-446655440001'
-let mockCandidateId = '750e8400-e29b-41d4-a716-446655440002'
-
 describe('POST /api/match-decisions', () => {
-	test('should record a declined decision with reason', async () => {
-		let mockDecision = {
-			id: '850e8400-e29b-41d4-a716-446655440003',
-			matchmaker_id: mockUserId,
-			person_id: mockPersonId,
-			candidate_id: mockCandidateId,
-			decision: 'declined',
-			decline_reason: 'incompatible religion',
-			created_at: new Date().toISOString(),
-		}
+	test('records a declined decision with reason', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({ id: PERSON_ID, matchmakerId: MM_USER }),
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_col: string, _val: unknown) => ({
-						eq: mock((_col2: string, _val2: unknown) => ({
-							maybeSingle: mock(() => ({
-								data: { id: mockPersonId },
-								error: null,
-							})),
-						})),
-					})),
-				})),
-				insert: mock((_data: unknown) => ({
-					select: mock(() => ({
-						single: mock(() => ({
-							data: mockDecision,
-							error: null,
-						})),
-					})),
-				})),
-			})),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
+		// Act
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				person_id: mockPersonId,
-				candidate_id: mockCandidateId,
+				person_id: PERSON_ID,
+				candidate_id: CANDIDATE_ID,
 				decision: 'declined',
 				decline_reason: 'incompatible religion',
 			}),
 		})
-
 		let res = await app.fetch(req)
-		let json = (await res.json()) as typeof mockDecision
+		let json = (await res.json()) as DecisionResponse
 
+		// Assert
 		expect(res.status).toBe(201)
 		expect(json.decision).toBe('declined')
 		expect(json.decline_reason).toBe('incompatible religion')
-		expect(json.person_id).toBe(mockPersonId)
-		expect(json.candidate_id).toBe(mockCandidateId)
+		expect(json.person_id).toBe(PERSON_ID)
+		expect(json.candidate_id).toBe(CANDIDATE_ID)
 		decisionResponseSchema.parse(json)
 	})
 
-	test('should record an accepted decision', async () => {
-		let mockDecision = {
-			id: '950e8400-e29b-41d4-a716-446655440004',
-			matchmaker_id: mockUserId,
-			person_id: mockPersonId,
-			candidate_id: mockCandidateId,
-			decision: 'accepted',
-			decline_reason: null,
-			created_at: new Date().toISOString(),
-		}
+	test('records an accepted decision', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({ id: PERSON_ID, matchmakerId: MM_USER }),
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_col: string, _val: unknown) => ({
-						eq: mock((_col2: string, _val2: unknown) => ({
-							maybeSingle: mock(() => ({
-								data: { id: mockPersonId },
-								error: null,
-							})),
-						})),
-					})),
-				})),
-				insert: mock((_data: unknown) => ({
-					select: mock(() => ({
-						single: mock(() => ({
-							data: mockDecision,
-							error: null,
-						})),
-					})),
-				})),
-			})),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
+		// Act
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				person_id: mockPersonId,
-				candidate_id: mockCandidateId,
+				person_id: PERSON_ID,
+				candidate_id: CANDIDATE_ID,
 				decision: 'accepted',
 			}),
 		})
-
 		let res = await app.fetch(req)
-		let json = (await res.json()) as typeof mockDecision
+		let json = (await res.json()) as DecisionResponse
 
+		// Assert
 		expect(res.status).toBe(201)
 		expect(json.decision).toBe('accepted')
 		expect(json.decline_reason).toBeNull()
 		decisionResponseSchema.parse(json)
 	})
 
-	test('should validate required fields', async () => {
-		let mockClient = createMockSupabaseClient()
+	test('returns 400 when required fields are missing', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
+		// Act
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ decision: 'declined' }), // missing person_id, candidate_id
+			body: JSON.stringify({ decision: 'declined' }),
 		})
-
 		let res = await app.fetch(req)
+
+		// Assert
 		expect(res.status).toBe(400)
 	})
 
-	test('should validate decision enum', async () => {
-		let mockClient = createMockSupabaseClient()
+	test('returns 400 when decision enum value is invalid', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
+		// Act
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				person_id: mockPersonId,
-				candidate_id: mockCandidateId,
+				person_id: PERSON_ID,
+				candidate_id: CANDIDATE_ID,
 				decision: 'maybe',
 			}),
 		})
-
 		let res = await app.fetch(req)
+
+		// Assert
 		expect(res.status).toBe(400)
 	})
 
-	test('should return 404 when person not found', async () => {
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_col: string, _val: unknown) => ({
-						eq: mock((_col2: string, _val2: unknown) => ({
-							maybeSingle: mock(() => ({
-								data: null,
-								error: null,
-							})),
-						})),
-					})),
-				})),
-			})),
-		})
+	test('returns 404 when the person does not exist', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
+		// Act
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				person_id: mockPersonId,
-				candidate_id: mockCandidateId,
+				person_id: PERSON_ID,
+				candidate_id: CANDIDATE_ID,
 				decision: 'declined',
 			}),
 		})
-
 		let res = await app.fetch(req)
 		let json = (await res.json()) as { error: string }
 
+		// Assert
 		expect(res.status).toBe(404)
 		expect(json.error).toBe('Person not found')
 	})
 })
 
 describe('GET /api/match-decisions/:personId', () => {
-	test('should list all decisions for a person', async () => {
-		let mockDecisions = [
-			{
+	test('lists all decisions for a person owned by the caller', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({ id: PERSON_ID, matchmakerId: MM_USER }),
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository([
+			makeDecision({
 				id: 'a50e8400-e29b-41d4-a716-446655440005',
-				matchmaker_id: mockUserId,
-				person_id: mockPersonId,
-				candidate_id: mockCandidateId,
+				matchmakerId: MM_USER,
+				personId: PERSON_ID,
+				candidateId: CANDIDATE_ID,
 				decision: 'declined',
-				decline_reason: 'age gap',
-				created_at: new Date().toISOString(),
-			},
-		]
+				declineReason: 'age gap',
+			}),
+		])
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_col: string, _val: unknown) => {
-						// person ownership check returns person
-						if (_col === 'id') {
-							return {
-								eq: mock((_col2: string, _val2: unknown) => ({
-									maybeSingle: mock(() => ({
-										data: { id: mockPersonId },
-										error: null,
-									})),
-								})),
-							}
-						}
-						// decisions query: .eq('person_id').eq('matchmaker_id')
-						return {
-							eq: mock((_col2: string, _val2: unknown) => ({
-								data: mockDecisions,
-								error: null,
-							})),
-						}
-					}),
-				})),
-			})),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
-		let res = await app.fetch(new Request(`http://localhost/${mockPersonId}`))
+		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 		let json = (await res.json()) as DecisionResponse[]
 
+		// Assert
 		expect(res.status).toBe(200)
-		expect(Array.isArray(json)).toBe(true)
 		expect(json).toHaveLength(1)
 		expect(json[0]?.decision).toBe('declined')
 	})
 
-	test('should return empty array if no decisions', async () => {
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_col: string, _val: unknown) => {
-						if (_col === 'id') {
-							return {
-								eq: mock((_col2: string, _val2: unknown) => ({
-									maybeSingle: mock(() => ({
-										data: { id: mockPersonId },
-										error: null,
-									})),
-								})),
-							}
-						}
-						return {
-							eq: mock((_col2: string, _val2: unknown) => ({
-								data: [],
-								error: null,
-							})),
-						}
-					}),
-				})),
-			})),
-		})
+	test('returns empty array when the person has no decisions', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({ id: PERSON_ID, matchmakerId: MM_USER }),
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
-		let res = await app.fetch(new Request(`http://localhost/${mockPersonId}`))
+		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 		let json = (await res.json()) as DecisionResponse[]
 
+		// Assert
 		expect(res.status).toBe(200)
 		expect(json).toHaveLength(0)
 	})
 
-	test('should return 404 when person not found', async () => {
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_col: string, _val: unknown) => ({
-						eq: mock((_col2: string, _val2: unknown) => ({
-							maybeSingle: mock(() => ({
-								data: null,
-								error: null,
-							})),
-						})),
-					})),
-				})),
-			})),
-		})
+	test('returns 404 when the person does not exist', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchDecisionsRoutes(mockClient))
-
-		let res = await app.fetch(new Request(`http://localhost/${mockPersonId}`))
+		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 		let json = (await res.json()) as { error: string }
 
+		// Assert
 		expect(res.status).toBe(404)
 		expect(json.error).toBe('Person not found')
 	})
