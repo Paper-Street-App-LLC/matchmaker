@@ -1,10 +1,19 @@
 import { describe, test, expect } from 'bun:test'
-import { createPerson, type Introduction } from '@matchmaker/shared'
+import { createPerson } from '@matchmaker/shared'
 import { createIntroduction } from '../../src/services/introductions'
 import {
 	InMemoryIntroductionRepository,
 	InMemoryPersonRepository,
 } from '../fakes/in-memory-repositories'
+
+type ServiceResult = Awaited<ReturnType<typeof createIntroduction>>
+type OkResult = Extract<ServiceResult, { error: null }>
+
+function assertOk(result: ServiceResult): asserts result is OkResult {
+	if (result.error !== null) {
+		throw new Error(`expected ok result, got error: ${result.error.message}`)
+	}
+}
 
 let now = new Date('2026-01-01T00:00:00.000Z')
 
@@ -40,8 +49,8 @@ describe('createIntroduction service', () => {
 		})
 
 		// Assert
-		expect(result.error).toBeNull()
-		let intro = result.data as Introduction
+		assertOk(result)
+		let intro = result.data
 		expect(intro.matchmakerAId).toBe('mm-user')
 		expect(intro.matchmakerBId).toBe('mm-other')
 		expect(intro.personAId).toBe('p-a')
@@ -67,10 +76,9 @@ describe('createIntroduction service', () => {
 		})
 
 		// Assert
-		expect(result.error).toBeNull()
-		let intro = result.data as Introduction
-		expect(intro.matchmakerAId).toBe('mm-other')
-		expect(intro.matchmakerBId).toBe('mm-user')
+		assertOk(result)
+		expect(result.data.matchmakerAId).toBe('mm-other')
+		expect(result.data.matchmakerBId).toBe('mm-user')
 	})
 
 	test('creates introduction when user owns both people', async () => {
@@ -88,10 +96,9 @@ describe('createIntroduction service', () => {
 		})
 
 		// Assert
-		expect(result.error).toBeNull()
-		let intro = result.data as Introduction
-		expect(intro.matchmakerAId).toBe('mm-user')
-		expect(intro.matchmakerBId).toBe('mm-user')
+		assertOk(result)
+		expect(result.data.matchmakerAId).toBe('mm-user')
+		expect(result.data.matchmakerBId).toBe('mm-user')
 	})
 
 	test('passes notes through to the created introduction', async () => {
@@ -110,8 +117,8 @@ describe('createIntroduction service', () => {
 		})
 
 		// Assert
-		expect(result.error).toBeNull()
-		expect((result.data as Introduction).notes).toBe('they both love climbing')
+		assertOk(result)
+		expect(result.data.notes).toBe('they both love climbing')
 	})
 
 	test('returns 404 when person A is not found', async () => {
@@ -189,8 +196,8 @@ describe('createIntroduction service', () => {
 		})
 
 		// Assert
-		expect(result.error).toBeNull()
-		let intro = result.data as Introduction
+		assertOk(result)
+		let intro = result.data
 		expect(typeof intro.id).toBe('string')
 		expect(intro.id.length).toBeGreaterThan(0)
 		expect(intro.createdAt.getTime()).toBe(intro.updatedAt.getTime())

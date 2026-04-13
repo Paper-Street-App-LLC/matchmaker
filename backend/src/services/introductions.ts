@@ -13,9 +13,11 @@ type CreateIntroductionParams = {
 	userId: string
 }
 
+type IntroductionErrorStatus = 403 | 404 | 422 | 500
+
 type IntroductionResult =
 	| { data: Introduction; error: null }
-	| { data: null; error: { message: string; status: number } }
+	| { data: null; error: { message: string; status: IntroductionErrorStatus } }
 
 export let createIntroduction = async (
 	personRepo: IPersonRepository,
