@@ -1,45 +1,35 @@
 import { Hono } from 'hono'
-import type { SupabaseClient } from '../lib/supabase'
-import {
-	SupabaseMatchDecisionRepository,
-	SupabasePersonRepository,
-} from '../adapters/supabase'
-import { matchFinder } from '../services/matchFinder'
+import { toMatchSuggestionResponseDTO, useCaseErrorToHttp } from '../dto'
+import type { FindMatchesForPerson } from '../usecases'
 
 type Variables = {
 	userId: string
 }
 
+export type MatchesRouteDeps = {
+	findMatchesForPerson: FindMatchesForPerson
+}
+
 export let createMatchesRoutes = (
-	supabaseClient: SupabaseClient
+	deps: MatchesRouteDeps,
 ): Hono<{ Variables: Variables }> => {
 	let app = new Hono<{ Variables: Variables }>()
 
 	app.get('/:personId', async c => {
 		let userId = c.get('userId')
 		let personId = c.req.param('personId')
-
-		// Verify person exists and belongs to matchmaker
-		let { data: person, error: personError } = await supabaseClient
-			.from('people')
-			.select('*')
-			.eq('id', personId)
-			.eq('matchmaker_id', userId)
-			.maybeSingle()
-
-		if (personError) {
-			return c.json({ error: personError.message }, 500)
-		}
-
-		if (!person) {
-			return c.json({ error: 'Person not found' }, 404)
-		}
-
 		try {
-			let personRepo = new SupabasePersonRepository(supabaseClient)
-			let matchDecisionRepo = new SupabaseMatchDecisionRepository(supabaseClient)
-			let matches = await matchFinder(personId, userId, personRepo, matchDecisionRepo)
-			return c.json(matches, 200)
+			let result = await deps.findMatchesForPerson.execute({
+				matchmakerId: userId,
+				personId,
+			})
+			if (!result.ok) {
+				let { status, body } = useCaseErrorToHttp(result.error)
+				let friendly =
+					result.error.code === 'not_found' ? { error: 'Person not found' } : body
+				return c.json(friendly, status)
+			}
+			return c.json(result.data.map(toMatchSuggestionResponseDTO), 200)
 		} catch (error) {
 			let message = error instanceof Error ? error.message : 'Failed to find matches'
 			return c.json({ error: message }, 500)

@@ -1,116 +1,80 @@
-import { describe, test, expect, mock } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { Hono } from 'hono'
-import { createMatchesRoutes } from '../../src/routes/matches'
-import { createMockSupabaseClient } from '../mocks/supabase'
+import { createMatchesRoutes, type MatchesRouteDeps } from '../../src/routes/matches'
+import {
+	InMemoryMatchDecisionRepository,
+	InMemoryPersonRepository,
+} from '../fakes/in-memory-repositories'
+import { FindMatchesForPerson, type MatchFinderFn } from '../../src/usecases'
+import { matchFinder as realMatchFinder } from '../../src/services/matchFinder'
+import { makeDecision, makePerson } from '../usecases/fixtures'
 import type { MatchResponse } from '../../src/schemas/matches'
 
-type Variables = {
-	userId: string
-}
+type Variables = { userId: string }
+type ErrorResponse = { error: string }
 
-type ErrorResponse = {
-	error: string
+let MM_USER = '550e8400-e29b-41d4-a716-446655440000'
+let PERSON_ID = '650e8400-e29b-41d4-a716-446655440001'
+let OTHER_ID = '750e8400-e29b-41d4-a716-446655440002'
+let THIRD_ID = '850e8400-e29b-41d4-a716-446655440003'
+
+let buildDeps = (
+	personRepo: InMemoryPersonRepository,
+	matchDecisionRepo: InMemoryMatchDecisionRepository,
+	matchFinder: MatchFinderFn = realMatchFinder,
+): MatchesRouteDeps => ({
+	findMatchesForPerson: new FindMatchesForPerson({
+		personRepo,
+		matchDecisionRepo,
+		matchFinder,
+	}),
+})
+
+let mountApp = (deps: MatchesRouteDeps, userId: string) => {
+	let app = new Hono<{ Variables: Variables }>()
+	app.use('*', async (c, next) => {
+		c.set('userId', userId)
+		await next()
+	})
+	app.route('/', createMatchesRoutes(deps))
+	return app
 }
 
 describe('GET /api/matches/:personId', () => {
-	test('should return match suggestions for person', async () => {
-		let mockUserId = '550e8400-e29b-41d4-a716-446655440000'
-		let mockPersonId = '650e8400-e29b-41d4-a716-446655440001'
-		let mockPerson = {
-			id: mockPersonId,
-			matchmaker_id: mockUserId,
-			name: 'John Doe',
-			age: 30,
-			location: 'NYC',
-			gender: 'male',
-			preferences: null,
-			personality: null,
-			notes: null,
-			active: true,
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
-		}
-
-		let mockAllPeople = [
-			mockPerson,
-			{
-				id: '750e8400-e29b-41d4-a716-446655440002',
-				matchmaker_id: mockUserId,
+	test('returns match suggestions for a person', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({
+				id: PERSON_ID,
+				matchmakerId: MM_USER,
+				name: 'John Doe',
+				age: 30,
+				location: 'NYC',
+				gender: 'male',
+			}),
+			makePerson({
+				id: OTHER_ID,
+				matchmakerId: MM_USER,
 				name: 'Jane Doe',
 				age: 28,
 				location: 'NYC',
 				gender: 'female',
-				preferences: null,
-				personality: null,
-				notes: null,
-				active: true,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString(),
-			},
-		]
-
-		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => {
-				if (table === 'match_decisions') {
-					return {
-						select: mock((_columns: string) => ({
-							eq: mock((_col: string, _val: unknown) => ({
-								eq: mock((_col2: string, _val2: unknown) => ({
-									eq: mock((_col3: string, _val3: unknown) => ({
-										data: [],
-										error: null,
-									})),
-								})),
-							})),
-						})),
-					}
-				}
-				// people table
-				return {
-					select: mock((_columns: string) => ({
-						eq: mock((column: string, value: unknown) => {
-							if (column === 'id' && value === mockPersonId) {
-								return {
-									eq: mock((_col2: string, _val2: unknown) => ({
-										maybeSingle: mock(() => ({
-											data: mockPerson,
-											error: null,
-										})),
-									})),
-								}
-							}
-							// .eq('active', true) — return all people for matchFinder
-							if (column === 'active') {
-								return {
-									data: mockAllPeople,
-									error: null,
-								}
-							}
-							return { data: null, error: null }
-						}),
-					})),
-				}
 			}),
-		})
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchesRoutes(mockClient))
-
-		let req = new Request(`http://localhost/${mockPersonId}`)
-
-		let res = await app.fetch(req)
+		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 		let json = (await res.json()) as MatchResponse[]
 
+		// Assert
 		expect(res.status).toBe(200)
 		expect(Array.isArray(json)).toBe(true)
 		expect(json).toHaveLength(1)
 		expect(json[0]).toMatchObject({
 			person: {
-				id: '750e8400-e29b-41d4-a716-446655440002',
+				id: OTHER_ID,
 				name: 'Jane Doe',
 			},
 			compatibility_score: expect.any(Number),
@@ -118,231 +82,88 @@ describe('GET /api/matches/:personId', () => {
 		})
 	})
 
-	test('should still include accepted candidates in results', async () => {
-		let mockUserId = '550e8400-e29b-41d4-a716-446655440000'
-		let mockPersonId = '650e8400-e29b-41d4-a716-446655440001'
-		let acceptedCandidateId = '750e8400-e29b-41d4-a716-446655440002'
-		let declinedCandidateId = '850e8400-e29b-41d4-a716-446655440003'
-
-		let mockPerson = {
-			id: mockPersonId,
-			matchmaker_id: mockUserId,
-			name: 'John Doe',
-			age: 30,
-			location: 'NYC',
-			gender: 'male',
-			preferences: null,
-			personality: null,
-			notes: null,
-			active: true,
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
-		}
-
-		let mockAllPeople = [
-			mockPerson,
-			{
-				id: acceptedCandidateId,
-				matchmaker_id: mockUserId,
+	test('excludes previously declined candidates from results', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({
+				id: PERSON_ID,
+				matchmakerId: MM_USER,
+				name: 'John Doe',
+				age: 30,
+				location: 'NYC',
+				gender: 'male',
+			}),
+			makePerson({
+				id: OTHER_ID,
+				matchmakerId: MM_USER,
 				name: 'Jane Doe',
 				age: 28,
 				location: 'NYC',
 				gender: 'female',
-				preferences: null,
-				personality: null,
-				notes: null,
-				active: true,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString(),
-			},
-			{
-				id: declinedCandidateId,
-				matchmaker_id: mockUserId,
+			}),
+			makePerson({
+				id: THIRD_ID,
+				matchmakerId: MM_USER,
 				name: 'Sara Smith',
 				age: 26,
 				location: 'NYC',
 				gender: 'female',
-				preferences: null,
-				personality: null,
-				notes: null,
-				active: true,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString(),
-			},
-		]
-
-		let declinedDecisionRow = {
-			id: '950e8400-e29b-41d4-a716-446655440009',
-			matchmaker_id: mockUserId,
-			person_id: mockPersonId,
-			candidate_id: declinedCandidateId,
-			decision: 'declined',
-			decline_reason: 'not a fit',
-			created_at: new Date().toISOString(),
-		}
-
-		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => {
-				if (table === 'match_decisions') {
-					return {
-						select: mock((_columns: string) => ({
-							eq: mock((_col: string, _val: unknown) => ({
-								data: [declinedDecisionRow],
-								error: null,
-							})),
-						})),
-					}
-				}
-				// people table
-				return {
-					select: mock((_columns: string) => ({
-						eq: mock((column: string, value: unknown) => {
-							if (column === 'id' && value === mockPersonId) {
-								return {
-									eq: mock((_col2: string, _val2: unknown) => ({
-										maybeSingle: mock(() => ({
-											data: mockPerson,
-											error: null,
-										})),
-									})),
-								}
-							}
-							if (column === 'active') {
-								return {
-									data: mockAllPeople,
-									error: null,
-								}
-							}
-							return { data: null, error: null }
-						}),
-					})),
-				}
 			}),
-		})
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository([
+			makeDecision({
+				id: 'd-1',
+				matchmakerId: MM_USER,
+				personId: PERSON_ID,
+				candidateId: THIRD_ID,
+				decision: 'declined',
+				declineReason: 'not a fit',
+			}),
+		])
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchesRoutes(mockClient))
-
-		let req = new Request(`http://localhost/${mockPersonId}`)
-		let res = await app.fetch(req)
+		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 		let json = (await res.json()) as MatchResponse[]
 
+		// Assert
 		expect(res.status).toBe(200)
-		// Accepted candidate (Jane) should still appear; declined (Sara) should not
-		let resultIds = json.map(m => m.person.id)
-		expect(resultIds).toContain(acceptedCandidateId)
-		expect(resultIds).not.toContain(declinedCandidateId)
+		let ids = json.map(m => m.person.id)
+		expect(ids).toContain(OTHER_ID)
+		expect(ids).not.toContain(THIRD_ID)
 	})
 
-	test('should return 500 when matchFinder query fails', async () => {
-		let mockUserId = '550e8400-e29b-41d4-a716-446655440000'
-		let mockPersonId = '650e8400-e29b-41d4-a716-446655440001'
-		let mockPerson = {
-			id: mockPersonId,
-			matchmaker_id: mockUserId,
-			name: 'John Doe',
-			age: 30,
-			location: 'NYC',
-			gender: 'male',
-			preferences: null,
-			personality: null,
-			notes: null,
-			active: true,
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
+	test('returns 500 when the matchFinder throws', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository([
+			makePerson({ id: PERSON_ID, matchmakerId: MM_USER }),
+		])
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let exploding: MatchFinderFn = async () => {
+			throw new Error('database connection failed')
 		}
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo, exploding), MM_USER)
 
-		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => {
-				if (table === 'match_decisions') {
-					return {
-						select: mock((_columns: string) => ({
-							eq: mock((_col: string, _val: unknown) => ({
-								eq: mock((_col2: string, _val2: unknown) => ({
-									eq: mock((_col3: string, _val3: unknown) => ({
-										data: [],
-										error: null,
-									})),
-								})),
-							})),
-						})),
-					}
-				}
-				// people table
-				return {
-					select: mock((_columns: string) => ({
-						eq: mock((column: string, value: unknown) => {
-							if (column === 'id' && value === mockPersonId) {
-								return {
-									eq: mock((_col2: string, _val2: unknown) => ({
-										maybeSingle: mock(() => ({
-											data: mockPerson,
-											error: null,
-										})),
-									})),
-								}
-							}
-							// .eq('active', true) — return error for matchFinder people query
-							if (column === 'active') {
-								return {
-									data: null,
-									error: { message: 'database connection failed' },
-								}
-							}
-							return { data: null, error: null }
-						}),
-					})),
-				}
-			}),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createMatchesRoutes(mockClient))
-
-		let req = new Request(`http://localhost/${mockPersonId}`)
-		let res = await app.fetch(req)
+		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 		let json = (await res.json()) as ErrorResponse
 
+		// Assert
 		expect(res.status).toBe(500)
 		expect(json.error).toBe('database connection failed')
 	})
 
-	test('should return 404 when person not found', async () => {
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_column: string, _value: unknown) => ({
-						eq: mock((_column2: string, _value2: unknown) => ({
-							maybeSingle: mock(() => ({
-								data: null,
-								error: null,
-							})),
-						})),
-					})),
-				})),
-			})),
-		})
+	test('returns 404 when the person does not exist', async () => {
+		// Arrange
+		let personRepo = new InMemoryPersonRepository()
+		let matchDecisionRepo = new InMemoryMatchDecisionRepository()
+		let app = mountApp(buildDeps(personRepo, matchDecisionRepo), MM_USER)
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', 'test-user')
-			await next()
-		})
-		app.route('/', createMatchesRoutes(mockClient))
-
-		let req = new Request('http://localhost/nonexistent-id')
-
-		let res = await app.fetch(req)
+		// Act
+		let res = await app.fetch(new Request('http://localhost/nonexistent-id'))
 		let json = (await res.json()) as ErrorResponse
 
+		// Assert
 		expect(res.status).toBe(404)
 		expect(json.error).toBe('Person not found')
 	})
