@@ -6,6 +6,7 @@ import {
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
+	GetPersonById,
 	ListMatchDecisions,
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
@@ -19,7 +20,7 @@ import {
 let makeTestClient = () => createClient('https://fake.test.invalid', 'sb-test-key')
 
 describe('buildContainer', () => {
-	test('wires all 9 use cases to their concrete classes', () => {
+	test('wires all use cases to their concrete classes', () => {
 		// Arrange
 		let client = makeTestClient()
 
@@ -30,6 +31,7 @@ describe('buildContainer', () => {
 		expect(usecases.createPerson).toBeInstanceOf(CreatePerson)
 		expect(usecases.updatePerson).toBeInstanceOf(UpdatePerson)
 		expect(usecases.deletePerson).toBeInstanceOf(DeletePerson)
+		expect(usecases.getPersonById).toBeInstanceOf(GetPersonById)
 		expect(usecases.listPeopleForMatchmaker).toBeInstanceOf(ListPeopleForMatchmaker)
 		expect(usecases.findMatchesForPerson).toBeInstanceOf(FindMatchesForPerson)
 		expect(usecases.createIntroduction).toBeInstanceOf(CreateIntroduction)

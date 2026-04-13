@@ -11,6 +11,7 @@ import {
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
+	GetPersonById,
 	ListMatchDecisions,
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
@@ -26,6 +27,7 @@ export interface UseCases {
 	createPerson: CreatePerson
 	updatePerson: UpdatePerson
 	deletePerson: DeletePerson
+	getPersonById: GetPersonById
 	listPeopleForMatchmaker: ListPeopleForMatchmaker
 	findMatchesForPerson: FindMatchesForPerson
 	createIntroduction: CreateIntroduction
@@ -54,6 +56,7 @@ export let buildContainer = (
 		createPerson: new CreatePerson({ personRepo, clock, ids }),
 		updatePerson: new UpdatePerson({ personRepo }),
 		deletePerson: new DeletePerson({ personRepo }),
+		getPersonById: new GetPersonById({ personRepo }),
 		listPeopleForMatchmaker: new ListPeopleForMatchmaker({ personRepo }),
 		findMatchesForPerson: new FindMatchesForPerson({
 			personRepo,

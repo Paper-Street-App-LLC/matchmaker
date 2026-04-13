@@ -11,6 +11,11 @@ export {
 	type DeletePersonDeps,
 } from './delete-person'
 export {
+	GetPersonById,
+	type GetPersonByIdInput,
+	type GetPersonByIdDeps,
+} from './get-person-by-id'
+export {
 	ListPeopleForMatchmaker,
 	type ListPeopleForMatchmakerInput,
 	type ListPeopleForMatchmakerDeps,
