@@ -1,4 +1,10 @@
-import type { SupabaseClient } from '../lib/supabase'
+import {
+	AuthorizationService,
+	createIntroduction as buildIntroduction,
+	type IIntroductionRepository,
+	type IPersonRepository,
+	type Introduction,
+} from '@matchmaker/shared'
 
 type CreateIntroductionParams = {
 	person_a_id: string
@@ -8,59 +14,56 @@ type CreateIntroductionParams = {
 }
 
 type IntroductionResult =
-	| { data: Record<string, unknown>; error: null }
+	| { data: Introduction; error: null }
 	| { data: null; error: { message: string; status: number } }
 
 export let createIntroduction = async (
-	supabaseClient: SupabaseClient,
-	params: CreateIntroductionParams
+	personRepo: IPersonRepository,
+	introductionRepo: IIntroductionRepository,
+	params: CreateIntroductionParams,
 ): Promise<IntroductionResult> => {
-	let { person_a_id, person_b_id, notes, userId } = params
-
-	// Look up both people to get their matchmaker IDs
-	let { data: personA, error: personAError } = await supabaseClient
-		.from('people')
-		.select('id, matchmaker_id')
-		.eq('id', person_a_id)
-		.single()
-
-	if (personAError || !personA) {
+	let personA = await personRepo.findById(params.person_a_id)
+	if (!personA) {
 		return { data: null, error: { message: 'Person A not found', status: 404 } }
 	}
 
-	let { data: personB, error: personBError } = await supabaseClient
-		.from('people')
-		.select('id, matchmaker_id')
-		.eq('id', person_b_id)
-		.single()
-
-	if (personBError || !personB) {
+	let personB = await personRepo.findById(params.person_b_id)
+	if (!personB) {
 		return { data: null, error: { message: 'Person B not found', status: 404 } }
 	}
 
-	// Validate the requesting user owns at least one of the people
-	if (personA.matchmaker_id !== userId && personB.matchmaker_id !== userId) {
+	if (!AuthorizationService.canMatchmakerCreateIntroduction(params.userId, personA, personB)) {
 		return {
 			data: null,
-			error: { message: 'You must own at least one person in the introduction', status: 403 },
+			error: {
+				message: 'You must own at least one person in the introduction',
+				status: 403,
+			},
 		}
 	}
 
-	let { data: introduction, error } = await supabaseClient
-		.from('introductions')
-		.insert({
-			person_a_id,
-			person_b_id,
-			notes: notes || null,
-			matchmaker_a_id: personA.matchmaker_id,
-			matchmaker_b_id: personB.matchmaker_id,
-		})
-		.select()
-		.single()
-
-	if (error) {
-		return { data: null, error: { message: error.message, status: 500 } }
+	// Introduction entity requires non-null matchmaker ids on both sides. Authorization above
+	// guarantees at least one side is owned by the requester, but the other side could still
+	// be an unassigned person — reject rather than fabricate a matchmaker id.
+	if (personA.matchmakerId === null || personB.matchmakerId === null) {
+		return {
+			data: null,
+			error: { message: 'Both people must belong to a matchmaker', status: 422 },
+		}
 	}
 
-	return { data: introduction, error: null }
+	let now = new Date()
+	let intro = buildIntroduction({
+		id: crypto.randomUUID(),
+		matchmakerAId: personA.matchmakerId,
+		matchmakerBId: personB.matchmakerId,
+		personAId: personA.id,
+		personBId: personB.id,
+		notes: params.notes ?? null,
+		createdAt: now,
+		updatedAt: now,
+	})
+
+	let saved = await introductionRepo.create(intro)
+	return { data: saved, error: null }
 }
