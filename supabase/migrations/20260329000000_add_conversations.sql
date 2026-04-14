@@ -9,3 +9,5 @@ CREATE TABLE conversations (
 );
 
 CREATE INDEX idx_conversations_thread ON conversations(thread_id, created_at);
+
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
