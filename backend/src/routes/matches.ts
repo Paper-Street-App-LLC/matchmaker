@@ -15,6 +15,8 @@ export let createMatchesRoutes = (
 ): Hono<{ Variables: Variables }> => {
 	let app = new Hono<{ Variables: Variables }>()
 
+	let notFoundPerson = { not_found: 'Person not found' }
+
 	app.get('/:personId', async c => {
 		let userId = c.get('userId')
 		let personId = c.req.param('personId')
@@ -24,13 +26,12 @@ export let createMatchesRoutes = (
 				personId,
 			})
 			if (!result.ok) {
-				let { status, body } = useCaseErrorToHttp(result.error)
-				let friendly =
-					result.error.code === 'not_found' ? { error: 'Person not found' } : body
-				return c.json(friendly, status)
+				let { status, body } = useCaseErrorToHttp(result.error, notFoundPerson)
+				return c.json(body, status)
 			}
 			return c.json(result.data.map(toMatchSuggestionResponseDTO), 200)
 		} catch (error) {
+			// TODO(#77): global Hono onError so routes stay pure
 			let message = error instanceof Error ? error.message : 'Failed to find matches'
 			return c.json({ error: message }, 500)
 		}

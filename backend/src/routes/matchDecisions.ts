@@ -22,16 +22,16 @@ export let createMatchDecisionsRoutes = (
 ): Hono<{ Variables: Variables }> => {
 	let app = new Hono<{ Variables: Variables }>()
 
+	let notFoundPerson = { not_found: 'Person not found' }
+
 	app.post('/', zValidator('json', createDecisionSchema), async c => {
 		let userId = c.get('userId')
 		let body = c.req.valid('json')
 		let input = fromCreateDecisionRequestDTO(body, userId)
 		let result = await deps.recordMatchDecision.execute(input)
 		if (!result.ok) {
-			let { status, body: errBody } = useCaseErrorToHttp(result.error)
-			let friendly =
-				result.error.code === 'not_found' ? { error: 'Person not found' } : errBody
-			return c.json(friendly, status)
+			let { status, body: errBody } = useCaseErrorToHttp(result.error, notFoundPerson)
+			return c.json(errBody, status)
 		}
 		return c.json(toMatchDecisionResponseDTO(result.data), 201)
 	})
@@ -44,9 +44,8 @@ export let createMatchDecisionsRoutes = (
 			personId,
 		})
 		if (!result.ok) {
-			let { status, body } = useCaseErrorToHttp(result.error)
-			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : body
-			return c.json(friendly, status)
+			let { status, body } = useCaseErrorToHttp(result.error, notFoundPerson)
+			return c.json(body, status)
 		}
 		return c.json(result.data.map(toMatchDecisionResponseDTO), 200)
 	})
