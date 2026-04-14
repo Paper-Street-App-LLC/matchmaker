@@ -31,7 +31,7 @@ export let createMatchesRoutes = (
 			}
 			return c.json(result.data.map(toMatchSuggestionResponseDTO), 200)
 		} catch (error) {
-			// TODO(#77): global Hono onError so routes stay pure
+			// TODO(#78): global Hono onError so routes stay pure
 			let message = error instanceof Error ? error.message : 'Failed to find matches'
 			return c.json({ error: message }, 500)
 		}
