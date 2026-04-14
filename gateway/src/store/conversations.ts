@@ -11,7 +11,7 @@ export type ConversationMessage = {
 	createdAt?: string
 }
 
-let dbRowSchema = z.object({
+export let dbRowSchema = z.object({
 	id: z.string(),
 	thread_id: z.string(),
 	role: z.enum(['user', 'assistant', 'system']),
