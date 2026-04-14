@@ -54,6 +54,8 @@ export let createPeopleRoutes = (
 		return c.json(result.data.map(toPersonResponseDTO), 200)
 	})
 
+	let notFoundPerson = { not_found: 'Person not found' }
+
 	app.get('/:id', async c => {
 		let userId = c.get('userId')
 		let personId = c.req.param('id')
@@ -62,9 +64,8 @@ export let createPeopleRoutes = (
 			personId,
 		})
 		if (!result.ok) {
-			let { status, body } = useCaseErrorToHttp(result.error)
-			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : body
-			return c.json(friendly, status)
+			let { status, body } = useCaseErrorToHttp(result.error, notFoundPerson)
+			return c.json(body, status)
 		}
 		return c.json(toPersonResponseDTO(result.data), 200)
 	})
@@ -76,9 +77,8 @@ export let createPeopleRoutes = (
 		let input = fromUpdatePersonRequestDTO(body, userId, personId)
 		let result = await deps.updatePerson.execute(input)
 		if (!result.ok) {
-			let { status, body: errBody } = useCaseErrorToHttp(result.error)
-			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : errBody
-			return c.json(friendly, status)
+			let { status, body: errBody } = useCaseErrorToHttp(result.error, notFoundPerson)
+			return c.json(errBody, status)
 		}
 		return c.json(toPersonResponseDTO(result.data), 200)
 	})
@@ -91,9 +91,8 @@ export let createPeopleRoutes = (
 			personId,
 		})
 		if (!result.ok) {
-			let { status, body } = useCaseErrorToHttp(result.error)
-			let friendly = result.error.code === 'not_found' ? { error: 'Person not found' } : body
-			return c.json(friendly, status)
+			let { status, body } = useCaseErrorToHttp(result.error, notFoundPerson)
+			return c.json(body, status)
 		}
 		return c.json(toPersonResponseDTO(result.data), 200)
 	})

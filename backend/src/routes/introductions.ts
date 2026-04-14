@@ -57,6 +57,8 @@ export let createIntroductionsRoutes = (
 		return c.json(result.data.map(toIntroductionResponseDTO), 200)
 	})
 
+	let notFoundIntroduction = { not_found: 'Introduction not found' }
+
 	app.get('/:id', async c => {
 		let userId = c.get('userId')
 		let introductionId = c.req.param('id')
@@ -65,10 +67,8 @@ export let createIntroductionsRoutes = (
 			introductionId,
 		})
 		if (!result.ok) {
-			let { status, body } = useCaseErrorToHttp(result.error)
-			let friendly =
-				result.error.code === 'not_found' ? { error: 'Introduction not found' } : body
-			return c.json(friendly, status)
+			let { status, body } = useCaseErrorToHttp(result.error, notFoundIntroduction)
+			return c.json(body, status)
 		}
 		return c.json(toIntroductionResponseDTO(result.data), 200)
 	})
@@ -80,10 +80,11 @@ export let createIntroductionsRoutes = (
 		let input = fromUpdateIntroductionRequestDTO(body, userId, introductionId)
 		let result = await deps.updateIntroductionStatus.execute(input)
 		if (!result.ok) {
-			let { status, body: errBody } = useCaseErrorToHttp(result.error)
-			let friendly =
-				result.error.code === 'not_found' ? { error: 'Introduction not found' } : errBody
-			return c.json(friendly, status)
+			let { status, body: errBody } = useCaseErrorToHttp(
+				result.error,
+				notFoundIntroduction,
+			)
+			return c.json(errBody, status)
 		}
 		return c.json(toIntroductionResponseDTO(result.data), 200)
 	})
