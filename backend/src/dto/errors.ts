@@ -7,15 +7,27 @@ export type ErrorHttpResponse = {
 	readonly body: { readonly error: string }
 }
 
-export let useCaseErrorToHttp = (error: UseCaseError): ErrorHttpResponse => {
-	switch (error.code) {
+export type UseCaseErrorMessageOverrides = Partial<
+	Record<UseCaseError['code'], string>
+>
+
+let statusFor = (code: UseCaseError['code']): ErrorHttpStatus => {
+	switch (code) {
 		case 'not_found':
-			return { status: 404, body: { error: error.message } }
+			return 404
 		case 'forbidden':
-			return { status: 403, body: { error: error.message } }
+			return 403
 		case 'unprocessable':
-			return { status: 422, body: { error: error.message } }
+			return 422
 		case 'conflict':
-			return { status: 409, body: { error: error.message } }
+			return 409
 	}
 }
+
+export let useCaseErrorToHttp = (
+	error: UseCaseError,
+	overrides: UseCaseErrorMessageOverrides = {},
+): ErrorHttpResponse => ({
+	status: statusFor(error.code),
+	body: { error: overrides[error.code] ?? error.message },
+})

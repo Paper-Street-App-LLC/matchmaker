@@ -24,4 +24,9 @@ export {
 	type MatchSuggestionResponseDTO,
 	toMatchSuggestionResponseDTO,
 } from './match-suggestion'
-export { type ErrorHttpStatus, type ErrorHttpResponse, useCaseErrorToHttp } from './errors'
+export {
+	type ErrorHttpStatus,
+	type ErrorHttpResponse,
+	type UseCaseErrorMessageOverrides,
+	useCaseErrorToHttp,
+} from './errors'
