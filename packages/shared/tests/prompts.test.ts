@@ -40,9 +40,11 @@ describe('Prompts', () => {
 			let text = result.messages[0]?.content.text ?? ''
 
 			expect(text).toContain('Phase 1')
-			expect(text).toContain('Phase 14')
+			expect(text).toContain('Phase 13')
 			expect(text).toContain('Diagnostic Question')
 			expect(text).toContain('Deal Breaker')
+			expect(text).toContain('Exit Criteria')
+			expect(text).toContain('Attribute Mismatch')
 		})
 
 		test('interview addresses matchmaker context', () => {
