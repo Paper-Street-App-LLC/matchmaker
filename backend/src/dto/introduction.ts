@@ -38,9 +38,9 @@ export type CreateIntroductionRequestBody = {
 
 export let fromCreateIntroductionRequestDTO = (
 	body: CreateIntroductionRequestBody,
-	userId: string,
+	matchmakerId: string,
 ): CreateIntroductionInput => ({
-	userId,
+	matchmakerId,
 	personAId: body.person_a_id,
 	personBId: body.person_b_id,
 	notes: body.notes,
@@ -53,10 +53,10 @@ export type UpdateIntroductionRequestBody = {
 
 export let fromUpdateIntroductionRequestDTO = (
 	body: UpdateIntroductionRequestBody,
-	userId: string,
+	matchmakerId: string,
 	introductionId: string,
 ): UpdateIntroductionStatusInput => {
-	let result: UpdateIntroductionStatusInput = { userId, introductionId }
+	let result: UpdateIntroductionStatusInput = { matchmakerId, introductionId }
 	if (body.status !== undefined) result.status = body.status
 	if (body.notes !== undefined) result.notes = body.notes
 	return result

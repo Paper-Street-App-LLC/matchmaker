@@ -45,7 +45,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-a',
 			person_b_id: 'p-b',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -72,7 +72,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-a',
 			person_b_id: 'p-b',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -92,7 +92,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-a',
 			person_b_id: 'p-b',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -113,7 +113,7 @@ describe('createIntroduction service', () => {
 			person_a_id: 'p-a',
 			person_b_id: 'p-b',
 			notes: 'they both love climbing',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -131,7 +131,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-missing',
 			person_b_id: 'p-b',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -149,7 +149,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-a',
 			person_b_id: 'p-missing',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -168,7 +168,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-a',
 			person_b_id: 'p-b',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert
@@ -192,7 +192,7 @@ describe('createIntroduction service', () => {
 		let result = await createIntroduction(personRepo, introRepo, {
 			person_a_id: 'p-a',
 			person_b_id: 'p-b',
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 		})
 
 		// Assert

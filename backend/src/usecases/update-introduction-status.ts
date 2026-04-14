@@ -9,7 +9,7 @@ import {
 import type { UseCase, UseCaseResult } from './types'
 
 export type UpdateIntroductionStatusInput = {
-	userId: string
+	matchmakerId: string
 	introductionId: string
 	status?: IntroductionStatus
 	notes?: string | null
@@ -39,7 +39,7 @@ export class UpdateIntroductionStatus
 			}
 		}
 
-		if (!AuthorizationService.canMatchmakerEditIntroduction(input.userId, existing)) {
+		if (!AuthorizationService.canMatchmakerEditIntroduction(input.matchmakerId, existing)) {
 			return {
 				ok: false,
 				error: { code: 'forbidden', message: 'You do not own this introduction' },

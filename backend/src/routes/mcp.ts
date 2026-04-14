@@ -513,7 +513,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						person_a_id,
 						person_b_id,
 						notes,
-						userId,
+						matchmakerId: userId,
 					})
 					if (result.error) throw new Error(result.error.message)
 					return {
