@@ -10,7 +10,7 @@ type CreateIntroductionParams = {
 	person_a_id: string
 	person_b_id: string
 	notes?: string | null
-	userId: string
+	matchmakerId: string
 }
 
 type IntroductionErrorStatus = 403 | 404 | 422 | 500
@@ -34,7 +34,7 @@ export let createIntroduction = async (
 		return { data: null, error: { message: 'Person B not found', status: 404 } }
 	}
 
-	if (!AuthorizationService.canMatchmakerCreateIntroduction(params.userId, personA, personB)) {
+	if (!AuthorizationService.canMatchmakerCreateIntroduction(params.matchmakerId, personA, personB)) {
 		return {
 			data: null,
 			error: {

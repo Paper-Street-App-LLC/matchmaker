@@ -67,7 +67,7 @@ describe('toIntroductionResponseDTO', () => {
 })
 
 describe('fromCreateIntroductionRequestDTO', () => {
-	test('maps a validated body + userId into CreateIntroductionInput', () => {
+	test('maps a validated body + matchmakerId into CreateIntroductionInput', () => {
 		// Arrange
 		let body = {
 			person_a_id: 'p-a',
@@ -80,7 +80,7 @@ describe('fromCreateIntroductionRequestDTO', () => {
 
 		// Assert
 		expect(input).toEqual({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			personAId: 'p-a',
 			personBId: 'p-b',
 			notes: 'Met at yoga',
@@ -109,7 +109,7 @@ describe('fromUpdateIntroductionRequestDTO', () => {
 
 		// Assert
 		expect(input).toEqual({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			introductionId: 'intro-1',
 			status: 'accepted',
 			notes: 'Both excited',

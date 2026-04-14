@@ -2,7 +2,7 @@ import type { IIntroductionRepository, IPersonRepository, Introduction } from '@
 import type { UseCase, UseCaseResult } from './types'
 
 export type CreateIntroductionInput = {
-	userId: string
+	matchmakerId: string
 	personAId: string
 	personBId: string
 	notes?: string | null
@@ -12,7 +12,7 @@ export type CreateIntroductionServiceParams = {
 	person_a_id: string
 	person_b_id: string
 	notes?: string | null
-	userId: string
+	matchmakerId: string
 }
 
 export type CreateIntroductionServiceResult =
@@ -42,7 +42,7 @@ export class CreateIntroduction implements UseCase<CreateIntroductionInput, Intr
 				person_a_id: input.personAId,
 				person_b_id: input.personBId,
 				notes: input.notes ?? null,
-				userId: input.userId,
+				matchmakerId: input.matchmakerId,
 			},
 		)
 

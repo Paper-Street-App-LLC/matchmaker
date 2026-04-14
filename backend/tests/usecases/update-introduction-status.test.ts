@@ -16,7 +16,7 @@ describe('UpdateIntroductionStatus use case', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			introductionId: 'intro-1',
 			status: 'accepted',
 		})
@@ -38,7 +38,7 @@ describe('UpdateIntroductionStatus use case', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			introductionId: 'intro-1',
 			status: 'ended',
 			notes: 'both moved on',
@@ -57,7 +57,7 @@ describe('UpdateIntroductionStatus use case', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			introductionId: 'intro-missing',
 			status: 'accepted',
 		})
@@ -79,7 +79,7 @@ describe('UpdateIntroductionStatus use case', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			introductionId: 'intro-1',
 			status: 'accepted',
 		})

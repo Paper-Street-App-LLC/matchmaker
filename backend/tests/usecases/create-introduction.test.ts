@@ -26,7 +26,7 @@ describe('CreateIntroduction', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			personAId: 'p-a',
 			personBId: 'p-b',
 			notes: 'both love hiking',
@@ -52,7 +52,7 @@ describe('CreateIntroduction', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			personAId: 'p-missing',
 			personBId: 'p-b',
 		})
@@ -79,7 +79,7 @@ describe('CreateIntroduction', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			personAId: 'p-a',
 			personBId: 'p-b',
 		})
@@ -108,7 +108,7 @@ describe('CreateIntroduction', () => {
 
 		// Act + Assert
 		await expect(
-			usecase.execute({ userId: 'mm-user', personAId: 'p-a', personBId: 'p-b' }),
+			usecase.execute({ matchmakerId: 'mm-user', personAId: 'p-a', personBId: 'p-b' }),
 		).rejects.toThrow(/boom/)
 	})
 
@@ -129,7 +129,7 @@ describe('CreateIntroduction', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			personAId: 'p-a',
 			personBId: 'p-b',
 		})
@@ -153,7 +153,7 @@ describe('CreateIntroduction', () => {
 
 		// Act
 		let result = await usecase.execute({
-			userId: 'mm-user',
+			matchmakerId: 'mm-user',
 			personAId: 'p-a',
 			personBId: 'p-b',
 		})
