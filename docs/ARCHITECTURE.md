@@ -215,6 +215,78 @@ graph TB
 - **Validation**: Zod schema validation for API responses
 - **Error Handling**: Graceful error propagation to AI assistant
 
+## Package Responsibilities
+
+This codebase is a Bun workspace with four server-side packages (`backend`, `gateway`, `mcp-server`, `packages/shared`) plus a `web` frontend. This section fixes the *inter*-package contract — what each package owns, what it must not import, and who can depend on whom — so that the Clean Architecture work in #60 has an agreed boundary to respect.
+
+### Missions
+
+- **`packages/shared`** — The framework-free domain core. Owns entities (`Person`, `Introduction`, `MatchDecision`, `Preferences`), repository *interfaces*, the `AuthorizationService`, and the shared MCP prompt registry. This is the dependency floor of the system: every other package may import from it, and it imports from nothing in this repo.
+- **`backend`** — The authoritative HTTP API and system of record. Owns REST routes, use cases, Supabase adapters (the concrete implementations of `packages/shared`'s repository ports), JWT auth middleware, OAuth, well-known discovery, and the streamable-HTTP MCP transport served at `routes/mcp.ts`.
+- **`gateway`** — Chat-orchestration edge. Receives webhooks from chat providers, parses them through a `ChatAdapter`, resolves the sender to a user, and replies. Any business state it needs is reached through `backend` over HTTP.
+- **`mcp-server`** — The stdio MCP transport. A thin proxy that speaks Model Context Protocol over stdio and forwards tool calls to `backend`'s REST API via an `ApiClient`.
+- **`web`** — Next.js frontend. Consumes `backend`'s REST API over HTTP.
+
+### Anti-scope (what each package MUST NOT contain)
+
+- **`packages/shared`**
+  - No framework imports: no Hono, no Supabase client, no React, no Next.js, no chat-provider SDKs. The only external import today is `@modelcontextprotocol/sdk` type definitions used by the prompt registry.
+  - No concrete repository implementations — only interfaces.
+  - No I/O of any kind: no `fetch`, no filesystem, no env access.
+- **`backend`**
+  - No chat-provider SDKs (Slack, Twilio, Discord, etc.) — those live in `gateway` adapters.
+  - No direct TypeScript imports from `mcp-server`, `gateway`, or `web`.
+  - No domain logic that can't be expressed against a `packages/shared` repository interface. If Supabase types leak into a use case, the code is in the wrong layer (see #60).
+- **`gateway`**
+  - No direct Supabase queries. All business state goes through `backend`'s REST API.
+  - No general CRUD surface — `gateway` exposes only webhook endpoints and health checks.
+  - No domain logic beyond "parse, resolve, dispatch, reply."
+- **`mcp-server`**
+  - No direct Supabase access. Every read and write goes through `backend`'s REST API.
+  - No tool logic beyond translation — if a tool needs to compute anything, the computation belongs in a `backend` use case that both MCP transports can share.
+- **`web`**
+  - No service-role Supabase keys in client code.
+  - No business logic that duplicates a `backend` use case.
+
+### Dependency graph
+
+Allowed import directions (`A → B` means A may import from B):
+
+```mermaid
+graph LR
+    web --> backend
+    gateway --> backend_http[backend REST API]
+    mcp_server[mcp-server] --> backend_http
+    web --> shared[packages/shared]
+    backend --> shared
+    gateway --> shared
+    mcp_server --> shared
+
+    style shared fill:#e8f5e9
+    style backend fill:#fff4e1
+    style backend_http stroke-dasharray: 5 5
+```
+
+Rules:
+
+- `packages/shared` is a sink: it imports nothing else in this repo.
+- `backend`, `gateway`, `mcp-server`, and `web` may all import from `packages/shared`.
+- `gateway`, `mcp-server`, and `web` reach `backend` **only over HTTP** — never via direct TypeScript imports. This preserves the deployment boundary inside the monorepo and keeps each server independently runnable.
+- No sibling-to-sibling imports. `backend → gateway`, `gateway → mcp-server`, and similar are forbidden.
+
+### Decision log
+
+These are the current answers to the ambiguities called out in issue #82. Revisit each one when the referenced code changes.
+
+1. **Should MCP routing stay in `backend/src/routes/mcp.ts` or migrate to `mcp-server`?**
+   **Decision: stay, but deduplicate.** `backend/routes/mcp.ts` is the *streamable-HTTP* MCP transport, served under `backend`'s auth and CORS. `mcp-server` is the *stdio* MCP transport for local AI assistants. These are two transports over the same tool set, not redundant implementations — both continue to exist. What is broken today is that tool definitions are duplicated between `backend/src/routes/mcp.ts` and `mcp-server/src/toolDefinitions.ts`. The remediation is to hoist tool metadata (names, descriptions, input schemas) into `packages/shared` and let both transports import it. Handler logic stays per-package because the stdio transport proxies over HTTP while the streamable-HTTP transport dispatches directly to use cases.
+
+2. **When does a new feature go in `backend` vs `gateway`?**
+   **Decision: `backend` by default; `gateway` only for chat-orchestration.** If the feature is a CRUD resource, a use case, a matching rule, or an authorization policy — it is `backend`. If the feature is "a new chat provider," "parsing inbound messages from channel X," or "delivering replies to Y" — it is `gateway`, and it calls `backend` over HTTP for anything stateful. Heuristic: "would a web-only user ever hit this code path?" — if yes, it belongs in `backend`.
+
+3. **Is `mcp-server` a long-term proxy or does it absorb MCP-specific logic?**
+   **Decision: long-term thin proxy.** Keeping `mcp-server` as a translation layer (stdio JSON-RPC ↔ `backend` REST) preserves a single source of truth for authorization and domain logic. The only MCP-specific concerns it should own are transport wiring and the mapping between tool names and REST calls. Anything richer — derived data, caching, tool-specific computation — belongs in a `backend` use case so both MCP transports benefit uniformly.
+
 ## Data Flow Patterns
 
 ### Authentication Flow
