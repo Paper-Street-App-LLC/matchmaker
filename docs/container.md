@@ -11,6 +11,7 @@ C4Container
 
     System_Boundary(system, "Matchmaker System") {
         Container(backend, "Backend API", "Bun + Hono, port 3000", "REST API, OAuth 2.1 authorization server, and MCP HTTP streaming endpoint")
+        Container(gateway, "Gateway", "Bun + Hono, port 3001", "Chat orchestration layer — routes conversations through ChatAdapter implementations")
         Container(mcpServer, "MCP Server", "Bun, stdio transport", "Standalone AI tool interface — proxies tool calls to Backend API over HTTP")
         Container(web, "Web App", "Next.js 14", "Landing page, waitlist signup, and future matchmaker UI")
     }
@@ -22,7 +23,9 @@ C4Container
     Rel(matchmaker, backend, "Manages people, reviews matches, creates introductions", "REST / OAuth 2.1")
     Rel(ai, backend, "Invokes MCP tools over HTTP", "POST /mcp (SSE streaming)")
     Rel(ai, mcpServer, "Invokes MCP tools locally", "stdio")
+    Rel(ai, gateway, "Sends chat messages", "HTTP")
     Rel(mcpServer, backend, "Proxies tool calls", "HTTP + Bearer token")
+    Rel(gateway, backend, "Invokes domain operations", "HTTP")
     Rel(backend, supabaseAuth, "Verifies tokens, creates users", "HTTPS")
     Rel(backend, supabaseDb, "CRUD operations on all tables", "Supabase JS client")
     Rel(web, supabaseAuth, "Client-side auth (future)", "HTTPS")
