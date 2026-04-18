@@ -86,11 +86,7 @@ export default function SetupPage() {
 	let [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("checking");
 
 	let mcpEndpoint = "https://matchmaker-production.up.railway.app/mcp";
-
-	let healthEndpoint =
-		typeof window !== "undefined"
-			? `${window.location.protocol}//${window.location.host}/health`
-			: "https://your-server-url.com/health";
+	let healthEndpoint = new URL("/health", mcpEndpoint).toString();
 
 	let checkConnection = useCallback(async () => {
 		setConnectionStatus("checking");
