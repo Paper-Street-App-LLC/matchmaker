@@ -14,11 +14,12 @@ import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '@matchmaker/shared'
 import { parsePreferences } from '../schemas/preferences'
 import {
+	SupabaseIntroductionRepository,
 	SupabaseMatchDecisionRepository,
 	SupabasePersonRepository,
 } from '../adapters/supabase'
 import { matchFinder } from '../services/matchFinder'
-import { createIntroduction } from '../services/introductions'
+import { CreateIntroduction, systemClock, uuidGenerator } from '../usecases'
 
 type Env = {
 	Variables: {
@@ -509,13 +510,21 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						notes?: string
 					}
 
-					let result = await createIntroduction(supabaseClient, {
-						person_a_id,
-						person_b_id,
-						notes,
-						matchmakerId: userId,
+					let personRepo = new SupabasePersonRepository(supabaseClient)
+					let introductionRepo = new SupabaseIntroductionRepository(supabaseClient)
+					let usecase = new CreateIntroduction({
+						personRepo,
+						introductionRepo,
+						clock: systemClock,
+						ids: uuidGenerator,
 					})
-					if (result.error) throw new Error(result.error.message)
+					let result = await usecase.execute({
+						matchmakerId: userId,
+						personAId: person_a_id,
+						personBId: person_b_id,
+						notes: notes ?? null,
+					})
+					if (!result.ok) throw new Error(result.error.message)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
 					}
