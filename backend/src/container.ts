@@ -4,7 +4,6 @@ import {
 	SupabasePersonRepository,
 } from './adapters/supabase/index.js'
 import type { SupabaseClient } from './lib/supabase.js'
-import { createIntroduction as createIntroductionService } from './services/introductions.js'
 import { matchFinder } from './services/matchFinder.js'
 import {
 	CreateIntroduction,
@@ -70,7 +69,8 @@ export let buildContainer = (
 		createIntroduction: new CreateIntroduction({
 			personRepo,
 			introductionRepo,
-			createIntroductionService,
+			clock,
+			ids,
 		}),
 		getIntroductionById: new GetIntroductionById({ introductionRepo }),
 		listIntroductionsForMatchmaker: new ListIntroductionsForMatchmaker({

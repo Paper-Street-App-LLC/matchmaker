@@ -1,28 +1,31 @@
 import { describe, test, expect } from 'bun:test'
-import {
-	CreateIntroduction,
-	type CreateIntroductionServiceFn,
-	type CreateIntroductionServiceResult,
-} from '../../src/usecases/create-introduction'
-import { createIntroduction as createIntroductionService } from '../../src/services/introductions'
+import { CreateIntroduction } from '../../src/usecases/create-introduction'
 import {
 	InMemoryIntroductionRepository,
 	InMemoryPersonRepository,
 } from '../fakes/in-memory-repositories'
-import { assertErr, assertOk, makeIntroduction, makePerson } from './fixtures'
+import { FIXED_NOW, assertErr, assertOk, fixedClock, fixedIds, makePerson } from './fixtures'
+
+let buildUsecase = (
+	personRepo: InMemoryPersonRepository,
+	introductionRepo: InMemoryIntroductionRepository,
+	ids: readonly string[] = ['intro-generated'],
+) =>
+	new CreateIntroduction({
+		personRepo,
+		introductionRepo,
+		clock: fixedClock(),
+		ids: fixedIds(ids),
+	})
 
 describe('CreateIntroduction', () => {
-	test('creates an introduction when caller owns one person', async () => {
+	test('creates an introduction when caller owns person A only', async () => {
 		// Arrange
 		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-other' })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({
-			personRepo,
-			introductionRepo,
-			createIntroductionService,
-		})
+		let usecase = buildUsecase(personRepo, introductionRepo)
 
 		// Act
 		let result = await usecase.execute({
@@ -34,21 +37,86 @@ describe('CreateIntroduction', () => {
 
 		// Assert
 		assertOk(result)
+		expect(result.data.matchmakerAId).toBe('mm-user')
+		expect(result.data.matchmakerBId).toBe('mm-other')
 		expect(result.data.personAId).toBe('p-a')
 		expect(result.data.personBId).toBe('p-b')
+		expect(result.data.status).toBe('pending')
 		expect(result.data.notes).toBe('both love hiking')
+		let persisted = await introductionRepo.findById(result.data.id)
+		expect(persisted).not.toBeNull()
 	})
 
-	test('translates missing person to not_found', async () => {
+	test('creates an introduction when caller owns person B only', async () => {
+		// Arrange
+		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-other' })
+		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-user' })
+		let personRepo = new InMemoryPersonRepository([personA, personB])
+		let introductionRepo = new InMemoryIntroductionRepository()
+		let usecase = buildUsecase(personRepo, introductionRepo)
+
+		// Act
+		let result = await usecase.execute({
+			matchmakerId: 'mm-user',
+			personAId: 'p-a',
+			personBId: 'p-b',
+		})
+
+		// Assert
+		assertOk(result)
+		expect(result.data.matchmakerAId).toBe('mm-other')
+		expect(result.data.matchmakerBId).toBe('mm-user')
+	})
+
+	test('creates an introduction when caller owns both people', async () => {
+		// Arrange
+		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
+		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-user' })
+		let personRepo = new InMemoryPersonRepository([personA, personB])
+		let introductionRepo = new InMemoryIntroductionRepository()
+		let usecase = buildUsecase(personRepo, introductionRepo)
+
+		// Act
+		let result = await usecase.execute({
+			matchmakerId: 'mm-user',
+			personAId: 'p-a',
+			personBId: 'p-b',
+		})
+
+		// Assert
+		assertOk(result)
+		expect(result.data.matchmakerAId).toBe('mm-user')
+		expect(result.data.matchmakerBId).toBe('mm-user')
+	})
+
+	test('uses injected id generator and clock', async () => {
+		// Arrange
+		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
+		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-other' })
+		let personRepo = new InMemoryPersonRepository([personA, personB])
+		let introductionRepo = new InMemoryIntroductionRepository()
+		let usecase = buildUsecase(personRepo, introductionRepo, ['intro-fixed'])
+
+		// Act
+		let result = await usecase.execute({
+			matchmakerId: 'mm-user',
+			personAId: 'p-a',
+			personBId: 'p-b',
+		})
+
+		// Assert
+		assertOk(result)
+		expect(result.data.id).toBe('intro-fixed')
+		expect(result.data.createdAt.getTime()).toBe(FIXED_NOW.getTime())
+		expect(result.data.updatedAt.getTime()).toBe(FIXED_NOW.getTime())
+	})
+
+	test('returns not_found when person A is missing', async () => {
 		// Arrange
 		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-user' })
 		let personRepo = new InMemoryPersonRepository([personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({
-			personRepo,
-			introductionRepo,
-			createIntroductionService,
-		})
+		let usecase = buildUsecase(personRepo, introductionRepo)
 
 		// Act
 		let result = await usecase.execute({
@@ -65,17 +133,32 @@ describe('CreateIntroduction', () => {
 		}
 	})
 
-	test('translates unauthorized caller to forbidden', async () => {
+	test('returns not_found when person B is missing', async () => {
 		// Arrange
-		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-a' })
-		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-b' })
+		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
+		let personRepo = new InMemoryPersonRepository([personA])
+		let introductionRepo = new InMemoryIntroductionRepository()
+		let usecase = buildUsecase(personRepo, introductionRepo)
+
+		// Act
+		let result = await usecase.execute({
+			matchmakerId: 'mm-user',
+			personAId: 'p-a',
+			personBId: 'p-missing',
+		})
+
+		// Assert
+		assertErr(result)
+		expect(result.error.code).toBe('not_found')
+	})
+
+	test('returns forbidden when caller owns neither person and does not persist', async () => {
+		// Arrange
+		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-other-1' })
+		let personB = makePerson({ id: 'p-b', matchmakerId: 'mm-other-2' })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({
-			personRepo,
-			introductionRepo,
-			createIntroductionService,
-		})
+		let usecase = buildUsecase(personRepo, introductionRepo)
 
 		// Act
 		let result = await usecase.execute({
@@ -87,69 +170,17 @@ describe('CreateIntroduction', () => {
 		// Assert
 		assertErr(result)
 		expect(result.error.code).toBe('forbidden')
+		expect(await introductionRepo.findByMatchmaker('mm-other-1')).toHaveLength(0)
+		expect(await introductionRepo.findByMatchmaker('mm-other-2')).toHaveLength(0)
 	})
 
-	test('throws when the injected service returns an unexpected 500', async () => {
-		// Arrange
-		let personRepo = new InMemoryPersonRepository()
-		let introductionRepo = new InMemoryIntroductionRepository()
-		let failingService: CreateIntroductionServiceFn = async () => {
-			let result: CreateIntroductionServiceResult = {
-				data: null,
-				error: { message: 'boom', status: 500 },
-			}
-			return result
-		}
-		let usecase = new CreateIntroduction({
-			personRepo,
-			introductionRepo,
-			createIntroductionService: failingService,
-		})
-
-		// Act + Assert
-		await expect(
-			usecase.execute({ matchmakerId: 'mm-user', personAId: 'p-a', personBId: 'p-b' }),
-		).rejects.toThrow(/boom/)
-	})
-
-	test('passes through the data from the injected service on success', async () => {
-		// Arrange
-		let personRepo = new InMemoryPersonRepository()
-		let introductionRepo = new InMemoryIntroductionRepository()
-		let stubbedIntro = makeIntroduction({ id: 'intro-stub' })
-		let stubService: CreateIntroductionServiceFn = async () => ({
-			data: stubbedIntro,
-			error: null,
-		})
-		let usecase = new CreateIntroduction({
-			personRepo,
-			introductionRepo,
-			createIntroductionService: stubService,
-		})
-
-		// Act
-		let result = await usecase.execute({
-			matchmakerId: 'mm-user',
-			personAId: 'p-a',
-			personBId: 'p-b',
-		})
-
-		// Assert
-		assertOk(result)
-		expect(result.data.id).toBe('intro-stub')
-	})
-
-	test('translates unassigned matchmaker to unprocessable', async () => {
+	test('returns unprocessable when either person has no matchmaker', async () => {
 		// Arrange
 		let personA = makePerson({ id: 'p-a', matchmakerId: 'mm-user' })
 		let personB = makePerson({ id: 'p-b', matchmakerId: null })
 		let personRepo = new InMemoryPersonRepository([personA, personB])
 		let introductionRepo = new InMemoryIntroductionRepository()
-		let usecase = new CreateIntroduction({
-			personRepo,
-			introductionRepo,
-			createIntroductionService,
-		})
+		let usecase = buildUsecase(personRepo, introductionRepo)
 
 		// Act
 		let result = await usecase.execute({

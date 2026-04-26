@@ -14,8 +14,7 @@ import {
 	ListIntroductionsForMatchmaker,
 	UpdateIntroductionStatus,
 } from '../../src/usecases'
-import { createIntroduction as createIntroductionService } from '../../src/services/introductions'
-import { makeIntroduction, makePerson } from '../usecases/fixtures'
+import { fixedClock, fixedIds, makeIntroduction, makePerson } from '../usecases/fixtures'
 import {
 	introductionResponseSchema,
 	type IntroductionResponse,
@@ -36,7 +35,13 @@ let buildDeps = (
 	createIntroduction: new CreateIntroduction({
 		personRepo,
 		introductionRepo,
-		createIntroductionService,
+		clock: fixedClock(),
+		ids: fixedIds([
+			'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+			'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+			'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
+			'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4',
+		]),
 	}),
 	getIntroductionById: new GetIntroductionById({ introductionRepo }),
 	listIntroductionsForMatchmaker: new ListIntroductionsForMatchmaker({
