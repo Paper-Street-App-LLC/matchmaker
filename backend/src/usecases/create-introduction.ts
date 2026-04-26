@@ -1,6 +1,7 @@
 import {
 	AuthorizationService,
 	InvalidIntroductionError,
+	RepositoryConflictError,
 	createIntroduction as buildIntroduction,
 	type IIntroductionRepository,
 	type IPersonRepository,
@@ -73,8 +74,9 @@ export class CreateIntroduction implements UseCase<CreateIntroductionInput, Intr
 		}
 
 		let now = this.deps.clock.now()
+		let intro: Introduction
 		try {
-			let intro = buildIntroduction({
+			intro = buildIntroduction({
 				id: this.deps.ids.newId(),
 				matchmakerAId: personA.matchmakerId,
 				matchmakerBId: personB.matchmakerId,
@@ -84,11 +86,19 @@ export class CreateIntroduction implements UseCase<CreateIntroductionInput, Intr
 				createdAt: now,
 				updatedAt: now,
 			})
-			let saved = await this.deps.introductionRepo.create(intro)
-			return { ok: true, data: saved }
 		} catch (error) {
 			if (error instanceof InvalidIntroductionError) {
 				return { ok: false, error: { code: 'unprocessable', message: error.message } }
+			}
+			throw error
+		}
+
+		try {
+			let saved = await this.deps.introductionRepo.create(intro)
+			return { ok: true, data: saved }
+		} catch (error) {
+			if (error instanceof RepositoryConflictError) {
+				return { ok: false, error: { code: 'conflict', message: error.message } }
 			}
 			throw error
 		}
