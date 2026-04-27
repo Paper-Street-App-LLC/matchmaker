@@ -7,20 +7,7 @@ import {
 	buildFeedbackList,
 	widgetResult,
 } from './widgets.js'
-import type { ToolName } from './tools.js'
-import {
-	validateAddPersonArgs,
-	validateGetPersonArgs,
-	validateUpdatePersonArgs,
-	validateCreateIntroductionArgs,
-	validateUpdateIntroductionArgs,
-	validateFindMatchesArgs,
-	validateDeletePersonArgs,
-	validateGetIntroductionArgs,
-	validateSubmitFeedbackArgs,
-	validateListFeedbackArgs,
-	validateGetFeedbackArgs,
-} from './tools.js'
+import { getToolDefinition, toolRegistry, type ToolName } from '@matchmaker/shared'
 
 type ToolResult = {
 	content: Array<{ type: 'text'; text: string }>
@@ -36,11 +23,18 @@ function successResult(data: unknown): ToolResult {
 	}
 }
 
+// Parses raw tool args against the shared registry's Zod schema.
+function parseArgs<T>(name: ToolName, args: unknown): T {
+	let definition = getToolDefinition(name)
+	if (!definition) throw new Error(`Unknown tool: ${name}`)
+	return definition.inputSchema.parse(args ?? {}) as T
+}
+
 export function createToolHandlers(apiClient: IApiClient): Record<ToolName, ToolHandler> {
 	return {
 		add_person: async args => {
-			let validated = validateAddPersonArgs(args)
-			let result = await apiClient.addPerson(validated.name)
+			let { name } = parseArgs<{ name: string }>('add_person', args)
+			let result = await apiClient.addPerson(name)
 			return successResult(result)
 		},
 
@@ -50,25 +44,39 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 		},
 
 		get_person: async args => {
-			let validated = validateGetPersonArgs(args)
-			let result = await apiClient.getPerson(validated.id)
+			let { id } = parseArgs<{ id: string }>('get_person', args)
+			let result = await apiClient.getPerson(id)
 			return widgetResult(result, buildPersonCard(result))
 		},
 
 		update_person: async args => {
-			let validated = validateUpdatePersonArgs(args)
-			let { id, ...updates } = validated
+			let { id, ...updates } = parseArgs<{
+				id: string
+				name?: string
+				age?: number
+				location?: string
+				gender?: string
+				preferences?: Record<string, unknown>
+				personality?: Record<string, unknown>
+				notes?: string
+			}>('update_person', args)
 			let result = await apiClient.updatePerson(id, updates)
 			return successResult(result)
 		},
 
+		delete_person: async args => {
+			let { id } = parseArgs<{ id: string }>('delete_person', args)
+			let result = await apiClient.deletePerson(id)
+			return successResult(result)
+		},
+
 		create_introduction: async args => {
-			let validated = validateCreateIntroductionArgs(args)
-			let result = await apiClient.createIntroduction(
-				validated.person_a_id,
-				validated.person_b_id,
-				validated.notes
-			)
+			let { person_a_id, person_b_id, notes } = parseArgs<{
+				person_a_id: string
+				person_b_id: string
+				notes?: string
+			}>('create_introduction', args)
+			let result = await apiClient.createIntroduction(person_a_id, person_b_id, notes)
 			return successResult(result)
 		},
 
@@ -82,27 +90,18 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 		},
 
 		update_introduction: async args => {
-			let validated = validateUpdateIntroductionArgs(args)
-			let { id, ...updates } = validated
+			let { id, ...updates } = parseArgs<{
+				id: string
+				status?: 'pending' | 'accepted' | 'declined' | 'dating' | 'ended'
+				notes?: string
+			}>('update_introduction', args)
 			let result = await apiClient.updateIntroduction(id, updates)
 			return successResult(result)
 		},
 
-		find_matches: async args => {
-			let validated = validateFindMatchesArgs(args)
-			let result = await apiClient.findMatches(validated.person_id)
-			return widgetResult(result, buildMatchList(result))
-		},
-
-		delete_person: async args => {
-			let validated = validateDeletePersonArgs(args)
-			let result = await apiClient.deletePerson(validated.id)
-			return successResult(result)
-		},
-
 		get_introduction: async args => {
-			let validated = validateGetIntroductionArgs(args)
-			let intro = await apiClient.getIntroduction(validated.id)
+			let { id } = parseArgs<{ id: string }>('get_introduction', args)
+			let intro = await apiClient.getIntroduction(id)
 			let [personAResult, personBResult] = await Promise.allSettled([
 				apiClient.getPerson(intro.person_a_id),
 				apiClient.getPerson(intro.person_b_id),
@@ -112,20 +111,53 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 			return widgetResult(intro, buildIntroductionCard(intro, personA, personB))
 		},
 
+		find_matches: async args => {
+			let { person_id } = parseArgs<{ person_id: string }>('find_matches', args)
+			let result = await apiClient.findMatches(person_id)
+			return widgetResult(result, buildMatchList(result))
+		},
+
+		record_decision: async args => {
+			let { person_id, candidate_id, decision, decline_reason } = parseArgs<{
+				person_id: string
+				candidate_id: string
+				decision: 'accepted' | 'declined'
+				decline_reason?: string
+			}>('record_decision', args)
+			let result = await apiClient.recordDecision(
+				person_id,
+				candidate_id,
+				decision,
+				decline_reason
+			)
+			return successResult(result)
+		},
+
+		list_decisions: async args => {
+			let { person_id } = parseArgs<{ person_id: string }>('list_decisions', args)
+			let result = await apiClient.listDecisions(person_id)
+			return successResult(result)
+		},
+
 		submit_feedback: async args => {
-			let validated = validateSubmitFeedbackArgs(args)
+			let { introduction_id, from_person_id, content, sentiment } = parseArgs<{
+				introduction_id: string
+				from_person_id: string
+				content: string
+				sentiment?: string
+			}>('submit_feedback', args)
 			let result = await apiClient.submitFeedback(
-				validated.introduction_id,
-				validated.from_person_id,
-				validated.content,
-				validated.sentiment
+				introduction_id,
+				from_person_id,
+				content,
+				sentiment
 			)
 			return successResult(result)
 		},
 
 		list_feedback: async args => {
-			let validated = validateListFeedbackArgs(args)
-			let feedbackList = await apiClient.listFeedback(validated.introduction_id)
+			let { introduction_id } = parseArgs<{ introduction_id: string }>('list_feedback', args)
+			let feedbackList = await apiClient.listFeedback(introduction_id)
 
 			// Deduplicate person IDs and resolve names
 			let uniquePersonIds = [...new Set(feedbackList.map(f => f.from_person_id))]
@@ -143,28 +175,15 @@ export function createToolHandlers(apiClient: IApiClient): Record<ToolName, Tool
 		},
 
 		get_feedback: async args => {
-			let validated = validateGetFeedbackArgs(args)
-			let result = await apiClient.getFeedback(validated.id)
+			let { id } = parseArgs<{ id: string }>('get_feedback', args)
+			let result = await apiClient.getFeedback(id)
 			return successResult(result)
 		},
 	}
 }
 
+let validToolNames = new Set<string>(toolRegistry.map(t => t.name))
+
 export function isValidToolName(name: string): name is ToolName {
-	let validNames: ToolName[] = [
-		'add_person',
-		'list_people',
-		'get_person',
-		'update_person',
-		'create_introduction',
-		'list_introductions',
-		'update_introduction',
-		'find_matches',
-		'delete_person',
-		'get_introduction',
-		'submit_feedback',
-		'list_feedback',
-		'get_feedback',
-	]
-	return validNames.includes(name as ToolName)
+	return validToolNames.has(name)
 }

@@ -324,4 +324,50 @@ export let handlers = [
 			},
 		])
 	}),
+
+	// POST /api/match-decisions - Success
+	http.post(`${BASE_URL}/api/match-decisions`, async ({ request }) => {
+		let auth = request.headers.get('Authorization')
+		if (auth !== 'Bearer valid-token') {
+			return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+		let body = (await request.json()) as {
+			person_id: string
+			candidate_id: string
+			decision: 'accepted' | 'declined'
+			decline_reason?: string
+		}
+		return HttpResponse.json(
+			{
+				id: '990e8400-e29b-41d4-a716-446655440000',
+				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				person_id: body.person_id,
+				candidate_id: body.candidate_id,
+				decision: body.decision,
+				decline_reason: body.decline_reason ?? null,
+				created_at: new Date().toISOString(),
+			},
+			{ status: 201 }
+		)
+	}),
+
+	// GET /api/match-decisions/:personId - Success
+	http.get(`${BASE_URL}/api/match-decisions/:personId`, ({ request, params }) => {
+		let auth = request.headers.get('Authorization')
+		if (auth !== 'Bearer valid-token') {
+			return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+		let { personId } = params
+		return HttpResponse.json([
+			{
+				id: '990e8400-e29b-41d4-a716-446655440001',
+				matchmaker_id: '123e4567-e89b-12d3-a456-426614174000',
+				person_id: personId,
+				candidate_id: '550e8400-e29b-41d4-a716-446655440002',
+				decision: 'declined',
+				decline_reason: 'Not a fit',
+				created_at: new Date().toISOString(),
+			},
+		])
+	}),
 ]
