@@ -168,10 +168,71 @@ describe('parsePreferences', () => {
 		expect(result.dealBreakers).toEqual(['isSmoker'])
 	})
 
-	test('should drop invalid aboutMe section', () => {
+	test('should drop invalid aboutMe section when no valid siblings remain', () => {
 		let raw = { aboutMe: { build: 'gigantic' } }
 		let result = parsePreferences(raw)
 		expect(result.aboutMe).toBeUndefined()
+	})
+
+	test('should drop only invalid fields and keep valid siblings in aboutMe', () => {
+		let raw = {
+			aboutMe: { build: 'gigantic', height: 175, fitnessLevel: 'active' },
+		}
+		let result = parsePreferences(raw)
+		expect(result.aboutMe).toEqual({ height: 175, fitnessLevel: 'active' })
+	})
+
+	test('should drop only invalid fields and keep valid siblings in lookingFor', () => {
+		let raw = {
+			lookingFor: { religionRequired: true, wantsChildren: true, fitnessPreference: 'any' },
+		}
+		let result = parsePreferences(raw)
+		expect(result.lookingFor).toEqual({ wantsChildren: true, fitnessPreference: 'any' })
+	})
+
+	test('should drop only invalid entries and keep valid ones in dealBreakers', () => {
+		let raw = { dealBreakers: ['isSmoker', 'not_real', 'hasChildren'] }
+		let result = parsePreferences(raw)
+		expect(result.dealBreakers).toEqual(['isSmoker', 'hasChildren'])
+	})
+
+	test('should drop dealBreakers entirely when all entries are invalid', () => {
+		let raw = { dealBreakers: ['nope', 'also_nope'] }
+		let result = parsePreferences(raw)
+		expect(result.dealBreakers).toBeUndefined()
+	})
+
+	test('should not log per-field issues by default (silent read-path normalizer)', () => {
+		let original = console.warn
+		let warnings: unknown[][] = []
+		console.warn = (...args: unknown[]) => warnings.push(args)
+		try {
+			parsePreferences({
+				aboutMe: { build: 'gigantic', height: 175 },
+				lookingFor: { religionRequired: true },
+				dealBreakers: ['nope', 'isSmoker'],
+			})
+		} finally {
+			console.warn = original
+		}
+		expect(warnings).toEqual([])
+	})
+
+	test('should invoke onInvalid callback once per invalid field when provided', () => {
+		let issues: Array<{ section: string; path: PropertyKey[]; code: string }> = []
+		parsePreferences(
+			{
+				aboutMe: { build: 'gigantic', height: 175 },
+				lookingFor: { religionRequired: true },
+				dealBreakers: ['nope', 'isSmoker'],
+			},
+			{ onInvalid: issue => issues.push(issue) },
+		)
+		expect(issues.map(i => `${i.section}.${i.path.join('.')}`)).toEqual([
+			'aboutMe.build',
+			'lookingFor.religionRequired',
+			'dealBreakers.0',
+		])
 	})
 
 	test('should return empty object for null input', () => {
@@ -184,7 +245,7 @@ describe('parsePreferences', () => {
 		expect(result).toEqual({})
 	})
 
-	test('should keep valid sections and drop invalid ones', () => {
+	test('should keep valid sections and drop fully-invalid ones', () => {
 		let raw = {
 			aboutMe: { build: 'INVALID' },
 			lookingFor: { wantsChildren: true },
