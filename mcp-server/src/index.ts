@@ -44,7 +44,11 @@ export function createServer(apiClient: IApiClient) {
 			if (!isValidToolName(name)) {
 				throw new Error(`Unknown tool: ${name}`)
 			}
-			return await toolHandlers[name](args)
+			let handler = toolHandlers[name]
+			if (!handler) {
+				throw new Error(`No handler registered for tool: ${name}`)
+			}
+			return await handler(args)
 		} catch (error) {
 			let errorMessage = 'Unknown error'
 			if (error instanceof Error) {
