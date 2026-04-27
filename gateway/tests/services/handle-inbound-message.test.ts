@@ -68,10 +68,12 @@ describe('HandleInboundMessage', () => {
 		await service.execute(adapter, {})
 
 		expect(sendReplyCalls).toHaveLength(1)
-		expect(sendReplyCalls[0].provider).toBe('test')
-		expect(sendReplyCalls[0].senderId).toBe('sender-123')
-		expect(sendReplyCalls[0].threadId).toBe('thread-456')
-		expect(sendReplyCalls[0].text.length).toBeGreaterThan(0)
+		let firstCall = sendReplyCalls[0]
+		if (!firstCall) throw new Error('expected one sendReply call')
+		expect(firstCall.provider).toBe('test')
+		expect(firstCall.senderId).toBe('sender-123')
+		expect(firstCall.threadId).toBe('thread-456')
+		expect(firstCall.text.length).toBeGreaterThan(0)
 	})
 
 	test('returns a fully-hydrated InboundMessage with resolved userId', async () => {

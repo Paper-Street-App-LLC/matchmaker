@@ -32,7 +32,9 @@ describe('ConversationStore', () => {
 
 	describe('save', () => {
 		test('inserts message with correct threadId, role, and content', async () => {
-			let insertMock = mock(() => Promise.resolve({ error: null }))
+			let insertMock = mock((_data: Record<string, unknown>) =>
+				Promise.resolve({ error: null }),
+			)
 			mockClient = createMockSupabaseClient({
 				from: (_table: string) => ({
 					insert: insertMock,
@@ -56,7 +58,9 @@ describe('ConversationStore', () => {
 			})
 
 			expect(insertMock).toHaveBeenCalledTimes(1)
-			let insertedData = insertMock.mock.calls[0]![0] as Record<string, unknown>
+			let firstCall = insertMock.mock.calls[0]
+			if (!firstCall) throw new Error('expected insert to be called once')
+			let insertedData = firstCall[0]
 			expect(insertedData.thread_id).toBe('thread-abc')
 			expect(insertedData.role).toBe('user')
 			expect(insertedData.content).toBe('Hello matchmaker')
