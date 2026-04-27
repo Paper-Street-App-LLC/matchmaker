@@ -1,1 +1,5 @@
-export { createConversationStore, type ConversationMessage } from './conversations'
+export {
+	createConversationStore,
+	type ConversationMessage,
+	type NewConversationMessage,
+} from './conversations'
