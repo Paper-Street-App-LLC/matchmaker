@@ -1,7 +1,25 @@
-import { describe, test, expect, beforeEach, mock, spyOn, afterEach } from 'bun:test'
+import { describe, test, expect, beforeEach, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { createMcpRoutes } from '../../src/routes/mcp'
 import { createMockSupabaseClient } from '../mocks/supabase'
+
+type JsonRpcResponse = {
+	result?: {
+		serverInfo?: { name?: string }
+		prompts?: Array<{ name: string; description?: string }>
+		messages?: Array<{ content: { type: string; text?: string } }>
+		isError?: boolean
+		content?: Array<{ type: string; text?: string }>
+	}
+	error?: { code?: number; message?: string } | string
+	code?: number
+	message?: string
+}
+
+async function jsonBody(res: Response): Promise<JsonRpcResponse> {
+	let body: JsonRpcResponse = JSON.parse(await res.text())
+	return body
+}
 
 describe('MCP Routes', () => {
 	let app: Hono
@@ -150,8 +168,8 @@ describe('MCP Routes', () => {
 			expect(initRes.status).toBe(200)
 
 			// Parse JSON response to get initialization result
-			let initBody = await initRes.json()
-			expect(initBody.result.serverInfo.name).toBe('matchmaker-mcp')
+			let initBody = await jsonBody(initRes)
+			expect(initBody.result?.serverInfo?.name).toBe('matchmaker-mcp')
 		})
 	})
 
@@ -414,18 +432,18 @@ describe('MCP Routes', () => {
 				let res = await app.fetch(req)
 				expect(res.status).toBe(200)
 
-				let body = await res.json()
+				let body = await jsonBody(res)
 				let promptsListResult = body.result
 
 				expect(promptsListResult).not.toBeNull()
-				expect(promptsListResult.prompts).toBeArray()
-				expect(promptsListResult.prompts.length).toBeGreaterThan(0)
+				expect(promptsListResult?.prompts).toBeArray()
+				expect(promptsListResult?.prompts?.length).toBeGreaterThan(0)
 
-				let intakePrompt = promptsListResult.prompts.find(
-					(p: { name: string }) => p.name === 'matchmaker_interview'
+				let intakePrompt = promptsListResult?.prompts?.find(
+					p => p.name === 'matchmaker_interview'
 				)
 				expect(intakePrompt).toBeDefined()
-				expect(intakePrompt.description).toBeDefined()
+				expect(intakePrompt?.description).toBeDefined()
 			})
 		})
 
@@ -451,17 +469,16 @@ describe('MCP Routes', () => {
 				let res = await app.fetch(req)
 				expect(res.status).toBe(200)
 
-				let body = await res.json()
+				let body = await jsonBody(res)
 				let promptResult = body.result
 
 				expect(promptResult).not.toBeNull()
-				expect(promptResult.messages).toBeArray()
-				expect(promptResult.messages.length).toBeGreaterThan(0)
+				expect(promptResult?.messages).toBeArray()
+				expect(promptResult?.messages?.length).toBeGreaterThan(0)
 
-				// Check the prompt content includes expected text
-				let messageContent = promptResult.messages[0].content
-				expect(messageContent.type).toBe('text')
-				expect(messageContent.text).toContain('Phase 1')
+				let messageContent = promptResult?.messages?.[0]?.content
+				expect(messageContent?.type).toBe('text')
+				expect(messageContent?.text).toContain('Phase 1')
 			})
 
 			test('returns an error for unknown prompt name', async () => {
@@ -485,9 +502,11 @@ describe('MCP Routes', () => {
 				let res = await app.fetch(req)
 				expect(res.status).toBe(200) // MCP returns 200 with error in body
 
-				let body = await res.json()
+				let body = await jsonBody(res)
 				expect(body.error).not.toBeNull()
-				expect(body.error.message).toContain('unknown_prompt')
+				expect(typeof body.error === 'object' ? body.error?.message : undefined).toContain(
+					'unknown_prompt'
+				)
 			})
 		})
 	})
@@ -514,12 +533,13 @@ describe('MCP Routes', () => {
 
 			expect(loggedCalls.length).toBe(1)
 
-			// First arg should be timestamp
 			let firstCall = loggedCalls[0]
+			if (!firstCall) throw new Error('expected one logged call')
 			expect(firstCall[0]).toBe('2026-01-23T00:00:00.000Z')
 
-			// Second arg should be JSON with error details
-			let logData = JSON.parse(firstCall[1] as string)
+			let serialized = firstCall[1]
+			if (typeof serialized !== 'string') throw new Error('expected JSON string')
+			let logData = JSON.parse(serialized)
 			expect(logData.type).toBe('TestError')
 			expect(logData.path).toBe('/test/path')
 			expect(logData.status).toBe(500)
@@ -541,14 +561,15 @@ describe('MCP Routes', () => {
 			let res = await app.fetch(req)
 			expect(res.status).toBe(400)
 
-			let body = await res.json()
+			let body = await jsonBody(res)
 			// The MCP SDK or our handler returns an error object
 			// Check for either our custom format or JSON-RPC error format
+			let errorObj = typeof body.error === 'object' ? body.error : undefined
 			let hasError =
 				body.error === 'Invalid JSON' ||
-				body.error?.code === -32700 ||
+				errorObj?.code === -32700 ||
 				body.code === -32700 ||
-				(body.message && body.message.includes('Invalid JSON'))
+				(body.message ? body.message.includes('Invalid JSON') : false)
 			expect(hasError).toBe(true)
 		})
 
@@ -616,7 +637,7 @@ describe('MCP Routes', () => {
 			let res = await notFoundApp.fetch(req)
 			expect(res.status).toBe(200)
 
-			let body = await res.json()
+			let body = await jsonBody(res)
 			expect(body.result?.isError).toBe(true)
 			expect(body.result?.content?.[0]?.text).toBe('Error: Introduction not found')
 		})
@@ -677,14 +698,12 @@ describe('MCP Routes', () => {
 			let res = await errorApp.fetch(toolReq)
 			expect(res.status).toBe(200) // MCP returns 200 with error in body
 
-			let body = await res.json()
+			let body = await jsonBody(res)
 
 			// JSON response contains the tool result directly
 			expect(body.result?.isError).toBe(true)
 			expect(Array.isArray(body.result?.content)).toBe(true)
-			let textContent = body.result.content.find(
-				(c: { type: string; text?: string }) => c.type === 'text'
-			)
+			let textContent = body.result?.content?.find(c => c.type === 'text')
 			expect(textContent?.text).toMatch(/^Error:/)
 		})
 

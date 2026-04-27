@@ -7,11 +7,14 @@ import { createMockSupabaseClient } from '../mocks/supabase'
  * Helper: send a tools/call JSON-RPC request to the MCP endpoint
  * and parse the JSON response to extract the tool result.
  */
+type ToolResult = { isError?: boolean; content: Array<{ type: string; text: string }> }
+type JsonRpcResponse = { result?: ToolResult }
+
 async function callTool(
 	app: Hono,
 	name: string,
 	args: Record<string, unknown>
-): Promise<{ isError?: boolean; content: Array<{ type: string; text: string }> }> {
+): Promise<ToolResult> {
 	let res = await app.fetch(
 		new Request('http://localhost/mcp', {
 			method: 'POST',
@@ -29,7 +32,7 @@ async function callTool(
 		})
 	)
 
-	let body = await res.json()
+	let body: JsonRpcResponse = JSON.parse(await res.text())
 	if (!body.result) throw new Error('No tool result found in JSON response')
 	return body.result
 }

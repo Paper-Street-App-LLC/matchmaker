@@ -7,7 +7,12 @@
  */
 import { describe, test, expect } from 'bun:test'
 import { buildMcpToolList } from '@matchmaker/shared'
-import { aboutMeSchema, lookingForSchema, parsePreferences } from '../../src/schemas/preferences'
+import {
+	aboutMeSchema,
+	lookingForSchema,
+	parsePreferences,
+	type StructuredPreferences,
+} from '../../src/schemas/preferences'
 
 let tools = buildMcpToolList()
 
@@ -84,11 +89,12 @@ describe('update_person preferences JSON Schema round-trips through Zod', () => 
 	test('every advertised dealBreaker value is accepted by parsePreferences', () => {
 		let dealBreakers = getStringEnum(dealBreakersItems)
 		let parsed = parsePreferences({ dealBreakers })
-		expect(parsed.dealBreakers).toEqual(dealBreakers)
+		expect(parsed.dealBreakers?.length).toBe(dealBreakers.length)
+		expect(parsed.dealBreakers?.map(String)).toEqual(dealBreakers)
 	})
 
 	test('a maximally populated example using only advertised values round-trips intact', () => {
-		let example = {
+		let example: StructuredPreferences = {
 			aboutMe: {
 				height: 175,
 				build: 'athletic',

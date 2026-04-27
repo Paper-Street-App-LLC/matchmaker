@@ -113,7 +113,7 @@ describe('End-to-End OAuth Flow', () => {
 		expect(resourceRes.status).toBe(200)
 		let resourceMetadata = (await resourceRes.json()) as ProtectedResourceMetadata
 
-		expect(resourceMetadata.authorization_servers[0].issuer).toBe('http://localhost')
+		expect(resourceMetadata.authorization_servers[0]?.issuer).toBe('http://localhost')
 
 		// Step 3: Register client dynamically
 		let registerReq = new Request('http://localhost/register', {
@@ -375,7 +375,7 @@ describe('End-to-End OAuth Flow', () => {
 
 		expect(tokenData.refresh_token).toBeDefined()
 		expect(typeof tokenData.refresh_token).toBe('string')
-		expect(tokenData.refresh_token.length).toBeGreaterThan(0)
+		expect(tokenData.refresh_token?.length).toBeGreaterThan(0)
 	})
 
 	test('authorization code can only be used once', async () => {
