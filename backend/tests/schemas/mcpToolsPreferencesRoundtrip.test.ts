@@ -6,8 +6,10 @@
  * backend will actually accept.
  */
 import { describe, test, expect } from 'bun:test'
-import { tools } from '../../../mcp-server/src/toolDefinitions'
+import { buildMcpToolList } from '@matchmaker/shared'
 import { aboutMeSchema, lookingForSchema, parsePreferences } from '../../src/schemas/preferences'
+
+let tools = buildMcpToolList()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
