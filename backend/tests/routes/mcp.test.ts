@@ -642,6 +642,102 @@ describe('MCP Routes', () => {
 			expect(body.result?.content?.[0]?.text).toBe('Error: Introduction not found')
 		})
 
+		test('get_person reads people across matchmakers (find_matches surfaces them)', async () => {
+			let liam = {
+				id: 'liam-id',
+				name: 'Liam',
+				matchmaker_id: 'other-matchmaker',
+				active: true,
+			}
+			let crossMatchmakerClient = createMockSupabaseClient({
+				auth: {
+					getUser: mock(async () => ({
+						data: { user: { id: 'user-123' } },
+						error: null,
+					})),
+				},
+				from: mock(() => ({
+					select: mock(() => ({
+						eq: mock(() => ({
+							maybeSingle: mock(async () => ({ data: liam, error: null })),
+						})),
+					})),
+				})),
+			})
+
+			let crossApp = new Hono()
+			crossApp.route('/mcp', createMcpRoutes(crossMatchmakerClient))
+
+			let req = new Request('http://localhost/mcp', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json, text/event-stream',
+					Authorization: 'Bearer valid-token',
+				},
+				body: JSON.stringify({
+					jsonrpc: '2.0',
+					method: 'tools/call',
+					params: { name: 'get_person', arguments: { id: liam.id } },
+					id: 2,
+				}),
+			})
+
+			let res = await crossApp.fetch(req)
+			expect(res.status).toBe(200)
+
+			let body = await jsonBody(res)
+			expect(body.result?.isError).toBeFalsy()
+			let textContent = body.result?.content?.find(c => c.type === 'text')
+			expect(textContent?.text).toBeDefined()
+			let parsed = JSON.parse(textContent?.text ?? '{}')
+			expect(parsed.id).toBe(liam.id)
+			expect(parsed.matchmaker_id).toBe('other-matchmaker')
+		})
+
+		test('get_person returns clean not-found error when id is unknown', async () => {
+			let notFoundClient = createMockSupabaseClient({
+				auth: {
+					getUser: mock(async () => ({
+						data: { user: { id: 'user-123' } },
+						error: null,
+					})),
+				},
+				from: mock(() => ({
+					select: mock(() => ({
+						eq: mock(() => ({
+							maybeSingle: mock(async () => ({ data: null, error: null })),
+						})),
+					})),
+				})),
+			})
+
+			let notFoundApp = new Hono()
+			notFoundApp.route('/mcp', createMcpRoutes(notFoundClient))
+
+			let req = new Request('http://localhost/mcp', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json, text/event-stream',
+					Authorization: 'Bearer valid-token',
+				},
+				body: JSON.stringify({
+					jsonrpc: '2.0',
+					method: 'tools/call',
+					params: { name: 'get_person', arguments: { id: 'unknown-id' } },
+					id: 2,
+				}),
+			})
+
+			let res = await notFoundApp.fetch(req)
+			expect(res.status).toBe(200)
+
+			let body = await jsonBody(res)
+			expect(body.result?.isError).toBe(true)
+			expect(body.result?.content?.[0]?.text).toBe('Error: Person not found')
+		})
+
 		test('MCP tool error responses follow specification format', async () => {
 			// Mock Supabase to return an error for a tool call
 			let errorMockSupabaseClient = createMockSupabaseClient({
@@ -654,11 +750,9 @@ describe('MCP Routes', () => {
 				from: mock(() => ({
 					select: mock(() => ({
 						eq: mock(() => ({
-							eq: mock(() => ({
-								single: mock(async () => ({
-									data: null,
-									error: { message: 'Person not found', code: 'PGRST116' },
-								})),
+							maybeSingle: mock(async () => ({
+								data: null,
+								error: { message: 'Database error', code: 'DB001' },
 							})),
 						})),
 					})),
