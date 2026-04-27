@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
 	toolRegistry,
 	getToolDefinition,
+	buildMcpToolList,
 	type ToolName,
 } from '../../src/mcp/tool-registry'
 
@@ -111,13 +112,31 @@ describe('MCP tool registry', () => {
 		})
 	})
 
-	describe('JSON Schema derivation', () => {
-		test('every input schema converts to JSON Schema', () => {
-			for (let tool of toolRegistry) {
-				let json = z.toJSONSchema(tool.inputSchema)
-				expect(json).toBeDefined()
-				expect((json as { type?: string }).type).toBe('object')
+	describe('buildMcpToolList', () => {
+		test('returns one entry per registered tool', () => {
+			let list = buildMcpToolList()
+			expect(list).toHaveLength(toolRegistry.length)
+			expect(list.map(t => t.name).sort()).toEqual(toolRegistry.map(t => t.name).sort())
+		})
+
+		test('every entry has an object-typed JSON Schema input', () => {
+			for (let tool of buildMcpToolList()) {
+				expect(tool.inputSchema).toBeDefined()
+				expect((tool.inputSchema as { type?: string }).type).toBe('object')
 			}
+		})
+
+		test('strips the JSON Schema $schema marker from inputSchema', () => {
+			for (let tool of buildMcpToolList()) {
+				expect('$schema' in tool.inputSchema).toBe(false)
+			}
+		})
+
+		test('add_person input requires the name property', () => {
+			let addPerson = buildMcpToolList().find(t => t.name === 'add_person')
+			expect(addPerson).toBeDefined()
+			let schema = addPerson!.inputSchema as { required?: string[] }
+			expect(schema.required).toContain('name')
 		})
 	})
 

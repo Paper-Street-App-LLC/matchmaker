@@ -6,6 +6,8 @@ export * from './repositories/index.js'
 export {
 	toolRegistry,
 	getToolDefinition,
+	buildMcpToolList,
 	type ToolDefinition,
 	type ToolName,
+	type McpToolDefinition,
 } from './mcp/tool-registry.js'
