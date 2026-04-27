@@ -205,19 +205,20 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 
 		// Handle tool calls by making direct database calls
 		server.setRequestHandler(CallToolRequestSchema, async request => {
-			let { name, arguments: args } = request.params
+			let { name, arguments: rawArgs } = request.params
 
 			try {
 				let toolDef = getToolDefinition(name)
+				let args: Record<string, unknown> | undefined = rawArgs
 				if (toolDef) {
-					let parsed = toolDef.inputSchema.safeParse(args ?? {})
+					let parsed = toolDef.inputSchema.safeParse(rawArgs ?? {})
 					if (!parsed.success) {
 						let detail = parsed.error.issues
 							.map(i => `${i.path.join('.') || '<root>'}: ${i.message}`)
 							.join('; ')
 						throw new Error(`Invalid arguments for ${name}: ${detail}`)
 					}
-					args = parsed.data as typeof args
+					args = parsed.data
 				}
 
 				if (name === 'add_person') {

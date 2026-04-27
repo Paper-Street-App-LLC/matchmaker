@@ -64,18 +64,20 @@ export type ParsePreferencesOptions = {
 	onInvalid?: (issue: PreferenceIssue) => void
 }
 
+let isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value)
+
 let stripObjectFields = <T extends z.ZodObject>(
 	schema: T,
 	raw: unknown,
 	section: PreferenceIssue['section'],
 	onInvalid: (issue: PreferenceIssue) => void,
 ): z.infer<T> | undefined => {
-	if (!raw || typeof raw !== 'object') return undefined
+	if (!isRecord(raw)) return undefined
 	let cleaned: Record<string, unknown> = {}
 	for (let [key, fieldSchema] of Object.entries(schema.shape)) {
 		if (!(key in raw)) continue
-		let value = (raw as Record<string, unknown>)[key]
-		let parsed = (fieldSchema as z.ZodTypeAny).safeParse(value)
+		let parsed = fieldSchema.safeParse(raw[key])
 		if (parsed.success) {
 			if (parsed.data !== undefined) cleaned[key] = parsed.data
 		} else {
@@ -84,7 +86,9 @@ let stripObjectFields = <T extends z.ZodObject>(
 			}
 		}
 	}
-	return Object.keys(cleaned).length === 0 ? undefined : (cleaned as z.infer<T>)
+	if (Object.keys(cleaned).length === 0) return undefined
+	let reparsed = schema.safeParse(cleaned)
+	return reparsed.success ? reparsed.data : undefined
 }
 
 export let parsePreferences = (
