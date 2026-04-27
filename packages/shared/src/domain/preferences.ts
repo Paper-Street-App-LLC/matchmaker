@@ -61,18 +61,18 @@ export type PreferencesInput = Preferences
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
-let BUILDS: readonly Build[] = ['slim', 'average', 'athletic', 'heavy']
-let FITNESS_LEVELS: readonly FitnessLevel[] = ['active', 'average', 'sedentary']
-let INCOMES: readonly Income[] = ['high', 'moderate', 'low']
-let FITNESS_PREFERENCES: readonly FitnessPreference[] = ['active', 'average', 'any']
-let INCOME_PREFERENCES: readonly IncomePreference[] = ['high', 'moderate', 'any']
-let DEAL_BREAKERS: readonly DealBreaker[] = [
+export const BUILDS = ['slim', 'average', 'athletic', 'heavy'] as const
+export const FITNESS_LEVELS = ['active', 'average', 'sedentary'] as const
+export const INCOMES = ['high', 'moderate', 'low'] as const
+export const FITNESS_PREFERENCES = ['active', 'average', 'any'] as const
+export const INCOME_PREFERENCES = ['high', 'moderate', 'any'] as const
+export const DEAL_BREAKERS = [
 	'isDivorced',
 	'hasChildren',
 	'hasTattoos',
 	'hasPiercings',
 	'isSmoker',
-]
+] as const
 
 function invalid(code: string, message: string): never {
 	throw new InvalidPreferencesError(code, message)
