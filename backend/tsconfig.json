@@ -15,11 +15,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
-		"outDir": "./dist",
-		"baseUrl": ".",
-		"paths": {
-			"@/*": ["./src/*"]
-		}
+		"outDir": "./dist"
 	},
 	"include": ["src/**/*", "tests/**/*", "**/*.test.ts"],
 	"exclude": ["node_modules", "dist"]
