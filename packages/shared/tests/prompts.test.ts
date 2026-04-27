@@ -32,12 +32,16 @@ describe('Prompts', () => {
 			expect(message).toBeDefined()
 			expect(message?.role).toBe('user')
 			expect(message?.content.type).toBe('text')
-			expect(message?.content.text).toBeDefined()
+			let content = message?.content
+			if (content?.type === 'text') {
+				expect(content.text).toBeDefined()
+			}
 		})
 
 		test('interview covers key phases', () => {
 			let result = getPrompt('matchmaker_interview')
-			let text = result.messages[0]?.content.text ?? ''
+			let content = result.messages[0]?.content
+			let text = content?.type === 'text' ? content.text : ''
 
 			expect(text).toContain('Phase 1')
 			expect(text).toContain('Phase 13')
@@ -49,7 +53,8 @@ describe('Prompts', () => {
 
 		test('interview addresses matchmaker context', () => {
 			let result = getPrompt('matchmaker_interview')
-			let text = result.messages[0]?.content.text ?? ''
+			let content = result.messages[0]?.content
+			let text = content?.type === 'text' ? content.text : ''
 
 			expect(text).toContain('matchmaker')
 			expect(text).toContain('advocate')
