@@ -83,8 +83,11 @@ let updatePerson: ToolDefinition = {
 		location: z.string().optional().describe('Person location'),
 		gender: z.string().optional().describe('Person gender'),
 		preferences: preferencesShape
+			.nullable()
 			.optional()
-			.describe('Structured preferences with aboutMe, lookingFor, and dealBreakers sections'),
+			.describe(
+				'Structured preferences with aboutMe, lookingFor, and dealBreakers sections. Pass null to clear.',
+			),
 		personality: z
 			.record(z.string(), z.unknown())
 			.optional()

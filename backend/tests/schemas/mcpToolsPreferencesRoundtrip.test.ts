@@ -20,10 +20,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function unwrapNullable(schema: Record<string, unknown>): Record<string, unknown> {
+	let any = schema.anyOf
+	if (!Array.isArray(any)) return schema
+	let nonNull = any.find((s): s is Record<string, unknown> => isRecord(s) && s.type !== 'null')
+	return nonNull ?? schema
+}
+
 function getRecord(parent: Record<string, unknown>, key: string): Record<string, unknown> {
 	let value = parent[key]
 	if (!isRecord(value)) throw new Error(`expected object at ${key}, got ${typeof value}`)
-	return value
+	return unwrapNullable(value)
 }
 
 function getStringEnum(schema: Record<string, unknown>): string[] {

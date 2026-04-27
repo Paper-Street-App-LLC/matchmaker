@@ -11,7 +11,7 @@ import {
 	GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
-import { prompts, getPrompt, buildMcpToolList } from '@matchmaker/shared'
+import { prompts, getPrompt, buildMcpToolList, getToolDefinition } from '@matchmaker/shared'
 import { parsePreferences } from '../schemas/preferences'
 import {
 	SupabaseIntroductionRepository,
@@ -208,6 +208,18 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 			let { name, arguments: args } = request.params
 
 			try {
+				let toolDef = getToolDefinition(name)
+				if (toolDef) {
+					let parsed = toolDef.inputSchema.safeParse(args ?? {})
+					if (!parsed.success) {
+						let detail = parsed.error.issues
+							.map(i => `${i.path.join('.') || '<root>'}: ${i.message}`)
+							.join('; ')
+						throw new Error(`Invalid arguments for ${name}: ${detail}`)
+					}
+					args = parsed.data as typeof args
+				}
+
 				if (name === 'add_person') {
 					if (
 						!args ||
