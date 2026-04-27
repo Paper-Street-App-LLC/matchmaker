@@ -184,3 +184,23 @@ export type ToolName = (typeof toolRegistry)[number]['name']
 export function getToolDefinition(name: string): ToolDefinition | undefined {
 	return toolRegistry.find(t => t.name === name)
 }
+
+export type McpToolDefinition = {
+	name: string
+	description: string
+	inputSchema: Record<string, unknown>
+}
+
+// Derives the MCP-SDK-shaped tool list (with JSON Schema input shapes) from the
+// Zod registry. Both transports consume this so that adding or renaming a tool
+// requires editing the registry only.
+export function buildMcpToolList(): McpToolDefinition[] {
+	return toolRegistry.map(t => {
+		let { $schema, ...inputSchema } = z.toJSONSchema(t.inputSchema) as Record<string, unknown>
+		return {
+			name: t.name,
+			description: t.description,
+			inputSchema,
+		}
+	})
+}
