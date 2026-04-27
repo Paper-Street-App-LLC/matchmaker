@@ -21,8 +21,8 @@ describe('POST /api/feedback', () => {
 		}
 
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				insert: mock((data: any) => ({
+			from: mock((_table: string) => ({
+				insert: mock((_data: any) => ({
 					select: mock(() => ({
 						single: mock(() => ({
 							data: mockFeedback,
@@ -107,9 +107,9 @@ describe('GET /api/feedback', () => {
 		]
 
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				select: mock((columns: string) => ({
-					eq: mock((column: string, value: any) => ({
+			from: mock((_table: string) => ({
+				select: mock((_columns: string) => ({
+					eq: mock((_column: string, _value: any) => ({
 						data: mockFeedback,
 						error: null,
 					})),
@@ -138,9 +138,9 @@ describe('GET /api/feedback', () => {
 
 	test('should return empty array if no feedback', async () => {
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				select: mock((columns: string) => ({
-					eq: mock((column: string, value: any) => ({
+			from: mock((_table: string) => ({
+				select: mock((_columns: string) => ({
+					eq: mock((_column: string, _value: any) => ({
 						data: [],
 						error: null,
 					})),
@@ -180,9 +180,9 @@ describe('GET /api/feedback/:id', () => {
 		}
 
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				select: mock((columns: string) => ({
-					eq: mock((column: string, value: any) => ({
+			from: mock((_table: string) => ({
+				select: mock((_columns: string) => ({
+					eq: mock((_column: string, _value: any) => ({
 						maybeSingle: mock(() => ({
 							data: mockFeedback,
 							error: null,
@@ -213,9 +213,9 @@ describe('GET /api/feedback/:id', () => {
 
 	test('should return 404 when feedback not found', async () => {
 		let mockClient = createMockSupabaseClient({
-			from: mock((table: string) => ({
-				select: mock((columns: string) => ({
-					eq: mock((column: string, value: any) => ({
+			from: mock((_table: string) => ({
+				select: mock((_columns: string) => ({
+					eq: mock((_column: string, _value: any) => ({
 						maybeSingle: mock(() => ({
 							data: null,
 							error: null,

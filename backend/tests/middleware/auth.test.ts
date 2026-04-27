@@ -12,7 +12,7 @@ describe('authMiddleware', () => {
 		let mockUserId = 'user-123'
 		let mockClient = createMockSupabaseClient({
 			auth: {
-				getUser: mock(async (token: string) => ({
+				getUser: mock(async (_token: string) => ({
 					data: { user: { id: mockUserId } },
 					error: null,
 				})),
@@ -70,7 +70,7 @@ describe('authMiddleware', () => {
 	test('should return 401 if token verification fails', async () => {
 		let mockClient = createMockSupabaseClient({
 			auth: {
-				getUser: mock(async (token: string) => ({
+				getUser: mock(async (_token: string) => ({
 					data: { user: null },
 					error: { message: 'Invalid token' },
 				})),
@@ -94,7 +94,7 @@ describe('authMiddleware', () => {
 	test('should return 401 if user not found', async () => {
 		let mockClient = createMockSupabaseClient({
 			auth: {
-				getUser: mock(async (token: string) => ({
+				getUser: mock(async (_token: string) => ({
 					data: { user: null },
 					error: null,
 				})),

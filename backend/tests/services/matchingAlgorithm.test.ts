@@ -39,7 +39,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person.name).toBe('Bob')
+		expect(matches[0]?.person.name).toBe('Bob')
 	})
 
 	test('should exclude inactive people', () => {
@@ -67,7 +67,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].is_cross_matchmaker).toBe(false)
+		expect(matches[0]?.is_cross_matchmaker).toBe(false)
 	})
 
 	test('should flag is_cross_matchmaker correctly for different matchmaker', () => {
@@ -84,7 +84,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].is_cross_matchmaker).toBe(true)
+		expect(matches[0]?.is_cross_matchmaker).toBe(true)
 	})
 
 	test('should strip sensitive fields from cross-matchmaker results', () => {
@@ -104,7 +104,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person).toEqual({
+		expect(matches[0]?.person).toEqual({
 			id: '111e8400-e29b-41d4-a716-446655440011',
 			name: 'Bob',
 			age: 28,
@@ -128,8 +128,8 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(typeof matches[0].match_explanation).toBe('string')
-		expect(matches[0].match_explanation.length).toBeGreaterThan(0)
+		expect(typeof matches[0]?.match_explanation).toBe('string')
+		expect(matches[0]?.match_explanation.length).toBeGreaterThan(0)
 	})
 
 	test('should include compatibility_score as a number', () => {
@@ -145,9 +145,9 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(typeof matches[0].compatibility_score).toBe('number')
-		expect(matches[0].compatibility_score).toBeGreaterThanOrEqual(0)
-		expect(matches[0].compatibility_score).toBeLessThanOrEqual(1)
+		expect(typeof matches[0]?.compatibility_score).toBe('number')
+		expect(matches[0]?.compatibility_score).toBeGreaterThanOrEqual(0)
+		expect(matches[0]?.compatibility_score).toBeLessThanOrEqual(1)
 	})
 
 	test('should score higher for same location', () => {
@@ -199,7 +199,9 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(2)
-		expect(matches[0].compatibility_score).toBeGreaterThanOrEqual(matches[1].compatibility_score)
+		let [first, second] = matches
+		if (!first || !second) throw new Error('expected two matches')
+		expect(first.compatibility_score).toBeGreaterThanOrEqual(second.compatibility_score)
 	})
 
 	test('should return empty array when no candidates', () => {
@@ -220,8 +222,10 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId, limit: 3 })
 
 		expect(matches).toHaveLength(3)
-		expect(matches[0].compatibility_score).toBeGreaterThanOrEqual(matches[1].compatibility_score)
-		expect(matches[1].compatibility_score).toBeGreaterThanOrEqual(matches[2].compatibility_score)
+		let [first, second, third] = matches
+		if (!first || !second || !third) throw new Error('expected three matches')
+		expect(first.compatibility_score).toBeGreaterThanOrEqual(second.compatibility_score)
+		expect(second.compatibility_score).toBeGreaterThanOrEqual(third.compatibility_score)
 	})
 
 	test('should include location in explanation when locations match', () => {
@@ -237,7 +241,7 @@ describe('findMatches', () => {
 
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
-		expect(matches[0].match_explanation).toContain('NYC')
+		expect(matches[0]?.match_explanation).toContain('NYC')
 	})
 
 	test('should only match women with men (opposite gender)', () => {
@@ -270,7 +274,7 @@ describe('findMatches', () => {
 		let matches = findMatches(femaleSubject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person.name).toBe('Bob')
+		expect(matches[0]?.person.name).toBe('Bob')
 	})
 
 	test('should only match men with women (opposite gender)', () => {
@@ -396,7 +400,7 @@ describe('findMatches', () => {
 		let matches = findMatches(femaleSubject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person.name).toBe('Bob')
+		expect(matches[0]?.person.name).toBe('Bob')
 	})
 
 	// --- Deal Breaker Filter Tests ---
@@ -431,7 +435,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectWithPrefs.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person.name).toBe('Charlie')
+		expect(matches[0]?.person.name).toBe('Charlie')
 	})
 
 	test('should filter bidirectionally — candidate deal breaker eliminates subject', () => {
@@ -607,7 +611,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectWithPrefs.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].compatibility_score).toBeGreaterThan(0)
+		expect(matches[0]?.compatibility_score).toBeGreaterThan(0)
 	})
 
 	test('should score higher when candidate is in partial age range with only min', () => {
@@ -691,7 +695,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectWithPrefs.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person.name).toBe('Charlie')
+		expect(matches[0]?.person.name).toBe('Charlie')
 	})
 
 	test('should compare religion case-insensitively', () => {
@@ -863,7 +867,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectWithPrefs.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].match_explanation).toContain('fitness')
+		expect(matches[0]?.match_explanation).toContain('fitness')
 	})
 
 	// --- Backward Compatibility Tests ---
@@ -893,7 +897,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectNull.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].compatibility_score).toBeGreaterThan(0)
+		expect(matches[0]?.compatibility_score).toBeGreaterThan(0)
 	})
 
 	test('should still work with old-format preferences (backward compatible)', () => {
@@ -921,7 +925,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectOld.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].compatibility_score).toBeGreaterThan(0)
+		expect(matches[0]?.compatibility_score).toBeGreaterThan(0)
 	})
 
 	// --- Seed Profile Tests ---
@@ -941,8 +945,8 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].is_cross_matchmaker).toBe(true)
-		expect(matches[0].person.name).toBe('Seed Bob')
+		expect(matches[0]?.is_cross_matchmaker).toBe(true)
+		expect(matches[0]?.person.name).toBe('Seed Bob')
 	})
 
 	test('should include seed profiles in match results alongside regular profiles', () => {
@@ -1148,7 +1152,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subjectWithPrefs.id, allPeople, { matchmakerId })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].match_explanation).toContain('income')
+		expect(matches[0]?.match_explanation).toContain('income')
 	})
 
 	// --- Height Scoring Tests ---
@@ -1359,7 +1363,7 @@ describe('findMatches', () => {
 		let matches = findMatches(subject.id, allPeople, { matchmakerId, excludeIds })
 
 		expect(matches).toHaveLength(1)
-		expect(matches[0].person.name).toBe('Keep')
+		expect(matches[0]?.person.name).toBe('Keep')
 	})
 
 	test('should apply decline reason penalty for tattoos keyword', () => {
@@ -1417,7 +1421,10 @@ describe('findMatches', () => {
 		let withPenalty = findMatches(subject.id, [subject, candidate], { matchmakerId, declineReasons })
 		let withoutPenalty = findMatches(subject.id, [subject, candidate], { matchmakerId })
 
-		expect(withPenalty[0].compatibility_score).toBe(withoutPenalty[0].compatibility_score)
+		let [withPenaltyFirst] = withPenalty
+		let [withoutPenaltyFirst] = withoutPenalty
+		if (!withPenaltyFirst || !withoutPenaltyFirst) throw new Error('expected one match each')
+		expect(withPenaltyFirst.compatibility_score).toBe(withoutPenaltyFirst.compatibility_score)
 	})
 
 	test('should cap decline penalty so score does not go below 0', () => {
@@ -1446,7 +1453,7 @@ describe('findMatches', () => {
 		]
 		let matches = findMatches(subject.id, [subject, candidate], { matchmakerId, declineReasons })
 
-		expect(matches[0].compatibility_score).toBeGreaterThanOrEqual(0)
+		expect(matches[0]?.compatibility_score).toBeGreaterThanOrEqual(0)
 	})
 
 	test('should apply penalty for smoker keyword variations', () => {
@@ -1497,7 +1504,10 @@ describe('findMatches', () => {
 		let withDecline = findMatches(subject.id, [subject, candidate], { matchmakerId, declineReasons })
 		let withoutDecline = findMatches(subject.id, [subject, candidate], { matchmakerId })
 
-		expect(withDecline[0].compatibility_score).toBe(withoutDecline[0].compatibility_score)
+		let [withDeclineFirst] = withDecline
+		let [withoutDeclineFirst] = withoutDecline
+		if (!withDeclineFirst || !withoutDeclineFirst) throw new Error('expected one match each')
+		expect(withDeclineFirst.compatibility_score).toBe(withoutDeclineFirst.compatibility_score)
 	})
 
 	test('should still apply penalty for valid piercing keyword in context', () => {

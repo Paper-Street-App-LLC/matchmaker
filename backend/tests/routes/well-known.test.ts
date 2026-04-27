@@ -145,7 +145,7 @@ describe('GET /.well-known/oauth-protected-resource', () => {
 		expect(body.authorization_servers).toBeDefined()
 		expect(Array.isArray(body.authorization_servers)).toBe(true)
 		expect(body.authorization_servers.length).toBeGreaterThan(0)
-		expect(body.authorization_servers[0].issuer).toBe('http://localhost')
+		expect(body.authorization_servers[0]?.issuer).toBe('http://localhost')
 	})
 
 	test('should include resource identifier', async () => {
