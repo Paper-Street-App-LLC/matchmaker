@@ -11,6 +11,14 @@ import type {
 	PersonPersonality,
 } from '../src/api'
 
+type Handlers = ReturnType<typeof createToolHandlers>
+
+function callHandler<T extends keyof Handlers>(handlers: Handlers, name: T, args: unknown) {
+	let handler = handlers[name]
+	if (!handler) throw new Error(`no handler registered for tool: ${String(name)}`)
+	return handler(args)
+}
+
 function createMockApiClient(overrides?: Partial<IApiClient>): IApiClient {
 	return {
 		addPerson: mock(
@@ -185,10 +193,9 @@ describe('MCP Server', () => {
 			})
 		)
 
-		let mockApiClient = {
+		let mockApiClient = createMockApiClient({
 			addPerson: mockAddPerson,
-			listPeople: mock(async (): Promise<Person[]> => []),
-		} as IApiClient
+		})
 
 		// Simulate what the handler does
 		let personName = 'John Doe'
@@ -221,19 +228,9 @@ describe('MCP Server', () => {
 			]
 		)
 
-		let mockApiClient = {
-			addPerson: mock(
-				async (_name: string): Promise<Person> => ({
-					id: 'test-id',
-					name: _name,
-					matchmaker_id: 'user-id',
-					active: true,
-					created_at: new Date().toISOString(),
-					updated_at: new Date().toISOString(),
-				})
-			),
+		let mockApiClient = createMockApiClient({
 			listPeople: mockListPeople,
-		} as IApiClient
+		})
 
 		let result = await mockApiClient.listPeople()
 
@@ -663,7 +660,7 @@ describe('Handler structuredContent', () => {
 			getPerson: mock(async () => person),
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.get_person({ id: 'p1' })
+		let result = await callHandler(handlers, 'get_person', { id: 'p1' })
 
 		expect(result.content[0]?.text).toBe(JSON.stringify(person, null, 2))
 		expect(result.structuredContent).toBeDefined()
@@ -683,7 +680,7 @@ describe('Handler structuredContent', () => {
 			findMatches: mock(async () => matches),
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.find_matches({ person_id: 'p2' })
+		let result = await callHandler(handlers, 'find_matches', { person_id: 'p2' })
 
 		expect(result.content[0]?.text).toBe(JSON.stringify(matches, null, 2))
 		expect(result.structuredContent).toBeDefined()
@@ -727,7 +724,7 @@ describe('Handler structuredContent', () => {
 			listPeople: mockListPeople,
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.list_introductions({})
+		let result = await callHandler(handlers, 'list_introductions', {})
 
 		expect(mockListPeople).toHaveBeenCalled()
 		expect(result.structuredContent).toBeDefined()
@@ -762,7 +759,7 @@ describe('Handler structuredContent', () => {
 			getPerson: mockGetPerson,
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.get_introduction({ id: 'i1' })
+		let result = await callHandler(handlers, 'get_introduction', { id: 'i1' })
 
 		expect(mockGetPerson).toHaveBeenCalledTimes(2)
 		expect(result.structuredContent).toBeDefined()
@@ -805,7 +802,7 @@ describe('Handler structuredContent', () => {
 			getPerson: mockGetPerson,
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.list_feedback({ introduction_id: 'i1' })
+		let result = await callHandler(handlers, 'list_feedback', { introduction_id: 'i1' })
 
 		// Should only call getPerson once since both feedback items are from p1
 		expect(mockGetPerson).toHaveBeenCalledTimes(1)
@@ -828,7 +825,7 @@ describe('Handler structuredContent', () => {
 			recordDecision: mockRecord,
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.record_decision({
+		let result = await callHandler(handlers, 'record_decision', {
 			person_id: '00000000-0000-0000-0000-000000000001',
 			candidate_id: '00000000-0000-0000-0000-000000000002',
 			decision: 'declined',
@@ -849,7 +846,7 @@ describe('Handler structuredContent', () => {
 		let mockClient = createMockApiClient()
 		let handlers = createToolHandlers(mockClient)
 		await expect(
-			handlers.record_decision({
+			callHandler(handlers, 'record_decision', {
 				person_id: '00000000-0000-0000-0000-000000000001',
 				candidate_id: '00000000-0000-0000-0000-000000000002',
 				decision: 'maybe',
@@ -874,7 +871,7 @@ describe('Handler structuredContent', () => {
 			listDecisions: mockList,
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.list_decisions({
+		let result = await callHandler(handlers, 'list_decisions', {
 			person_id: '00000000-0000-0000-0000-000000000001',
 		})
 
@@ -900,7 +897,7 @@ describe('Handler structuredContent', () => {
 			}),
 		})
 		let handlers = createToolHandlers(mockClient)
-		let result = await handlers.list_feedback({ introduction_id: 'i1' })
+		let result = await callHandler(handlers, 'list_feedback', { introduction_id: 'i1' })
 
 		// Should still return successfully with fallback to ID
 		expect(result.structuredContent).toBeDefined()
