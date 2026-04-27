@@ -54,35 +54,75 @@ export let structuredPreferencesSchema = z.object({
 
 export type StructuredPreferences = z.infer<typeof structuredPreferencesSchema>
 
-export let parsePreferences = (raw: Record<string, unknown> | null): StructuredPreferences => {
+export type PreferenceIssue = {
+	section: 'aboutMe' | 'lookingFor' | 'dealBreakers'
+	path: PropertyKey[]
+	code: string
+}
+
+export type ParsePreferencesOptions = {
+	onInvalid?: (issue: PreferenceIssue) => void
+}
+
+let stripObjectFields = <T extends z.ZodObject>(
+	schema: T,
+	raw: unknown,
+	section: PreferenceIssue['section'],
+	onInvalid: (issue: PreferenceIssue) => void,
+): z.infer<T> | undefined => {
+	if (!raw || typeof raw !== 'object') return undefined
+	let cleaned: Record<string, unknown> = {}
+	for (let [key, fieldSchema] of Object.entries(schema.shape)) {
+		if (!(key in raw)) continue
+		let value = (raw as Record<string, unknown>)[key]
+		let parsed = (fieldSchema as z.ZodTypeAny).safeParse(value)
+		if (parsed.success) {
+			if (parsed.data !== undefined) cleaned[key] = parsed.data
+		} else {
+			for (let issue of parsed.error.issues) {
+				onInvalid({ section, path: [key, ...issue.path], code: issue.code })
+			}
+		}
+	}
+	return Object.keys(cleaned).length === 0 ? undefined : (cleaned as z.infer<T>)
+}
+
+export let parsePreferences = (
+	raw: Record<string, unknown> | null,
+	options: ParsePreferencesOptions = {},
+): StructuredPreferences => {
 	if (!raw) return {}
+
+	let onInvalid = options.onInvalid ?? (() => {})
 
 	let result: StructuredPreferences = {}
 
 	if ('aboutMe' in raw && raw.aboutMe) {
-		let parsed = aboutMeSchema.safeParse(raw.aboutMe)
-		if (parsed.success) {
-			result.aboutMe = parsed.data
-		} else {
-			console.warn('parsePreferences: invalid aboutMe dropped', parsed.error.issues)
-		}
+		let cleaned = stripObjectFields(aboutMeSchema, raw.aboutMe, 'aboutMe', onInvalid)
+		if (cleaned) result.aboutMe = cleaned
 	}
 
 	if ('lookingFor' in raw && raw.lookingFor) {
-		let parsed = lookingForSchema.safeParse(raw.lookingFor)
-		if (parsed.success) {
-			result.lookingFor = parsed.data
-		} else {
-			console.warn('parsePreferences: invalid lookingFor dropped', parsed.error.issues)
-		}
+		let cleaned = stripObjectFields(lookingForSchema, raw.lookingFor, 'lookingFor', onInvalid)
+		if (cleaned) result.lookingFor = cleaned
 	}
 
 	if ('dealBreakers' in raw && raw.dealBreakers) {
-		let parsed = dealBreakersSchema.safeParse(raw.dealBreakers)
-		if (parsed.success) {
-			result.dealBreakers = parsed.data
+		if (Array.isArray(raw.dealBreakers)) {
+			let kept: z.infer<typeof dealBreakersSchema> = []
+			raw.dealBreakers.forEach((entry, index) => {
+				let parsed = dealBreakersSchema.element.safeParse(entry)
+				if (parsed.success) {
+					kept.push(parsed.data)
+				} else {
+					for (let issue of parsed.error.issues) {
+						onInvalid({ section: 'dealBreakers', path: [index, ...issue.path], code: issue.code })
+					}
+				}
+			})
+			if (kept.length > 0) result.dealBreakers = kept
 		} else {
-			console.warn('parsePreferences: invalid dealBreakers dropped', parsed.error.issues)
+			onInvalid({ section: 'dealBreakers', path: [], code: 'invalid_type' })
 		}
 	}
 
