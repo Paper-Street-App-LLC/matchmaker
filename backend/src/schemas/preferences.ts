@@ -73,7 +73,13 @@ let stripObjectFields = <T extends z.ZodObject>(
 	section: PreferenceIssue['section'],
 	onInvalid: (issue: PreferenceIssue) => void,
 ): z.infer<T> | undefined => {
-	if (!isRecord(raw)) return undefined
+	if (!isRecord(raw)) {
+		onInvalid({ section, path: [], code: 'invalid_type' })
+		return undefined
+	}
+	let whole = schema.safeParse(raw)
+	if (whole.success) return whole.data
+
 	let cleaned: Record<string, unknown> = {}
 	for (let [key, fieldSchema] of Object.entries(schema.shape)) {
 		if (!(key in raw)) continue
@@ -112,21 +118,30 @@ export let parsePreferences = (
 	}
 
 	if ('dealBreakers' in raw && raw.dealBreakers) {
-		if (Array.isArray(raw.dealBreakers)) {
-			let kept: z.infer<typeof dealBreakersSchema> = []
-			raw.dealBreakers.forEach((entry, index) => {
-				let parsed = dealBreakersSchema.element.safeParse(entry)
-				if (parsed.success) {
-					kept.push(parsed.data)
-				} else {
-					for (let issue of parsed.error.issues) {
-						onInvalid({ section: 'dealBreakers', path: [index, ...issue.path], code: issue.code })
-					}
-				}
-			})
-			if (kept.length > 0) result.dealBreakers = kept
-		} else {
+		if (!Array.isArray(raw.dealBreakers)) {
 			onInvalid({ section: 'dealBreakers', path: [], code: 'invalid_type' })
+		} else {
+			let whole = dealBreakersSchema.safeParse(raw.dealBreakers)
+			if (whole.success) {
+				if (whole.data.length > 0) result.dealBreakers = whole.data
+			} else {
+				let kept: z.infer<typeof dealBreakersSchema> = []
+				raw.dealBreakers.forEach((entry, index) => {
+					let parsed = dealBreakersSchema.element.safeParse(entry)
+					if (parsed.success) {
+						kept.push(parsed.data)
+					} else {
+						for (let issue of parsed.error.issues) {
+							onInvalid({
+								section: 'dealBreakers',
+								path: [index, ...issue.path],
+								code: issue.code,
+							})
+						}
+					}
+				})
+				if (kept.length > 0) result.dealBreakers = kept
+			}
 		}
 	}
 
