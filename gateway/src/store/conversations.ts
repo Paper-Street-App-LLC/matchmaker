@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
 export type ConversationMessage = {
@@ -9,6 +8,29 @@ export type ConversationMessage = {
 	provider?: string
 	senderId?: string
 	createdAt?: string
+}
+
+type DbError = { message: string }
+type InsertResult = { error: DbError | null }
+type SelectResult = { data: unknown[] | null; error: DbError | null }
+
+export interface ConversationStoreClient {
+	from(table: string): {
+		insert(values: Record<string, unknown>): PromiseLike<InsertResult>
+		select(columns: string): {
+			eq(
+				column: string,
+				value: string,
+			): {
+				order(
+					column: string,
+					opts: { ascending: boolean },
+				): {
+					limit(count: number): PromiseLike<SelectResult>
+				}
+			}
+		}
+	}
 }
 
 export let dbRowSchema = z.object({
@@ -33,7 +55,7 @@ function toMessage(row: z.infer<typeof dbRowSchema>): ConversationMessage {
 	}
 }
 
-export function createConversationStore(client: SupabaseClient) {
+export function createConversationStore(client: ConversationStoreClient) {
 	return {
 		async save(message: Omit<ConversationMessage, 'id' | 'createdAt'>) {
 			let { error } = await client.from('conversations').insert({
