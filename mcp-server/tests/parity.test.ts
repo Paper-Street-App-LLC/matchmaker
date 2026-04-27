@@ -2,13 +2,17 @@
  * Soft-parity contract: the stdio transport must advertise every tool in the
  * shared registry, modulo an explicit opt-out set (currently empty). This
  * exists to catch drift if anyone replaces buildMcpToolList() with hand-rolled
- * tool definitions — the same drift that previously caused record_decision
- * and list_decisions to be missing from stdio.
+ * tool definitions at the stdio call site — the same drift that previously
+ * caused record_decision and list_decisions to be missing from stdio.
+ *
+ * Tests the actual call site: listAdvertisedTools() is what the stdio
+ * ListToolsRequestSchema handler returns to clients.
  */
 import { describe, test, expect } from 'bun:test'
 import { toolRegistry, type ToolName } from '@matchmaker/shared'
-import { tools } from '../src/toolDefinitions'
+import { listAdvertisedTools } from '../src/index'
 
+let tools = listAdvertisedTools()
 let stdioOptOuts: ReadonlySet<ToolName> = new Set()
 
 describe('stdio MCP transport parity with shared tool registry', () => {

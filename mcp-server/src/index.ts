@@ -1,5 +1,4 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { tools } from './toolDefinitions.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
 	CallToolRequestSchema,
@@ -11,7 +10,9 @@ import { loadConfig } from './config.js'
 import { ApiClient } from './api.js'
 import type { IApiClient } from './api.js'
 import { createToolHandlers, isValidToolName } from './handlers.js'
-import { prompts, getPrompt } from '@matchmaker/shared'
+import { prompts, getPrompt, buildMcpToolList } from '@matchmaker/shared'
+
+export let listAdvertisedTools = () => buildMcpToolList()
 
 export function createServer(apiClient: IApiClient) {
 	let server = new Server(
@@ -27,8 +28,10 @@ export function createServer(apiClient: IApiClient) {
 		}
 	)
 
-	// Register tools
-	server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }))
+	// Register tools — single source of truth is @matchmaker/shared.
+	server.setRequestHandler(ListToolsRequestSchema, async () => ({
+		tools: listAdvertisedTools(),
+	}))
 
 	// Create tool handlers with discriminated union pattern
 	let toolHandlers = createToolHandlers(apiClient)
