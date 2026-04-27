@@ -5,7 +5,7 @@
 		"buildCommand": "bun install --frozen-lockfile"
 	},
 	"deploy": {
-		"startCommand": "cd backend && bun run start",
+		"startCommand": "cd backend && NODE_ENV=production bun --silent run start",
 		"healthcheckPath": "/health",
 		"healthcheckTimeout": 30,
 		"restartPolicyType": "ON_FAILURE",
