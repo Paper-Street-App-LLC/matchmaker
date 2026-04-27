@@ -235,6 +235,20 @@ describe('parsePreferences', () => {
 		])
 	})
 
+	test('should report invalid_type via onInvalid when section is not an object', () => {
+		let issues: Array<{ section: string; path: PropertyKey[]; code: string }> = []
+		let result = parsePreferences(
+			{ aboutMe: 'oops', lookingFor: 123 },
+			{ onInvalid: issue => issues.push(issue) },
+		)
+		expect(result.aboutMe).toBeUndefined()
+		expect(result.lookingFor).toBeUndefined()
+		expect(issues).toEqual([
+			{ section: 'aboutMe', path: [], code: 'invalid_type' },
+			{ section: 'lookingFor', path: [], code: 'invalid_type' },
+		])
+	})
+
 	test('should return empty object for null input', () => {
 		let result = parsePreferences(null)
 		expect(result).toEqual({})
