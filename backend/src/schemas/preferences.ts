@@ -73,7 +73,10 @@ let stripObjectFields = <T extends z.ZodObject>(
 	section: PreferenceIssue['section'],
 	onInvalid: (issue: PreferenceIssue) => void,
 ): z.infer<T> | undefined => {
-	if (!isRecord(raw)) return undefined
+	if (!isRecord(raw)) {
+		onInvalid({ section, path: [], code: 'invalid_type' })
+		return undefined
+	}
 	let cleaned: Record<string, unknown> = {}
 	for (let [key, fieldSchema] of Object.entries(schema.shape)) {
 		if (!(key in raw)) continue
