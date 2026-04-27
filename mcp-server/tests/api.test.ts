@@ -501,4 +501,60 @@ describe('ApiClient', () => {
 		let client = new ApiClient(config)
 		await expect(client.getFeedback('not-found-id')).rejects.toThrow('HTTP 404')
 	})
+
+	test('recordDecision() makes POST with Bearer token', async () => {
+		let client = new ApiClient(config)
+		let result = await client.recordDecision(
+			'550e8400-e29b-41d4-a716-446655440000',
+			'550e8400-e29b-41d4-a716-446655440002',
+			'declined',
+			'Not a fit'
+		)
+
+		expect(result.person_id).toBe('550e8400-e29b-41d4-a716-446655440000')
+		expect(result.candidate_id).toBe('550e8400-e29b-41d4-a716-446655440002')
+		expect(result.decision).toBe('declined')
+		expect(result.decline_reason).toBe('Not a fit')
+	})
+
+	test('recordDecision() rejects invalid decision values', async () => {
+		let client = new ApiClient(config)
+		await expect(
+			client.recordDecision(
+				'550e8400-e29b-41d4-a716-446655440000',
+				'550e8400-e29b-41d4-a716-446655440002',
+				// @ts-expect-error invalid decision value
+				'maybe'
+			)
+		).rejects.toThrow()
+	})
+
+	test('recordDecision() throws on 401 unauthorized', async () => {
+		let invalidClient = new ApiClient({
+			...config,
+			auth_token: 'invalid-token',
+		})
+		await expect(
+			invalidClient.recordDecision(
+				'550e8400-e29b-41d4-a716-446655440000',
+				'550e8400-e29b-41d4-a716-446655440002',
+				'accepted'
+			)
+		).rejects.toThrow()
+	})
+
+	test('listDecisions(personId) makes GET with Bearer token', async () => {
+		let client = new ApiClient(config)
+		let result = await client.listDecisions('550e8400-e29b-41d4-a716-446655440000')
+
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(1)
+		expect(result[0]?.person_id).toBe('550e8400-e29b-41d4-a716-446655440000')
+		expect(result[0]?.decision).toBe('declined')
+	})
+
+	test('listDecisions(personId) validates personId is not empty', async () => {
+		let client = new ApiClient(config)
+		await expect(client.listDecisions('')).rejects.toThrow('Person ID is required')
+	})
 })

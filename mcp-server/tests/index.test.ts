@@ -6,6 +6,7 @@ import type {
 	Introduction,
 	Match,
 	Feedback,
+	MatchDecision,
 	PersonPreferences,
 	PersonPersonality,
 } from '../src/api'
@@ -810,6 +811,75 @@ describe('Handler structuredContent', () => {
 		expect(mockGetPerson).toHaveBeenCalledTimes(1)
 		expect(result.structuredContent).toBeDefined()
 		expect(result.structuredContent?.type).toBe('Card')
+	})
+
+	test('record_decision forwards args to apiClient.recordDecision', async () => {
+		let decision: MatchDecision = {
+			id: 'd1',
+			matchmaker_id: 'mm1',
+			person_id: '00000000-0000-0000-0000-000000000001',
+			candidate_id: '00000000-0000-0000-0000-000000000002',
+			decision: 'declined',
+			decline_reason: 'Not a fit',
+			created_at: '2024-01-01T00:00:00Z',
+		}
+		let mockRecord = mock(async () => decision)
+		let mockClient = createMockApiClient({
+			recordDecision: mockRecord,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.record_decision({
+			person_id: '00000000-0000-0000-0000-000000000001',
+			candidate_id: '00000000-0000-0000-0000-000000000002',
+			decision: 'declined',
+			decline_reason: 'Not a fit',
+		})
+
+		expect(mockRecord).toHaveBeenCalledWith(
+			'00000000-0000-0000-0000-000000000001',
+			'00000000-0000-0000-0000-000000000002',
+			'declined',
+			'Not a fit'
+		)
+		expect(result.content[0]?.text).toBe(JSON.stringify(decision, null, 2))
+		expect(result.isError).toBeUndefined()
+	})
+
+	test('record_decision rejects invalid decision values via registry validation', async () => {
+		let mockClient = createMockApiClient()
+		let handlers = createToolHandlers(mockClient)
+		await expect(
+			handlers.record_decision({
+				person_id: '00000000-0000-0000-0000-000000000001',
+				candidate_id: '00000000-0000-0000-0000-000000000002',
+				decision: 'maybe',
+			})
+		).rejects.toThrow()
+	})
+
+	test('list_decisions forwards args to apiClient.listDecisions', async () => {
+		let decisions: MatchDecision[] = [
+			{
+				id: 'd1',
+				matchmaker_id: 'mm1',
+				person_id: '00000000-0000-0000-0000-000000000001',
+				candidate_id: '00000000-0000-0000-0000-000000000002',
+				decision: 'declined',
+				decline_reason: null,
+				created_at: '2024-01-01T00:00:00Z',
+			},
+		]
+		let mockList = mock(async () => decisions)
+		let mockClient = createMockApiClient({
+			listDecisions: mockList,
+		})
+		let handlers = createToolHandlers(mockClient)
+		let result = await handlers.list_decisions({
+			person_id: '00000000-0000-0000-0000-000000000001',
+		})
+
+		expect(mockList).toHaveBeenCalledWith('00000000-0000-0000-0000-000000000001')
+		expect(result.content[0]?.text).toBe(JSON.stringify(decisions, null, 2))
 	})
 
 	test('list_feedback gracefully handles getPerson failure', async () => {

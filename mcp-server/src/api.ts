@@ -8,6 +8,8 @@ import {
 	matchesListResponseSchema,
 	feedbackResponseSchema,
 	feedbackListResponseSchema,
+	matchDecisionResponseSchema,
+	matchDecisionsListResponseSchema,
 } from './schemas'
 
 let addPersonInputSchema = z.object({
@@ -66,6 +68,17 @@ let listFeedbackInputSchema = z.object({
 
 let getFeedbackInputSchema = z.object({
 	id: z.string().min(1, 'ID is required'),
+})
+
+let recordDecisionInputSchema = z.object({
+	person_id: z.string().uuid('person_id must be a valid UUID'),
+	candidate_id: z.string().uuid('candidate_id must be a valid UUID'),
+	decision: z.enum(['accepted', 'declined']),
+	decline_reason: z.string().optional(),
+})
+
+let listDecisionsInputSchema = z.object({
+	person_id: z.string().min(1, 'Person ID is required'),
 })
 
 export interface PersonPreferences {
@@ -127,6 +140,16 @@ export interface Feedback {
 	created_at: string
 }
 
+export interface MatchDecision {
+	id: string
+	matchmaker_id: string
+	person_id: string
+	candidate_id: string
+	decision: 'accepted' | 'declined'
+	decline_reason: string | null
+	created_at: string
+}
+
 export interface IApiClient {
 	addPerson(name: string): Promise<Person>
 	listPeople(): Promise<Person[]>
@@ -167,6 +190,13 @@ export interface IApiClient {
 	): Promise<Feedback>
 	listFeedback(introduction_id: string): Promise<Feedback[]>
 	getFeedback(id: string): Promise<Feedback>
+	recordDecision(
+		person_id: string,
+		candidate_id: string,
+		decision: 'accepted' | 'declined',
+		decline_reason?: string
+	): Promise<MatchDecision>
+	listDecisions(person_id: string): Promise<MatchDecision[]>
 }
 
 export class ApiClient implements IApiClient {
@@ -477,5 +507,59 @@ export class ApiClient implements IApiClient {
 		}
 
 		return this.parseResponse(response, feedbackResponseSchema)
+	}
+
+	async recordDecision(
+		person_id: string,
+		candidate_id: string,
+		decision: 'accepted' | 'declined',
+		decline_reason?: string
+	): Promise<MatchDecision> {
+		recordDecisionInputSchema.parse({ person_id, candidate_id, decision, decline_reason })
+
+		let body: {
+			person_id: string
+			candidate_id: string
+			decision: 'accepted' | 'declined'
+			decline_reason?: string
+		} = { person_id, candidate_id, decision }
+		if (decline_reason !== undefined) {
+			body.decline_reason = decline_reason
+		}
+
+		let response = await fetch(`${this.config.api_base_url}/api/match-decisions`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.config.auth_token}`,
+			},
+			body: JSON.stringify(body),
+		})
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, matchDecisionResponseSchema)
+	}
+
+	async listDecisions(person_id: string): Promise<MatchDecision[]> {
+		listDecisionsInputSchema.parse({ person_id })
+
+		let response = await fetch(
+			`${this.config.api_base_url}/api/match-decisions/${encodeURIComponent(person_id)}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${this.config.auth_token}`,
+				},
+			}
+		)
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+		}
+
+		return this.parseResponse(response, matchDecisionsListResponseSchema)
 	}
 }
