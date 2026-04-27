@@ -20,6 +20,9 @@ function makeStub(): IPersonRepository {
 		async findByMatchmakerId(matchmakerId) {
 			return store.filter((p) => p.matchmakerId === matchmakerId)
 		},
+		async findAllActive() {
+			return store
+		},
 		async create(person) {
 			store.push(person)
 			return person
