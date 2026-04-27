@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import { dbRowSchema } from '../../src/store/conversations'
 
 function extractColumnNames(sql: string): string[] {
-	let match = sql.match(/CREATE TABLE\s+conversations\s*\(([^;]+)\)\s*;/i)
+	let match = sql.match(/CREATE TABLE\s+(?:public\.)?conversations\s*\(([^;]+)\)\s*;/i)
 	if (!match) throw new Error('could not find CREATE TABLE conversations in migration')
 
 	let body = match[1] ?? ''
