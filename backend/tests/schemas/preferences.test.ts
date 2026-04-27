@@ -235,6 +235,33 @@ describe('parsePreferences', () => {
 		])
 	})
 
+	test('should not call per-field safeParse when whole section is valid (fast-path)', () => {
+		let aboutMeCallCount = 0
+		let originalParse = aboutMeSchema.safeParse.bind(aboutMeSchema)
+		let heightSchema = aboutMeSchema.shape.height
+		let originalHeightParse = heightSchema.safeParse.bind(heightSchema)
+		let heightCallCount = 0
+		aboutMeSchema.safeParse = (...args: Parameters<typeof originalParse>) => {
+			aboutMeCallCount++
+			return originalParse(...args)
+		}
+		heightSchema.safeParse = (...args: Parameters<typeof originalHeightParse>) => {
+			heightCallCount++
+			return originalHeightParse(...args)
+		}
+		try {
+			let result = parsePreferences({
+				aboutMe: { height: 175, build: 'athletic', fitnessLevel: 'active' },
+			})
+			expect(result.aboutMe).toEqual({ height: 175, build: 'athletic', fitnessLevel: 'active' })
+			expect(aboutMeCallCount).toBe(1)
+			expect(heightCallCount).toBe(0)
+		} finally {
+			aboutMeSchema.safeParse = originalParse
+			heightSchema.safeParse = originalHeightParse
+		}
+	})
+
 	test('should report invalid_type via onInvalid when section is not an object', () => {
 		let issues: Array<{ section: string; path: PropertyKey[]; code: string }> = []
 		let result = parsePreferences(
