@@ -1,9 +1,17 @@
 import { z } from 'zod'
+import {
+	BUILDS,
+	FITNESS_LEVELS,
+	INCOMES,
+	FITNESS_PREFERENCES,
+	INCOME_PREFERENCES,
+	DEAL_BREAKERS,
+} from '@matchmaker/shared'
 
 export let aboutMeSchema = z.object({
 	height: z.number().optional(),
-	build: z.enum(['slim', 'average', 'athletic', 'heavy']).optional(),
-	fitnessLevel: z.enum(['active', 'average', 'sedentary']).optional(),
+	build: z.enum(BUILDS).optional(),
+	fitnessLevel: z.enum(FITNESS_LEVELS).optional(),
 	ethnicity: z.string().optional(),
 	religion: z.string().optional(),
 	hasChildren: z.boolean().optional(),
@@ -13,7 +21,7 @@ export let aboutMeSchema = z.object({
 	hasPiercings: z.boolean().optional(),
 	isSmoker: z.boolean().optional(),
 	occupation: z.string().optional(),
-	income: z.enum(['high', 'moderate', 'low']).optional(),
+	income: z.enum(INCOMES).optional(),
 })
 
 export let lookingForSchema = z.object({
@@ -29,16 +37,14 @@ export let lookingForSchema = z.object({
 			max: z.number().optional(),
 		})
 		.optional(),
-	fitnessPreference: z.enum(['active', 'average', 'any']).optional(),
+	fitnessPreference: z.enum(FITNESS_PREFERENCES).optional(),
 	ethnicityPreference: z.array(z.string()).optional(),
-	incomePreference: z.enum(['high', 'moderate', 'any']).optional(),
+	incomePreference: z.enum(INCOME_PREFERENCES).optional(),
 	religionRequired: z.string().nullable().optional(),
 	wantsChildren: z.boolean().nullable().optional(),
 })
 
-let dealBreakersSchema = z.array(
-	z.enum(['isDivorced', 'hasChildren', 'hasTattoos', 'hasPiercings', 'isSmoker'])
-)
+let dealBreakersSchema = z.array(z.enum(DEAL_BREAKERS))
 
 export let structuredPreferencesSchema = z.object({
 	aboutMe: aboutMeSchema.optional(),
