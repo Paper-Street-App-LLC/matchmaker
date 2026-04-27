@@ -61,18 +61,35 @@ export type PreferencesInput = Preferences
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
-export const BUILDS = ['slim', 'average', 'athletic', 'heavy'] as const
-export const FITNESS_LEVELS = ['active', 'average', 'sedentary'] as const
-export const INCOMES = ['high', 'moderate', 'low'] as const
-export const FITNESS_PREFERENCES = ['active', 'average', 'any'] as const
-export const INCOME_PREFERENCES = ['high', 'moderate', 'any'] as const
-export const DEAL_BREAKERS = [
+export let BUILDS: readonly Build[] = Object.freeze([
+	'slim',
+	'average',
+	'athletic',
+	'heavy',
+])
+export let FITNESS_LEVELS: readonly FitnessLevel[] = Object.freeze([
+	'active',
+	'average',
+	'sedentary',
+])
+export let INCOMES: readonly Income[] = Object.freeze(['high', 'moderate', 'low'])
+export let FITNESS_PREFERENCES: readonly FitnessPreference[] = Object.freeze([
+	'active',
+	'average',
+	'any',
+])
+export let INCOME_PREFERENCES: readonly IncomePreference[] = Object.freeze([
+	'high',
+	'moderate',
+	'any',
+])
+export let DEAL_BREAKERS: readonly DealBreaker[] = Object.freeze([
 	'isDivorced',
 	'hasChildren',
 	'hasTattoos',
 	'hasPiercings',
 	'isSmoker',
-] as const
+])
 
 function invalid(code: string, message: string): never {
 	throw new InvalidPreferencesError(code, message)
