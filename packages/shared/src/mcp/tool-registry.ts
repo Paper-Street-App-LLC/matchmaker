@@ -224,8 +224,12 @@ export let toolRegistry = [
 
 export type ToolName = (typeof toolRegistry)[number]['name']
 
+let toolByName: ReadonlyMap<string, ToolDefinition> = new Map(
+	toolRegistry.map(t => [t.name, t]),
+)
+
 export function getToolDefinition(name: string): ToolDefinition | undefined {
-	return toolRegistry.find(t => t.name === name)
+	return toolByName.get(name)
 }
 
 export type McpToolDefinition = {
