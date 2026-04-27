@@ -10,6 +10,7 @@
 		"test": "bun test --preload ./tests/setup.ts",
 		"test:watch": "bun test --watch --preload ./tests/setup.ts",
 		"test:coverage": "bun test --coverage --preload ./tests/setup.ts",
+		"typecheck": "tsc --noEmit",
 		"format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.json\"",
 		"format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.json\""
 	},

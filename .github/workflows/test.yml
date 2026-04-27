@@ -51,3 +51,48 @@ jobs:
       - name: Run gateway tests
         working-directory: ./gateway
         run: bun test
+
+  typecheck:
+    name: Typecheck Packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install shared dependencies
+        working-directory: ./packages/shared
+        run: bun install --frozen-lockfile
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: bun install --frozen-lockfile
+
+      - name: Install MCP server dependencies
+        working-directory: ./mcp-server
+        run: bun install --frozen-lockfile
+
+      - name: Install gateway dependencies
+        working-directory: ./gateway
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck shared
+        working-directory: ./packages/shared
+        run: bun run typecheck
+
+      - name: Typecheck backend
+        working-directory: ./backend
+        run: bun run typecheck
+
+      - name: Typecheck MCP server
+        working-directory: ./mcp-server
+        run: bun run typecheck
+
+      - name: Typecheck gateway
+        working-directory: ./gateway
+        run: bun run typecheck
