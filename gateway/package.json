@@ -12,6 +12,7 @@
 	},
 	"dependencies": {
 		"@matchmaker/shared": "workspace:*",
+		"@supabase/supabase-js": "^2.39.0",
 		"hono": "^4.0.0",
 		"zod": "^4.3.6",
 		"@hono/zod-validator": "^0.7.6"
