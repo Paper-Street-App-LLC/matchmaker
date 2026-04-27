@@ -1,42 +1,48 @@
-import type { SupabaseClient } from '../lib/supabase'
+import type {
+	IMatchDecisionRepository,
+	IPersonRepository,
+	Person,
+} from '@matchmaker/shared'
 import { findMatches } from './matchingAlgorithm'
 import type { MatchResponse } from '../schemas/matches'
+import type { PersonResponse } from '../schemas/people'
+
+// TODO(#71): remove once matchingAlgorithm accepts domain Person entities.
+// This mapper only exists because findMatches still consumes the snake_case
+// PersonResponse schema shape — a layer leak between the use case and the
+// otherwise framework-free algorithmic core.
+let toPersonResponse = (p: Person): PersonResponse => ({
+	id: p.id,
+	matchmaker_id: p.matchmakerId,
+	name: p.name,
+	age: p.age,
+	location: p.location,
+	gender: p.gender,
+	preferences: p.preferences === null ? null : { ...p.preferences },
+	personality: p.personality === null ? null : { ...p.personality },
+	notes: p.notes,
+	active: p.active,
+	created_at: p.createdAt.toISOString(),
+	updated_at: p.updatedAt.toISOString(),
+})
 
 // Orchestrates match finding by fetching all active people (cross-matchmaker pool),
-// excluding candidates the matchmaker has already reviewed, then running the algorithm.
+// excluding candidates the matchmaker has already declined, then running the algorithm.
 export let matchFinder = async (
 	personId: string,
 	matchmakerId: string,
-	supabaseClient: SupabaseClient
+	personRepo: IPersonRepository,
+	matchDecisionRepo: IMatchDecisionRepository,
 ): Promise<MatchResponse[]> => {
-	// Fetch ALL active people — seed profiles and all matchmakers' clients
-	let { data: allPeople, error: peopleError } = await supabaseClient
-		.from('people')
-		.select('*')
-		.eq('active', true)
-
-	if (peopleError) {
-		throw new Error(peopleError.message)
-	}
-
-	// Fetch declined decisions to build the exclusion set
-	let { data: decisions, error: decisionsError } = await supabaseClient
-		.from('match_decisions')
-		.select('candidate_id')
-		.eq('person_id', personId)
-		.eq('matchmaker_id', matchmakerId)
-		.eq('decision', 'declined')
-
-	if (decisionsError) {
-		throw new Error(decisionsError.message)
-	}
+	let allPeople = await personRepo.findAllActive()
+	let decisions = await matchDecisionRepo.findByPerson(personId)
 
 	let excludeIds = new Set<string>(
-		(decisions || []).map((d: { candidate_id: string }) => d.candidate_id)
+		decisions
+			.filter(d => d.decision === 'declined' && d.matchmakerId === matchmakerId)
+			.map(d => d.candidateId),
 	)
 
-	// Exclude declined candidates (accepted candidates remain visible)
-	let eligiblePeople = (allPeople || []).filter(p => !excludeIds.has(p.id))
-
-	return findMatches(personId, eligiblePeople)
+	let eligible = allPeople.filter(p => !excludeIds.has(p.id)).map(toPersonResponse)
+	return findMatches(personId, eligible)
 }

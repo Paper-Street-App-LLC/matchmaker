@@ -35,12 +35,42 @@ export default function Home() {
 							Get started
 						</h2>
 						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
-							Join the Matchlight waitlist for early access.
+							Join the Matchmaker waitlist for early access.
 						</p>
 					</div>
 					<div className="mx-auto mt-12 max-w-md" id="waitlist">
-						<Card variant="elevated">
-							<div className="p-8">
+						<Card variant="elevated" className="!pt-2">
+							<div className="px-8 pb-10 pt-3">
+								{/* Segmented control */}
+								<div className="mb-8 flex justify-center">
+									<div className="flex rounded-lg bg-gray-200 p-1 dark:bg-gray-700" role="tablist">
+										<button
+											role="tab"
+											aria-selected={activeForm === "matchmaker"}
+											onClick={() => setActiveForm("matchmaker")}
+											className={`rounded-md px-5 py-2 text-sm font-medium transition-all ${
+												activeForm === "matchmaker"
+													? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-gray-100"
+													: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+											}`}
+										>
+											I&apos;m a Matchmaker
+										</button>
+										<button
+											role="tab"
+											aria-selected={activeForm === "single"}
+											onClick={() => setActiveForm("single")}
+											className={`rounded-md px-5 py-2 text-sm font-medium transition-all ${
+												activeForm === "single"
+													? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-gray-100"
+													: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+											}`}
+										>
+											I&apos;m looking for love
+										</button>
+									</div>
+								</div>
+
 								{activeForm === "matchmaker" ? (
 									<>
 										<div className="text-center">
@@ -68,14 +98,6 @@ export default function Home() {
 										</div>
 										<div className="mt-8">
 											<WaitlistForm />
-										</div>
-										<div className="mt-6 text-center">
-											<button
-												onClick={() => setActiveForm("single")}
-												className="text-sm font-medium text-gray-500 transition-colors hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400"
-											>
-												Ready to be matched?
-											</button>
 										</div>
 									</>
 								) : (
@@ -106,14 +128,6 @@ export default function Home() {
 										</div>
 										<div className="mt-8">
 											<ReferralForm />
-										</div>
-										<div className="mt-6 text-center">
-											<button
-												onClick={() => setActiveForm("matchmaker")}
-												className="text-sm font-medium text-gray-500 transition-colors hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400"
-											>
-												Are you a matchmaker?
-											</button>
 										</div>
 									</>
 								)}
@@ -146,7 +160,7 @@ export default function Home() {
 					<div className="flex flex-col items-center space-y-8">
 						<div className="text-center">
 							<h3 className="bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-3xl font-bold text-transparent dark:from-sky-400 dark:to-indigo-400">
-								Matchlight
+								Matchmaker
 							</h3>
 							<p className="mt-3 font-display text-lg font-normal text-gray-600 dark:text-gray-400">
 								Human matchmaking, powered by AI.
@@ -167,7 +181,7 @@ export default function Home() {
 							</a>
 						</div>
 						<p className="text-sm text-gray-400 dark:text-gray-500">
-							© {new Date().getFullYear()} Matchlight. All rights reserved.
+							© {new Date().getFullYear()} Matchmaker. All rights reserved.
 						</p>
 					</div>
 				</div>

@@ -243,7 +243,7 @@ export function Hero() {
 									<Check className="h-5 w-5 text-white" />
 								</div>
 								<div>
-									<h2 className="font-semibold text-gray-900 dark:text-gray-100">Matchlight</h2>
+									<h2 className="font-semibold text-gray-900 dark:text-gray-100">Matchmaker</h2>
 									<p className="text-xs text-gray-500 dark:text-gray-400">by The Introduction</p>
 								</div>
 							</div>

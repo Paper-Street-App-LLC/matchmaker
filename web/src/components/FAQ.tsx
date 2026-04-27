@@ -9,7 +9,7 @@ interface FAQItem {
 
 let faqs: FAQItem[] = [
 	{
-		question: "What is Matchlight?",
+		question: "What is Matchmaker?",
 		answer:
 			"A matchmaking experience where a real person finds your match, with AI doing the heavy lifting behind the scenes.",
 	},
@@ -31,7 +31,7 @@ let faqs: FAQItem[] = [
 	{
 		question: "How is this different from apps?",
 		answer:
-			"Apps hand you a list of strangers and ask you to swipe. Matchlight gives you a matchmaker who knows both people and only introduces you when there's a real reason to.",
+			"Apps hand you a list of strangers and ask you to swipe. Matchmaker pairs you with someone who knows both of you and only introduces you when there's a real reason to.",
 	},
 	{
 		question: "What does the AI do?",
@@ -39,7 +39,7 @@ let faqs: FAQItem[] = [
 			"It reads matchmaker notes, spots compatibility patterns, and surfaces potential matches. It never reaches out to anyone or makes introductions on its own.",
 	},
 	{
-		question: "Who is Matchlight for?",
+		question: "Who is Matchmaker for?",
 		answer:
 			"Singles who want a more personal way to find their person, and matchmakers who love connecting people and want better tools to do it.",
 	},
@@ -51,7 +51,7 @@ let faqs: FAQItem[] = [
 	{
 		question: "What's the connection to The Introduction?",
 		answer:
-			"Matchlight was built by The Introduction to power our own matchmaking. Now we're opening it up to more matchmakers and more singles.",
+			"Matchmaker was built by The Introduction to power our own work. Now we're opening it up to more matchmakers and more singles.",
 	},
 	{
 		question: "When does it launch?",
@@ -79,7 +79,7 @@ export function FAQ() {
 							</span>
 						</h2>
 						<p className="mt-6 font-display text-lg font-light text-gray-600 dark:text-gray-400">
-							Everything you need to know about Matchlight
+							Everything you need to know about Matchmaker
 						</p>
 					</div>
 

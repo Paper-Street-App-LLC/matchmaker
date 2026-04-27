@@ -13,8 +13,13 @@ import {
 import type { SupabaseClient } from '../lib/supabase'
 import { prompts, getPrompt } from '@matchmaker/shared'
 import { parsePreferences } from '../schemas/preferences'
+import {
+	SupabaseIntroductionRepository,
+	SupabaseMatchDecisionRepository,
+	SupabasePersonRepository,
+} from '../adapters/supabase'
 import { matchFinder } from '../services/matchFinder'
-import { createIntroduction } from '../services/introductions'
+import { CreateIntroduction, systemClock, uuidGenerator } from '../usecases'
 
 type Env = {
 	Variables: {
@@ -50,7 +55,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 	app.use(
 		'*',
 		cors({
-			origin: 'https://claude.ai',
+			origin: origin => (origin === 'https://claude.ai' || !origin ? origin || '*' : null),
 			allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
 			allowHeaders: ['Authorization', 'Content-Type', 'Accept', 'Mcp-Session-Id'],
 			exposeHeaders: ['Mcp-Session-Id'],
@@ -505,13 +510,21 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 						notes?: string
 					}
 
-					let result = await createIntroduction(supabaseClient, {
-						person_a_id,
-						person_b_id,
-						notes,
-						userId,
+					let personRepo = new SupabasePersonRepository(supabaseClient)
+					let introductionRepo = new SupabaseIntroductionRepository(supabaseClient)
+					let usecase = new CreateIntroduction({
+						personRepo,
+						introductionRepo,
+						clock: systemClock,
+						ids: uuidGenerator,
 					})
-					if (result.error) throw new Error(result.error.message)
+					let result = await usecase.execute({
+						matchmakerId: userId,
+						personAId: person_a_id,
+						personBId: person_b_id,
+						notes: notes ?? null,
+					})
+					if (!result.ok) throw new Error(result.error.message)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
 					}
@@ -566,7 +579,14 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					if (personError) throw new Error(personError.message)
 					if (!person) throw new Error('Person not found')
 
-					let matches = await matchFinder(args.person_id, userId, supabaseClient)
+					let personRepo = new SupabasePersonRepository(supabaseClient)
+					let matchDecisionRepo = new SupabaseMatchDecisionRepository(supabaseClient)
+					let matches = await matchFinder(
+						args.person_id,
+						userId,
+						personRepo,
+						matchDecisionRepo,
+					)
 					return {
 						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
 					}
@@ -784,7 +804,7 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 		// Create transport in stateless mode (no session ID generator)
 		let transport = new WebStandardStreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
-			enableJsonResponse: false,
+			enableJsonResponse: true,
 		})
 
 		// Create and connect MCP server

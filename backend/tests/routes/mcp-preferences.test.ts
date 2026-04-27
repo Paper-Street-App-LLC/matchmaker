@@ -5,7 +5,7 @@ import { createMockSupabaseClient } from '../mocks/supabase'
 
 /**
  * Helper: send a tools/call JSON-RPC request to the MCP endpoint
- * and parse the SSE response to extract the tool result.
+ * and parse the JSON response to extract the tool result.
  */
 async function callTool(
 	app: Hono,
@@ -29,17 +29,9 @@ async function callTool(
 		})
 	)
 
-	let body = await res.text()
-	for (let line of body.split('\n')) {
-		if (!line.startsWith('data:')) continue
-		try {
-			let data = JSON.parse(line.slice(5).trim())
-			if (data.result) return data.result
-		} catch {
-			// skip
-		}
-	}
-	throw new Error('No tool result found in SSE response')
+	let body = await res.json()
+	if (!body.result) throw new Error('No tool result found in JSON response')
+	return body.result
 }
 
 describe('update_person preferences validation', () => {

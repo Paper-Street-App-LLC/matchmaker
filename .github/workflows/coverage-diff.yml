@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout main into __base
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           path: __base
@@ -92,7 +92,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Post or update PR comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const marker = '<!-- coverage-diff -->';

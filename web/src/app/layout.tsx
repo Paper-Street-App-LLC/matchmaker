@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-	title: "Matchlight — Human matchmaking, powered by AI",
+	title: "Matchmaker — Human matchmaking, powered by AI",
 	description: "The best introductions come from people who really know you.",
 	keywords: [
 		"matchmaking",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 		"matchmaker",
 		"dating",
 		"human matchmaking",
-		"Matchlight",
+		"Matchmaker",
 	],
 	icons: {
 		icon: "/favicon.ico",
@@ -31,14 +31,14 @@ export const metadata: Metadata = {
 		apple: "/apple-touch-icon/apple-touch-icon-180x180.png",
 	},
 	openGraph: {
-		title: "Matchlight — Human matchmaking, powered by AI",
+		title: "Matchmaker — Human matchmaking, powered by AI",
 		description: "The best introductions come from people who really know you.",
 		type: "website",
-		siteName: "Matchlight",
+		siteName: "Matchmaker",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Matchlight — Human matchmaking, powered by AI",
+		title: "Matchmaker — Human matchmaking, powered by AI",
 		description: "The best introductions come from people who really know you.",
 	},
 };

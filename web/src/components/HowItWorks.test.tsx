@@ -6,7 +6,7 @@ describe("HowItWorks", () => {
 	it("renders the section headline", () => {
 		render(<HowItWorks />);
 		expect(
-			screen.getByRole("heading", { name: /how matchlight works/i }),
+			screen.getByRole("heading", { name: /how matchmaker works/i }),
 		).toBeInTheDocument();
 	});
 
