@@ -1,14 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
-export type ConversationMessage = {
-	id?: string
+export type NewConversationMessage = {
 	threadId: string
 	role: 'user' | 'assistant' | 'system'
 	content: string
 	provider?: string
 	senderId?: string
-	createdAt?: string
+}
+
+export type ConversationMessage = NewConversationMessage & {
+	id: string
+	createdAt: string
 }
 
 export let dbRowSchema = z.object({
@@ -35,7 +38,7 @@ function toMessage(row: z.infer<typeof dbRowSchema>): ConversationMessage {
 
 export function createConversationStore(client: SupabaseClient) {
 	return {
-		async save(message: Omit<ConversationMessage, 'id' | 'createdAt'>) {
+		async save(message: NewConversationMessage) {
 			let { error } = await client.from('conversations').insert({
 				thread_id: message.threadId,
 				role: message.role,
