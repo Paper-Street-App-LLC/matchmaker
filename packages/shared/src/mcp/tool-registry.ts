@@ -75,7 +75,7 @@ let getPerson: ToolDefinition = {
 let updatePerson: ToolDefinition = {
 	name: 'update_person',
 	description:
-		"Update a person's profile information. Use the structured preferences format for the `preferences` field: { aboutMe: { height (cm), build ('slim'|'athletic'|'average'|'curvy'|'heavyset'), fitnessLevel ('sedentary'|'light'|'moderate'|'active'|'very_active'), ethnicity, religion, hasChildren, numberOfChildren, isDivorced, hasTattoos, hasPiercings, isSmoker, occupation, income ('<30k'|'30k-60k'|'60k-100k'|'100k-200k'|'>200k') }, lookingFor: { ageRange: { min, max }, heightRange: { min, max }, fitnessPreference, ethnicityPreference, incomePreference, religionRequired, wantsChildren }, dealBreakers: string[] }",
+		"Update a person's profile information. The preferences field carries structured aboutMe, lookingFor, and dealBreakers sections — see the inputSchema for valid enum values.",
 	inputSchema: z.object({
 		id: z.string().describe('Person ID (UUID)'),
 		name: z.string().optional().describe('Person name'),
