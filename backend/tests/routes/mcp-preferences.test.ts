@@ -130,7 +130,7 @@ describe('update_person preferences validation', () => {
 		expect((parsed.aboutMe as Record<string, unknown>).height).toBe(180)
 	})
 
-	test('invalid preferences sub-section gets dropped', async () => {
+	test('invalid preferences enum value rejects with a tool error and does not update', async () => {
 		let prefs = {
 			aboutMe: { build: 'INVALID_ENUM_VALUE' },
 			lookingFor: { wantsChildren: true },
@@ -141,12 +141,24 @@ describe('update_person preferences validation', () => {
 			preferences: prefs,
 		})
 
-		expect(result.isError).toBeFalsy()
-		let updated = lastUpdate as Record<string, unknown>
-		let parsed = updated.preferences as Record<string, unknown>
-		// invalid aboutMe should be dropped, valid lookingFor kept
-		expect(parsed.aboutMe).toBeUndefined()
-		expect(parsed.lookingFor).toEqual({ wantsChildren: true })
+		expect(result.isError).toBe(true)
+		expect(result.content[0]?.text).toMatch(/aboutMe.*build/i)
+		expect(lastUpdate).toBeUndefined()
+	})
+
+	test('invalid preferences type (religionRequired boolean) rejects with a tool error', async () => {
+		let prefs = {
+			lookingFor: { religionRequired: true },
+		}
+
+		let result = await callTool(app, 'update_person', {
+			id: 'person-1',
+			preferences: prefs,
+		})
+
+		expect(result.isError).toBe(true)
+		expect(result.content[0]?.text).toMatch(/religionRequired/)
+		expect(lastUpdate).toBeUndefined()
 	})
 
 	test('null preferences skip validation', async () => {
