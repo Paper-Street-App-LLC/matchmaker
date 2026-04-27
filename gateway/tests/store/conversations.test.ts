@@ -1,29 +1,28 @@
 import { describe, test, expect, mock, beforeEach } from 'bun:test'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { createConversationStore } from '../../src/store/conversations'
+import {
+	createConversationStore,
+	type ConversationStoreClient,
+} from '../../src/store/conversations'
 
-function createMockSupabaseClient(overrides: { from?: any } = {}): SupabaseClient {
-	let defaultFrom = mock((_table: string) => ({
-		insert: mock(() => ({ error: null })),
-		select: mock(() => ({
-			eq: mock(() => ({
-				order: mock(() => ({
-					limit: mock(() => ({
-						data: [],
-						error: null,
-					})),
-					data: [],
-					error: null,
-				})),
-			})),
-		})),
-	}))
+type FromFn = ConversationStoreClient['from']
 
-	return { from: overrides.from || defaultFrom } as unknown as SupabaseClient
+function createMockSupabaseClient(overrides: { from?: FromFn } = {}): ConversationStoreClient {
+	let defaultFrom: FromFn = (_table: string) => ({
+		insert: () => Promise.resolve({ error: null }),
+		select: () => ({
+			eq: () => ({
+				order: () => ({
+					limit: () => Promise.resolve({ data: [], error: null }),
+				}),
+			}),
+		}),
+	})
+
+	return { from: overrides.from || defaultFrom }
 }
 
 describe('ConversationStore', () => {
-	let mockClient: SupabaseClient
+	let mockClient: ConversationStoreClient
 	let store: ReturnType<typeof createConversationStore>
 
 	beforeEach(() => {
@@ -33,11 +32,18 @@ describe('ConversationStore', () => {
 
 	describe('save', () => {
 		test('inserts message with correct threadId, role, and content', async () => {
-			let insertMock = mock(() => ({ error: null }))
+			let insertMock = mock(() => Promise.resolve({ error: null }))
 			mockClient = createMockSupabaseClient({
-				from: mock((_table: string) => ({
+				from: (_table: string) => ({
 					insert: insertMock,
-				})),
+					select: () => ({
+						eq: () => ({
+							order: () => ({
+								limit: () => Promise.resolve({ data: [], error: null }),
+							}),
+						}),
+					}),
+				}),
 			})
 			store = createConversationStore(mockClient)
 
@@ -60,13 +66,20 @@ describe('ConversationStore', () => {
 
 		test('throws on Supabase error', async () => {
 			mockClient = createMockSupabaseClient({
-				from: mock((_table: string) => ({
-					insert: mock(() => ({ error: { message: 'insert failed' } })),
-				})),
+				from: (_table: string) => ({
+					insert: () => Promise.resolve({ error: { message: 'insert failed' } }),
+					select: () => ({
+						eq: () => ({
+							order: () => ({
+								limit: () => Promise.resolve({ data: [], error: null }),
+							}),
+						}),
+					}),
+				}),
 			})
 			store = createConversationStore(mockClient)
 
-			expect(
+			await expect(
 				store.save({
 					threadId: 'thread-abc',
 					role: 'user',
@@ -84,18 +97,16 @@ describe('ConversationStore', () => {
 			]
 
 			mockClient = createMockSupabaseClient({
-				from: mock((_table: string) => ({
-					select: mock(() => ({
-						eq: mock(() => ({
-							order: mock(() => ({
-								limit: mock(() => ({
-									data: mockMessages,
-									error: null,
-								})),
-							})),
-						})),
-					})),
-				})),
+				from: (_table: string) => ({
+					insert: () => Promise.resolve({ error: null }),
+					select: () => ({
+						eq: () => ({
+							order: () => ({
+								limit: () => Promise.resolve({ data: mockMessages, error: null }),
+							}),
+						}),
+					}),
+				}),
 			})
 			store = createConversationStore(mockClient)
 
@@ -109,24 +120,27 @@ describe('ConversationStore', () => {
 		})
 
 		test('respects limit parameter', async () => {
-			let limitMock = mock(() => ({
-				data: [
-					{ id: '4', thread_id: 'thread-abc', role: 'user', content: 'msg4', provider: null, sender_id: null, created_at: '2026-01-01T00:00:04Z' },
-					{ id: '5', thread_id: 'thread-abc', role: 'assistant', content: 'msg5', provider: null, sender_id: null, created_at: '2026-01-01T00:00:05Z' },
-				],
-				error: null,
-			}))
+			let limitMock = mock(() =>
+				Promise.resolve({
+					data: [
+						{ id: '4', thread_id: 'thread-abc', role: 'user', content: 'msg4', provider: null, sender_id: null, created_at: '2026-01-01T00:00:04Z' },
+						{ id: '5', thread_id: 'thread-abc', role: 'assistant', content: 'msg5', provider: null, sender_id: null, created_at: '2026-01-01T00:00:05Z' },
+					],
+					error: null,
+				}),
+			)
 
 			mockClient = createMockSupabaseClient({
-				from: mock((_table: string) => ({
-					select: mock(() => ({
-						eq: mock(() => ({
-							order: mock(() => ({
+				from: (_table: string) => ({
+					insert: () => Promise.resolve({ error: null }),
+					select: () => ({
+						eq: () => ({
+							order: () => ({
 								limit: limitMock,
-							})),
-						})),
-					})),
-				})),
+							}),
+						}),
+					}),
+				}),
 			})
 			store = createConversationStore(mockClient)
 
@@ -143,22 +157,20 @@ describe('ConversationStore', () => {
 
 		test('throws on Supabase error', async () => {
 			mockClient = createMockSupabaseClient({
-				from: mock((_table: string) => ({
-					select: mock(() => ({
-						eq: mock(() => ({
-							order: mock(() => ({
-								limit: mock(() => ({
-									data: null,
-									error: { message: 'query failed' },
-								})),
-							})),
-						})),
-					})),
-				})),
+				from: (_table: string) => ({
+					insert: () => Promise.resolve({ error: null }),
+					select: () => ({
+						eq: () => ({
+							order: () => ({
+								limit: () => Promise.resolve({ data: null, error: { message: 'query failed' } }),
+							}),
+						}),
+					}),
+				}),
 			})
 			store = createConversationStore(mockClient)
 
-			expect(store.getHistory('thread-abc', 10)).rejects.toThrow('query failed')
+			await expect(store.getHistory('thread-abc', 10)).rejects.toThrow('query failed')
 		})
 	})
 })
