@@ -257,12 +257,14 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
 						throw new Error('Invalid arguments: id is required and must be a string')
 					}
-					// Mirrors find_matches' cross-matchmaker pool: any candidate that
-					// can surface as a match must also be inspectable by id.
+					// Mirrors find_matches' cross-matchmaker pool (active people only):
+					// any active candidate that can surface as a match must also be
+					// inspectable by id.
 					let { data, error } = await supabaseClient
 						.from('people')
 						.select('*')
 						.eq('id', args.id)
+						.eq('active', true)
 						.maybeSingle()
 					if (error) throw new Error(error.message)
 					if (!data) throw new Error('Person not found')
