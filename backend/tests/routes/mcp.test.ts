@@ -659,7 +659,9 @@ describe('MCP Routes', () => {
 				from: mock(() => ({
 					select: mock(() => ({
 						eq: mock(() => ({
-							maybeSingle: mock(async () => ({ data: liam, error: null })),
+							eq: mock(() => ({
+								maybeSingle: mock(async () => ({ data: liam, error: null })),
+							})),
 						})),
 					})),
 				})),
@@ -695,6 +697,60 @@ describe('MCP Routes', () => {
 			expect(parsed.matchmaker_id).toBe('other-matchmaker')
 		})
 
+		test('get_person treats inactive (soft-deleted) people as not found', async () => {
+			let inactiveClient = createMockSupabaseClient({
+				auth: {
+					getUser: mock(async () => ({
+						data: { user: { id: 'user-123' } },
+						error: null,
+					})),
+				},
+				from: mock(() => ({
+					select: mock(() => ({
+						eq: mock((column: string) => {
+							// Second .eq is the active filter — return no row when active=true
+							// is required, simulating an inactive match.
+							if (column === 'active') {
+								return {
+									maybeSingle: mock(async () => ({ data: null, error: null })),
+								}
+							}
+							return {
+								eq: mock(() => ({
+									maybeSingle: mock(async () => ({ data: null, error: null })),
+								})),
+							}
+						}),
+					})),
+				})),
+			})
+
+			let inactiveApp = new Hono()
+			inactiveApp.route('/mcp', createMcpRoutes(inactiveClient))
+
+			let req = new Request('http://localhost/mcp', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json, text/event-stream',
+					Authorization: 'Bearer valid-token',
+				},
+				body: JSON.stringify({
+					jsonrpc: '2.0',
+					method: 'tools/call',
+					params: { name: 'get_person', arguments: { id: 'inactive-id' } },
+					id: 2,
+				}),
+			})
+
+			let res = await inactiveApp.fetch(req)
+			expect(res.status).toBe(200)
+
+			let body = await jsonBody(res)
+			expect(body.result?.isError).toBe(true)
+			expect(body.result?.content?.[0]?.text).toBe('Error: Person not found')
+		})
+
 		test('get_person returns clean not-found error when id is unknown', async () => {
 			let notFoundClient = createMockSupabaseClient({
 				auth: {
@@ -706,7 +762,9 @@ describe('MCP Routes', () => {
 				from: mock(() => ({
 					select: mock(() => ({
 						eq: mock(() => ({
-							maybeSingle: mock(async () => ({ data: null, error: null })),
+							eq: mock(() => ({
+								maybeSingle: mock(async () => ({ data: null, error: null })),
+							})),
 						})),
 					})),
 				})),
@@ -750,9 +808,11 @@ describe('MCP Routes', () => {
 				from: mock(() => ({
 					select: mock(() => ({
 						eq: mock(() => ({
-							maybeSingle: mock(async () => ({
-								data: null,
-								error: { message: 'Database error', code: 'DB001' },
+							eq: mock(() => ({
+								maybeSingle: mock(async () => ({
+									data: null,
+									error: { message: 'Database error', code: 'DB001' },
+								})),
 							})),
 						})),
 					})),
