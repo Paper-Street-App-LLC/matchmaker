@@ -35,3 +35,19 @@ export type {
 	IMatchDecisionRepository,
 	IAuthContext,
 } from '@matchmaker/shared'
+
+export { processMessage } from './ai'
+export type {
+	ConversationStore,
+	GenerateTextFn,
+	ProcessMessageDeps,
+	ProcessMessageInput,
+} from './ai'
+export { createMatchmakerTools } from './tools'
+export {
+	createMcpClient,
+	signServiceJwt,
+	formatToolResult,
+	type McpToolCaller,
+	type CreateMcpClientOptions,
+} from './mcp-client'
