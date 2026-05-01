@@ -35,7 +35,7 @@ function buildApp(adapters: Map<string, ChatAdapter>, service: HandleInboundMess
 describe('webhook router', () => {
 	test('POST /webhook/:provider returns 200 on success', async () => {
 		let adapters = new Map([['test', createMockAdapter()]])
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 
 		let res = await app.fetch(
@@ -53,7 +53,7 @@ describe('webhook router', () => {
 
 	test('POST /webhook/:provider returns 404 for unknown provider', async () => {
 		let adapters = new Map<string, ChatAdapter>()
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 
 		let res = await app.fetch(
@@ -70,7 +70,7 @@ describe('webhook router', () => {
 	test('POST /webhook/:provider returns 401 when verifyWebhook fails', async () => {
 		let adapter = createMockAdapter({ verifyWebhook: async () => false })
 		let adapters = new Map([['test', adapter]])
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 
 		let res = await app.fetch(
@@ -97,7 +97,7 @@ describe('webhook router', () => {
 			},
 		})
 		let adapters = new Map([['test', adapter]])
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 
 		let payload = JSON.stringify({ some: 'data' })
@@ -124,7 +124,7 @@ describe('webhook router', () => {
 			},
 		})
 		let adapters = new Map([['test', adapter]])
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 
 		let res = await app.fetch(
@@ -145,7 +145,7 @@ describe('webhook router', () => {
 			},
 		})
 		let adapters = new Map([['test', adapter]])
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 		app.onError((_err, c) => c.json({ error: 'Internal server error' }, 500))
 
@@ -167,7 +167,7 @@ describe('webhook router', () => {
 			},
 		})
 		let adapters = new Map([['test', adapter]])
-		let service = new HandleInboundMessage()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
 		let app = buildApp(adapters, service)
 		app.onError((_err, c) => c.json({ error: 'Internal server error' }, 500))
 

@@ -9,17 +9,24 @@
 		"test": "bun test",
 		"test:watch": "bun test --watch",
 		"test:coverage": "bun test --coverage",
+		"test:evals": "evalite",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^2.0.0",
 		"@matchmaker/shared": "workspace:*",
+		"@modelcontextprotocol/sdk": "^1.0.0",
 		"@supabase/supabase-js": "^2.39.0",
+		"ai": "^5.0.0",
 		"hono": "^4.0.0",
+		"jose": "^5.9.0",
 		"zod": "^4.3.6",
 		"@hono/zod-validator": "^0.7.6"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.0.0",
-		"typescript": "^6.0.3"
+		"evalite": "^0.11.0",
+		"typescript": "^6.0.3",
+		"vitest": "^3.0.0"
 	}
 }
