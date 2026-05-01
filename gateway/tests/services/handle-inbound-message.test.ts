@@ -1,7 +1,10 @@
 import { describe, test, expect } from 'bun:test'
 import type { ChatAdapter } from '../../src/types/adapter'
-import type { OutboundMessage, RawInboundMessage } from '../../src/types/messages'
-import { HandleInboundMessage } from '../../src/services/handle-inbound-message'
+import type { InboundMessage, OutboundMessage, RawInboundMessage } from '../../src/types/messages'
+import {
+	HandleInboundMessage,
+	type ProcessMessage,
+} from '../../src/services/handle-inbound-message'
 import { InboundParseError } from '../../src/services/errors'
 
 let validRaw: RawInboundMessage = {
@@ -39,10 +42,23 @@ function createMockAdapter(overrides: Partial<ChatAdapter> = {}) {
 	return { adapter, parseInboundCalls, resolveUserCalls, sendReplyCalls }
 }
 
+function stubProcessMessage(reply = 'AI response'): {
+	processMessage: ProcessMessage
+	calls: InboundMessage[]
+} {
+	let calls: InboundMessage[] = []
+	let processMessage: ProcessMessage = async input => {
+		calls.push(input.inbound)
+		return reply
+	}
+	return { processMessage, calls }
+}
+
 describe('HandleInboundMessage', () => {
 	test('calls parseInbound on the adapter with raw payload', async () => {
 		let { adapter, parseInboundCalls } = createMockAdapter()
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
 		let rawPayload = { some: 'data' }
 
 		await service.execute(adapter, rawPayload)
@@ -53,7 +69,8 @@ describe('HandleInboundMessage', () => {
 
 	test('calls resolveUser with the parsed senderId', async () => {
 		let { adapter, resolveUserCalls } = createMockAdapter()
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
 
 		await service.execute(adapter, {})
 
@@ -61,24 +78,41 @@ describe('HandleInboundMessage', () => {
 		expect(resolveUserCalls[0]).toBe('sender-123')
 	})
 
-	test('calls sendReply with correct provider, senderId, and threadId', async () => {
+	test('runs the inbound message through the AI core after resolving the user', async () => {
+		let { adapter } = createMockAdapter()
+		let { processMessage, calls } = stubProcessMessage('AI response text')
+		let service = new HandleInboundMessage({ processMessage })
+
+		await service.execute(adapter, {})
+
+		expect(calls).toHaveLength(1)
+		let inbound = calls[0]!
+		expect(inbound.userId).toBe(resolvedUserId)
+		expect(inbound.text).toBe('hello')
+		expect(inbound.provider).toBe('test')
+		expect(inbound.senderId).toBe('sender-123')
+		expect(inbound.threadId).toBe('thread-456')
+	})
+
+	test('replies with the AI core response (not a hard-coded ack)', async () => {
 		let { adapter, sendReplyCalls } = createMockAdapter()
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage('Hi Alex, tell me more.')
+		let service = new HandleInboundMessage({ processMessage })
 
 		await service.execute(adapter, {})
 
 		expect(sendReplyCalls).toHaveLength(1)
-		let firstCall = sendReplyCalls[0]
-		if (!firstCall) throw new Error('expected one sendReply call')
+		let firstCall = sendReplyCalls[0]!
 		expect(firstCall.provider).toBe('test')
 		expect(firstCall.senderId).toBe('sender-123')
 		expect(firstCall.threadId).toBe('thread-456')
-		expect(firstCall.text.length).toBeGreaterThan(0)
+		expect(firstCall.text).toBe('Hi Alex, tell me more.')
 	})
 
 	test('returns a fully-hydrated InboundMessage with resolved userId', async () => {
 		let { adapter } = createMockAdapter()
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
 
 		let result = await service.execute(adapter, {})
 
@@ -96,7 +130,8 @@ describe('HandleInboundMessage', () => {
 				throw new Error('bad payload')
 			},
 		})
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
 
 		await expect(service.execute(adapter, {})).rejects.toBeInstanceOf(InboundParseError)
 	})
@@ -107,7 +142,8 @@ describe('HandleInboundMessage', () => {
 				throw new Error('user directory down')
 			},
 		})
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
 
 		let caught: unknown = null
 		try {
@@ -126,7 +162,26 @@ describe('HandleInboundMessage', () => {
 				throw new Error('chat provider timeout')
 			},
 		})
-		let service = new HandleInboundMessage()
+		let { processMessage } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
+
+		let caught: unknown = null
+		try {
+			await service.execute(adapter, {})
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught).toBeInstanceOf(Error)
+		expect(caught).not.toBeInstanceOf(InboundParseError)
+	})
+
+	test('propagates processMessage failures untouched (not as InboundParseError)', async () => {
+		let { adapter } = createMockAdapter()
+		let processMessage: ProcessMessage = async () => {
+			throw new Error('AI core blew up')
+		}
+		let service = new HandleInboundMessage({ processMessage })
 
 		let caught: unknown = null
 		try {

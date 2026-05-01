@@ -2,7 +2,19 @@ import type { ChatAdapter } from '../types/adapter'
 import type { InboundMessage, RawInboundMessage } from '../types/messages'
 import { InboundParseError } from './errors'
 
+export type ProcessMessage = (input: { inbound: InboundMessage }) => Promise<string>
+
+export type HandleInboundMessageOptions = {
+	processMessage: ProcessMessage
+}
+
 export class HandleInboundMessage {
+	private processMessage: ProcessMessage
+
+	constructor(options: HandleInboundMessageOptions) {
+		this.processMessage = options.processMessage
+	}
+
 	async execute(adapter: ChatAdapter, raw: unknown): Promise<InboundMessage> {
 		let rawMessage: RawInboundMessage
 		try {
@@ -15,11 +27,13 @@ export class HandleInboundMessage {
 
 		let message: InboundMessage = { ...rawMessage, userId }
 
+		let replyText = await this.processMessage({ inbound: message })
+
 		await adapter.sendReply({
 			provider: message.provider,
 			senderId: message.senderId,
 			threadId: message.threadId,
-			text: `Message received from ${userId}`,
+			text: replyText,
 		})
 
 		return message
