@@ -9,6 +9,7 @@
 	"scripts": {
 		"test": "bun run test:shared && bun run test:backend && bun run test:mcp && bun run test:gateway",
 		"test:gateway": "cd gateway && bun test",
+		"test:evals:gateway": "cd gateway && bun run test:evals",
 		"test:shared": "cd packages/shared && bun test",
 		"test:backend": "cd backend && bun test",
 		"test:mcp": "cd mcp-server && bun run test",
