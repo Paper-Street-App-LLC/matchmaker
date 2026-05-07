@@ -109,6 +109,8 @@ describe('Gateway', () => {
 			)
 
 			expect(res.status).toBe(200)
+			let body = (await res.json()) as { ok: boolean; threadId: string }
+			expect(body).toEqual({ ok: true, threadId: 'thread-abc' })
 
 			expect(inserts).toHaveLength(2)
 			let [userTurn, assistantTurn] = inserts
