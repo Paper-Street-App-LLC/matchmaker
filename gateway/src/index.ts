@@ -3,7 +3,7 @@ import { createApp } from './app'
 import { processMessage as runAiCore } from './core/ai'
 import { createMcpClient } from './core/mcp-client'
 import { createMatchmakerTools } from './core/tools'
-import { createConversationStore, type ConversationStoreClient } from './store/conversations'
+import { createConversationStore, createSupabaseConversationDb } from './store/conversations'
 import {
 	HandleInboundMessage,
 	type ProcessMessage,
@@ -24,7 +24,7 @@ let MCP_BASE_URL = requireEnv('MCP_BASE_URL')
 let SUPABASE_JWT_SECRET = requireEnv('SUPABASE_JWT_SECRET')
 
 let supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-let store = createConversationStore(supabase as unknown as ConversationStoreClient)
+let store = createConversationStore(createSupabaseConversationDb(supabase))
 
 let processMessage: ProcessMessage = async ({ inbound }) => {
 	let caller = createMcpClient({

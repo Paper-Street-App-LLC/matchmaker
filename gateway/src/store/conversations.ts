@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
 export type NewConversationMessage = {
@@ -13,29 +14,6 @@ export type ConversationMessage = NewConversationMessage & {
 	createdAt: string
 }
 
-type DbError = { message: string }
-type InsertResult = { error: DbError | null }
-type SelectResult = { data: unknown[] | null; error: DbError | null }
-
-export interface ConversationStoreClient {
-	from(table: string): {
-		insert(values: Record<string, unknown>): PromiseLike<InsertResult>
-		select(columns: string): {
-			eq(
-				column: string,
-				value: string,
-			): {
-				order(
-					column: string,
-					opts: { ascending: boolean },
-				): {
-					limit(count: number): PromiseLike<SelectResult>
-				}
-			}
-		}
-	}
-}
-
 export let dbRowSchema = z.object({
 	id: z.string(),
 	thread_id: z.string(),
@@ -46,7 +24,41 @@ export let dbRowSchema = z.object({
 	created_at: z.string(),
 })
 
-function toMessage(row: z.infer<typeof dbRowSchema>): ConversationMessage {
+export type DbRow = z.infer<typeof dbRowSchema>
+
+export type ConversationInsertRow = {
+	thread_id: string
+	role: NewConversationMessage['role']
+	content: string
+	provider: string | null
+	sender_id: string | null
+}
+
+export interface ConversationDb {
+	insert(row: ConversationInsertRow): Promise<void>
+	selectByThread(threadId: string, limit: number): Promise<DbRow[]>
+}
+
+export function createConversationStore(db: ConversationDb) {
+	return {
+		async save(message: NewConversationMessage) {
+			await db.insert({
+				thread_id: message.threadId,
+				role: message.role,
+				content: message.content,
+				provider: message.provider ?? null,
+				sender_id: message.senderId ?? null,
+			})
+		},
+
+		async getHistory(threadId: string, limit: number): Promise<ConversationMessage[]> {
+			let rows = await db.selectByThread(threadId, limit)
+			return rows.map(toMessage)
+		},
+	}
+}
+
+function toMessage(row: DbRow): ConversationMessage {
 	return {
 		id: row.id,
 		threadId: row.thread_id,
@@ -58,25 +70,21 @@ function toMessage(row: z.infer<typeof dbRowSchema>): ConversationMessage {
 	}
 }
 
-export function createConversationStore(client: ConversationStoreClient) {
+export function createSupabaseConversationDb(
+	client: SupabaseClient,
+	table = 'conversations',
+): ConversationDb {
 	return {
-		async save(message: NewConversationMessage) {
-			let { error } = await client.from('conversations').insert({
-				thread_id: message.threadId,
-				role: message.role,
-				content: message.content,
-				provider: message.provider ?? null,
-				sender_id: message.senderId ?? null,
-			})
-
+		async insert(row) {
+			let { error } = await client.from(table).insert(row)
 			if (error) {
 				throw new Error(error.message)
 			}
 		},
 
-		async getHistory(threadId: string, limit: number): Promise<ConversationMessage[]> {
+		async selectByThread(threadId, limit) {
 			let { data, error } = await client
-				.from('conversations')
+				.from(table)
 				.select('*')
 				.eq('thread_id', threadId)
 				.order('created_at', { ascending: true })
@@ -86,12 +94,7 @@ export function createConversationStore(client: ConversationStoreClient) {
 				throw new Error(error.message)
 			}
 
-			if (!data) {
-				return []
-			}
-
-			let rows = z.array(dbRowSchema).parse(data)
-			return rows.map(toMessage)
+			return z.array(dbRowSchema).parse(data ?? [])
 		},
 	}
 }
