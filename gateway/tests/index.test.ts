@@ -9,7 +9,7 @@ import {
 } from '../src/services/handle-inbound-message'
 import type { ChatAdapter } from '../src/types/adapter'
 import type { OutboundMessage, RawInboundMessage } from '../src/types/messages'
-import { createInMemoryStoreClient } from './helpers/in-memory-store'
+import { createInMemoryConversationDb } from './helpers/in-memory-store'
 
 let healthSchema = z.object({
 	status: z.string(),
@@ -84,8 +84,8 @@ describe('Gateway', () => {
 				verifyWebhook: async () => true,
 			}
 
-			let { client, inserts } = createInMemoryStoreClient()
-			let store = createConversationStore(client)
+			let { db, inserts } = createInMemoryConversationDb()
+			let store = createConversationStore(db)
 
 			let stubGenerateText = (async () => ({
 				text: 'AI reply text',
