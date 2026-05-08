@@ -7,11 +7,13 @@ import {
 	createPerson,
 	createIntroduction,
 	createMatchDecision,
+	createFeedback,
 	DomainError,
 	InvalidPreferencesError,
 	InvalidPersonError,
 	InvalidIntroductionError,
 	InvalidMatchDecisionError,
+	InvalidFeedbackError,
 	AuthorizationService,
 	AuthorizationError,
 } from '../src/index'
@@ -32,11 +34,12 @@ describe('@matchmaker/shared barrel exports', () => {
 })
 
 describe('domain barrel', () => {
-	test('re-exports createPreferences, createPerson, createIntroduction, createMatchDecision as functions', () => {
+	test('re-exports createPreferences, createPerson, createIntroduction, createMatchDecision, createFeedback as functions', () => {
 		expect(typeof createPreferences).toBe('function')
 		expect(typeof createPerson).toBe('function')
 		expect(typeof createIntroduction).toBe('function')
 		expect(typeof createMatchDecision).toBe('function')
+		expect(typeof createFeedback).toBe('function')
 	})
 
 	test('re-exports DomainError and all Invalid*Error classes', () => {
@@ -45,6 +48,7 @@ describe('domain barrel', () => {
 		expect(typeof InvalidPersonError).toBe('function')
 		expect(typeof InvalidIntroductionError).toBe('function')
 		expect(typeof InvalidMatchDecisionError).toBe('function')
+		expect(typeof InvalidFeedbackError).toBe('function')
 	})
 
 	test('re-exports AuthorizationService and AuthorizationError', () => {
