@@ -57,12 +57,8 @@ export let createPeopleRoutes = (
 	let notFoundPerson = { not_found: 'Person not found' }
 
 	app.get('/:id', async c => {
-		let userId = c.get('userId')
 		let personId = c.req.param('id')
-		let result = await deps.getPersonById.execute({
-			matchmakerId: userId,
-			personId,
-		})
+		let result = await deps.getPersonById.execute({ personId })
 		if (!result.ok) {
 			let { status, body } = useCaseErrorToHttp(result.error, notFoundPerson)
 			return c.json(body, status)

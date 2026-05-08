@@ -220,18 +220,31 @@ describe('GET /api/people/:id', () => {
 		expect(json.error).toBe('Person not found')
 	})
 
-	test('returns 403 when the person belongs to another matchmaker', async () => {
-		// Arrange
+	test('returns the person when it belongs to another matchmaker (cross-matchmaker visibility)', async () => {
+		// GET /:id mirrors find_matches' candidate pool: any active person is
+		// inspectable regardless of who owns them.
 		let personRepo = new InMemoryPersonRepository([
 			seedPerson({ id: PERSON_ID, matchmakerId: OTHER_MATCHMAKER_ID }),
 		])
 		let app = mountApp(buildDeps(personRepo), MATCHMAKER_ID)
 
-		// Act
+		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
+		let json = (await res.json()) as PersonResponse
+
+		expect(res.status).toBe(200)
+		expect(json.id).toBe(PERSON_ID)
+		expect(json.matchmaker_id).toBe(OTHER_MATCHMAKER_ID)
+	})
+
+	test('returns 404 when the person is soft-deleted (inactive)', async () => {
+		let personRepo = new InMemoryPersonRepository([
+			seedPerson({ id: PERSON_ID, active: false }),
+		])
+		let app = mountApp(buildDeps(personRepo), MATCHMAKER_ID)
+
 		let res = await app.fetch(new Request(`http://localhost/${PERSON_ID}`))
 
-		// Assert
-		expect(res.status).toBe(403)
+		expect(res.status).toBe(404)
 	})
 })
 

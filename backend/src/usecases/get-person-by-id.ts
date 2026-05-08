@@ -1,12 +1,7 @@
-import {
-	AuthorizationService,
-	type IPersonRepository,
-	type Person,
-} from '@matchmaker/shared'
+import type { IPersonRepository, Person } from '@matchmaker/shared'
 import type { UseCase, UseCaseResult } from './types'
 
 export type GetPersonByIdInput = {
-	matchmakerId: string
 	personId: string
 }
 
@@ -14,12 +9,15 @@ export type GetPersonByIdDeps = {
 	personRepo: IPersonRepository
 }
 
+// Cross-matchmaker by design: any active person is inspectable by id, mirroring
+// the FindMatchesForPerson candidate pool. Soft-deleted (inactive) people are
+// hidden as not_found.
 export class GetPersonById implements UseCase<GetPersonByIdInput, Person> {
 	constructor(private deps: GetPersonByIdDeps) {}
 
 	async execute(input: GetPersonByIdInput): Promise<UseCaseResult<Person>> {
 		let existing = await this.deps.personRepo.findById(input.personId)
-		if (!existing) {
+		if (!existing || !existing.active) {
 			return {
 				ok: false,
 				error: {
@@ -29,14 +27,6 @@ export class GetPersonById implements UseCase<GetPersonByIdInput, Person> {
 				},
 			}
 		}
-
-		if (!AuthorizationService.canMatchmakerAccessPerson(input.matchmakerId, existing)) {
-			return {
-				ok: false,
-				error: { code: 'forbidden', message: 'You do not own this person' },
-			}
-		}
-
 		return { ok: true, data: existing }
 	}
 }
