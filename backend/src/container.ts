@@ -1,4 +1,5 @@
 import {
+	SupabaseFeedbackRepository,
 	SupabaseIntroductionRepository,
 	SupabaseMatchDecisionRepository,
 	SupabasePersonRepository,
@@ -10,12 +11,15 @@ import {
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
+	GetFeedback,
 	GetIntroductionById,
 	GetPersonById,
+	ListFeedback,
 	ListIntroductionsForMatchmaker,
 	ListMatchDecisions,
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
+	SubmitFeedback,
 	UpdateIntroductionStatus,
 	UpdatePerson,
 	systemClock,
@@ -37,6 +41,9 @@ export interface UseCases {
 	updateIntroductionStatus: UpdateIntroductionStatus
 	recordMatchDecision: RecordMatchDecision
 	listMatchDecisions: ListMatchDecisions
+	submitFeedback: SubmitFeedback
+	listFeedback: ListFeedback
+	getFeedback: GetFeedback
 }
 
 export type ContainerOverrides = {
@@ -54,6 +61,7 @@ export let buildContainer = (
 	let personRepo = new SupabasePersonRepository(supabase)
 	let introductionRepo = new SupabaseIntroductionRepository(supabase)
 	let matchDecisionRepo = new SupabaseMatchDecisionRepository(supabase)
+	let feedbackRepo = new SupabaseFeedbackRepository(supabase)
 
 	let usecases: UseCases = {
 		createPerson: new CreatePerson({ personRepo, clock, ids }),
@@ -84,6 +92,9 @@ export let buildContainer = (
 			ids,
 		}),
 		listMatchDecisions: new ListMatchDecisions({ personRepo, matchDecisionRepo }),
+		submitFeedback: new SubmitFeedback({ feedbackRepo, clock, ids }),
+		listFeedback: new ListFeedback({ feedbackRepo }),
+		getFeedback: new GetFeedback({ feedbackRepo }),
 	}
 
 	return Object.freeze(usecases)
