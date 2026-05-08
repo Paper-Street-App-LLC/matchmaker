@@ -2,6 +2,8 @@ import {
 	IntroductionNotFoundError,
 	PersonNotFoundError,
 	RepositoryConflictError,
+	type Feedback,
+	type IFeedbackRepository,
 	type IIntroductionRepository,
 	type IMatchDecisionRepository,
 	type IPersonRepository,
@@ -131,5 +133,29 @@ export class InMemoryIntroductionRepository implements IIntroductionRepository {
 		})
 		this.introductions[index] = updated
 		return updated
+	}
+}
+
+export class InMemoryFeedbackRepository implements IFeedbackRepository {
+	private feedback: Feedback[]
+
+	constructor(seed: readonly Feedback[] = []) {
+		this.feedback = [...seed]
+	}
+
+	async create(feedback: Feedback): Promise<Feedback> {
+		if (this.feedback.some(f => f.id === feedback.id)) {
+			throw new RepositoryConflictError(`Feedback already exists: ${feedback.id}`)
+		}
+		this.feedback.push(feedback)
+		return feedback
+	}
+
+	async findById(id: string): Promise<Feedback | null> {
+		return this.feedback.find(f => f.id === id) ?? null
+	}
+
+	async findByIntroductionId(introductionId: string): Promise<readonly Feedback[]> {
+		return this.feedback.filter(f => f.introductionId === introductionId)
 	}
 }
