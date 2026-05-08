@@ -6,12 +6,15 @@ import {
 	CreatePerson,
 	DeletePerson,
 	FindMatchesForPerson,
+	GetFeedback,
 	GetIntroductionById,
 	GetPersonById,
+	ListFeedback,
 	ListIntroductionsForMatchmaker,
 	ListMatchDecisions,
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
+	SubmitFeedback,
 	UpdateIntroductionStatus,
 	UpdatePerson,
 } from '../src/usecases'
@@ -44,6 +47,9 @@ describe('buildContainer', () => {
 		expect(usecases.updateIntroductionStatus).toBeInstanceOf(UpdateIntroductionStatus)
 		expect(usecases.recordMatchDecision).toBeInstanceOf(RecordMatchDecision)
 		expect(usecases.listMatchDecisions).toBeInstanceOf(ListMatchDecisions)
+		expect(usecases.submitFeedback).toBeInstanceOf(SubmitFeedback)
+		expect(usecases.listFeedback).toBeInstanceOf(ListFeedback)
+		expect(usecases.getFeedback).toBeInstanceOf(GetFeedback)
 	})
 
 	test('returns a frozen struct', () => {
