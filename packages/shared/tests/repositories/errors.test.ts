@@ -4,6 +4,7 @@ import {
 	PersonNotFoundError,
 	IntroductionNotFoundError,
 	MatchDecisionNotFoundError,
+	FeedbackNotFoundError,
 	RepositoryConflictError,
 } from '../../src/repositories/errors'
 import { DomainError } from '../../src/domain/errors'
@@ -80,6 +81,24 @@ describe('MatchDecisionNotFoundError', () => {
 	test('uses the MATCH_DECISION_NOT_FOUND code', () => {
 		let err = new MatchDecisionNotFoundError('decision-1')
 		expect(err.code).toBe('MATCH_DECISION_NOT_FOUND')
+	})
+})
+
+describe('FeedbackNotFoundError', () => {
+	test('extends RepositoryError', () => {
+		let err = new FeedbackNotFoundError('feedback-1')
+		expect(err).toBeInstanceOf(FeedbackNotFoundError)
+		expect(err).toBeInstanceOf(RepositoryError)
+	})
+
+	test('uses the FEEDBACK_NOT_FOUND code', () => {
+		let err = new FeedbackNotFoundError('feedback-1')
+		expect(err.code).toBe('FEEDBACK_NOT_FOUND')
+	})
+
+	test('includes the feedback id in the message', () => {
+		let err = new FeedbackNotFoundError('feedback-1')
+		expect(err.message).toContain('feedback-1')
 	})
 })
 

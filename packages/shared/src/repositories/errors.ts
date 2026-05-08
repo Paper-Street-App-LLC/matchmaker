@@ -29,6 +29,13 @@ export class MatchDecisionNotFoundError extends RepositoryError {
 	}
 }
 
+export class FeedbackNotFoundError extends RepositoryError {
+	constructor(id: string) {
+		super('FEEDBACK_NOT_FOUND', `Feedback not found: ${id}`)
+		this.name = 'FeedbackNotFoundError'
+	}
+}
+
 export class RepositoryConflictError extends RepositoryError {
 	constructor(message: string) {
 		super('REPOSITORY_CONFLICT', message)
