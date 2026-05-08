@@ -25,6 +25,12 @@ export {
 	toMatchSuggestionResponseDTO,
 } from './match-suggestion'
 export {
+	type FeedbackResponseDTO,
+	type CreateFeedbackRequestBody,
+	toFeedbackResponseDTO,
+	fromCreateFeedbackRequestDTO,
+} from './feedback'
+export {
 	type ErrorHttpStatus,
 	type ErrorHttpResponse,
 	type UseCaseErrorMessageOverrides,

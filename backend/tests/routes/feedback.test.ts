@@ -1,82 +1,80 @@
-import { describe, test, expect, mock } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { Hono } from 'hono'
-import { createFeedbackRoutes } from '../../src/routes/feedback'
-import { createMockSupabaseClient } from '../mocks/supabase'
+import { createFeedbackRoutes, type FeedbackRouteDeps } from '../../src/routes/feedback'
+import { InMemoryFeedbackRepository } from '../fakes/in-memory-repositories'
+import { GetFeedback, ListFeedback, SubmitFeedback } from '../../src/usecases'
+import { fixedClock, fixedIds, makeFeedback } from '../usecases/fixtures'
 import { feedbackResponseSchema, type FeedbackResponse } from '../../src/schemas/feedback'
 
-type Variables = {
-	userId: string
+type Variables = { userId: string }
+
+let MATCHMAKER_ID = '550e8400-e29b-41d4-a716-446655440000'
+let INTRODUCTION_ID = '750e8400-e29b-41d4-a716-446655440002'
+let FROM_PERSON_ID = '850e8400-e29b-41d4-a716-446655440003'
+let NEW_FEEDBACK_ID = '650e8400-e29b-41d4-a716-446655440001'
+
+let buildDeps = (
+	feedbackRepo: InMemoryFeedbackRepository,
+	idQueue: readonly string[] = [NEW_FEEDBACK_ID],
+): FeedbackRouteDeps => ({
+	submitFeedback: new SubmitFeedback({
+		feedbackRepo,
+		clock: fixedClock(),
+		ids: fixedIds(idQueue),
+	}),
+	listFeedback: new ListFeedback({ feedbackRepo }),
+	getFeedback: new GetFeedback({ feedbackRepo }),
+})
+
+let mountApp = (deps: FeedbackRouteDeps): Hono<{ Variables: Variables }> => {
+	let app = new Hono<{ Variables: Variables }>()
+	app.use('*', async (c, next) => {
+		c.set('userId', MATCHMAKER_ID)
+		await next()
+	})
+	app.route('/', createFeedbackRoutes(deps))
+	return app
 }
 
 describe('POST /api/feedback', () => {
-	test('should create feedback for introduction', async () => {
-		let mockUserId = '550e8400-e29b-41d4-a716-446655440000'
-		let mockFeedback = {
-			id: '650e8400-e29b-41d4-a716-446655440001',
-			introduction_id: '750e8400-e29b-41d4-a716-446655440002',
-			from_person_id: '850e8400-e29b-41d4-a716-446655440003',
-			content: 'Had a great time!',
-			sentiment: 'positive',
-			created_at: new Date().toISOString(),
-		}
+	test('creates feedback and returns the snake_case response', async () => {
+		// Arrange
+		let feedbackRepo = new InMemoryFeedbackRepository()
+		let app = mountApp(buildDeps(feedbackRepo))
 
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				insert: mock((_data: any) => ({
-					select: mock(() => ({
-						single: mock(() => ({
-							data: mockFeedback,
-							error: null,
-						})),
-					})),
-				})),
-			})),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createFeedbackRoutes(mockClient))
-
+		// Act
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				introduction_id: '750e8400-e29b-41d4-a716-446655440002',
-				from_person_id: '850e8400-e29b-41d4-a716-446655440003',
+				introduction_id: INTRODUCTION_ID,
+				from_person_id: FROM_PERSON_ID,
 				content: 'Had a great time!',
 				sentiment: 'positive',
 			}),
 		})
-
 		let res = await app.fetch(req)
-		let json = (await res.json()) as typeof mockFeedback
+		let json = (await res.json()) as FeedbackResponse
 
+		// Assert
 		expect(res.status).toBe(201)
+		expect(json.id).toBe(NEW_FEEDBACK_ID)
 		expect(json.content).toBe('Had a great time!')
 		expect(json.sentiment).toBe('positive')
-		expect(json.introduction_id).toBe('750e8400-e29b-41d4-a716-446655440002')
+		expect(json.introduction_id).toBe(INTRODUCTION_ID)
+		expect(json.from_person_id).toBe(FROM_PERSON_ID)
 		feedbackResponseSchema.parse(json)
 	})
 
-	test('should validate required fields', async () => {
-		let mockClient = createMockSupabaseClient()
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', 'test-user')
-			await next()
-		})
-		app.route('/', createFeedbackRoutes(mockClient))
+	test('rejects requests missing required fields with 400', async () => {
+		let feedbackRepo = new InMemoryFeedbackRepository()
+		let app = mountApp(buildDeps(feedbackRepo))
 
 		let req = new Request('http://localhost/', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ content: 'Test' }),
 		})
-
 		let res = await app.fetch(req)
 
 		expect(res.status).toBe(400)
@@ -84,50 +82,26 @@ describe('POST /api/feedback', () => {
 })
 
 describe('GET /api/feedback', () => {
-	test('should list feedback for introduction', async () => {
-		let mockUserId = '950e8400-e29b-41d4-a716-446655440000'
-		let mockIntroductionId = 'a50e8400-e29b-41d4-a716-446655440001'
-		let mockFeedback = [
-			{
-				id: 'b50e8400-e29b-41d4-a716-446655440002',
-				introduction_id: mockIntroductionId,
-				from_person_id: 'c50e8400-e29b-41d4-a716-446655440003',
+	test('returns the feedback list for the introduction', async () => {
+		let feedbackRepo = new InMemoryFeedbackRepository([
+			makeFeedback({
+				id: 'fb-1',
+				introductionId: INTRODUCTION_ID,
 				content: 'Great date!',
 				sentiment: 'positive',
-				created_at: new Date().toISOString(),
-			},
-			{
-				id: 'd50e8400-e29b-41d4-a716-446655440004',
-				introduction_id: mockIntroductionId,
-				from_person_id: 'e50e8400-e29b-41d4-a716-446655440005',
+			}),
+			makeFeedback({
+				id: 'fb-2',
+				introductionId: INTRODUCTION_ID,
 				content: 'Not a good match',
 				sentiment: 'negative',
-				created_at: new Date().toISOString(),
-			},
-		]
+			}),
+		])
+		let app = mountApp(buildDeps(feedbackRepo))
 
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_column: string, _value: any) => ({
-						data: mockFeedback,
-						error: null,
-					})),
-				})),
-			})),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createFeedbackRoutes(mockClient))
-
-		let req = new Request(`http://localhost/?introductionId=${mockIntroductionId}`)
-
+		let req = new Request(`http://localhost/?introductionId=${INTRODUCTION_ID}`)
 		let res = await app.fetch(req)
-		let json = (await res.json()) as typeof mockFeedback
+		let json = (await res.json()) as FeedbackResponse[]
 
 		expect(res.status).toBe(200)
 		expect(Array.isArray(json)).toBe(true)
@@ -136,27 +110,11 @@ describe('GET /api/feedback', () => {
 		expect(json[1]?.sentiment).toBe('negative')
 	})
 
-	test('should return empty array if no feedback', async () => {
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_column: string, _value: any) => ({
-						data: [],
-						error: null,
-					})),
-				})),
-			})),
-		})
+	test('returns an empty list when the introduction has no feedback', async () => {
+		let feedbackRepo = new InMemoryFeedbackRepository()
+		let app = mountApp(buildDeps(feedbackRepo))
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', 'test-user')
-			await next()
-		})
-		app.route('/', createFeedbackRoutes(mockClient))
-
-		let req = new Request('http://localhost/?introductionId=test-id')
-
+		let req = new Request('http://localhost/?introductionId=intro-empty')
 		let res = await app.fetch(req)
 		let json = (await res.json()) as FeedbackResponse[]
 
@@ -164,76 +122,47 @@ describe('GET /api/feedback', () => {
 		expect(Array.isArray(json)).toBe(true)
 		expect(json).toHaveLength(0)
 	})
+
+	test('returns 400 when introductionId query param is missing', async () => {
+		let feedbackRepo = new InMemoryFeedbackRepository()
+		let app = mountApp(buildDeps(feedbackRepo))
+
+		let req = new Request('http://localhost/')
+		let res = await app.fetch(req)
+
+		expect(res.status).toBe(400)
+	})
 })
 
 describe('GET /api/feedback/:id', () => {
-	test('should return feedback by ID', async () => {
-		let mockUserId = '550e8400-e29b-41d4-a716-446655440000'
-		let mockFeedbackId = '650e8400-e29b-41d4-a716-446655440001'
-		let mockFeedback = {
-			id: mockFeedbackId,
-			introduction_id: '750e8400-e29b-41d4-a716-446655440002',
-			from_person_id: '850e8400-e29b-41d4-a716-446655440003',
+	test('returns feedback by id', async () => {
+		let feedbackId = 'b50e8400-e29b-41d4-a716-446655440099'
+		let existing = makeFeedback({
+			id: feedbackId,
+			introductionId: INTRODUCTION_ID,
+			fromPersonId: FROM_PERSON_ID,
 			content: 'It was okay',
 			sentiment: 'neutral',
-			created_at: new Date().toISOString(),
-		}
-
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_column: string, _value: any) => ({
-						maybeSingle: mock(() => ({
-							data: mockFeedback,
-							error: null,
-						})),
-					})),
-				})),
-			})),
 		})
+		let feedbackRepo = new InMemoryFeedbackRepository([existing])
+		let app = mountApp(buildDeps(feedbackRepo))
 
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', mockUserId)
-			await next()
-		})
-		app.route('/', createFeedbackRoutes(mockClient))
-
-		let req = new Request(`http://localhost/${mockFeedbackId}`)
-
+		let req = new Request(`http://localhost/${feedbackId}`)
 		let res = await app.fetch(req)
-		let json = (await res.json()) as typeof mockFeedback
+		let json = (await res.json()) as FeedbackResponse
 
 		expect(res.status).toBe(200)
-		expect(json.id).toBe(mockFeedbackId)
+		expect(json.id).toBe(feedbackId)
 		expect(json.content).toBe('It was okay')
 		expect(json.sentiment).toBe('neutral')
 		feedbackResponseSchema.parse(json)
 	})
 
-	test('should return 404 when feedback not found', async () => {
-		let mockClient = createMockSupabaseClient({
-			from: mock((_table: string) => ({
-				select: mock((_columns: string) => ({
-					eq: mock((_column: string, _value: any) => ({
-						maybeSingle: mock(() => ({
-							data: null,
-							error: null,
-						})),
-					})),
-				})),
-			})),
-		})
-
-		let app = new Hono<{ Variables: Variables }>()
-		app.use('*', async (c, next) => {
-			c.set('userId', 'test-user')
-			await next()
-		})
-		app.route('/', createFeedbackRoutes(mockClient))
+	test('returns 404 when feedback is not found', async () => {
+		let feedbackRepo = new InMemoryFeedbackRepository()
+		let app = mountApp(buildDeps(feedbackRepo))
 
 		let req = new Request('http://localhost/nonexistent-id')
-
 		let res = await app.fetch(req)
 		let json = (await res.json()) as { error: string }
 
