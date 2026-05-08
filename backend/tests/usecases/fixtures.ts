@@ -2,7 +2,9 @@ import {
 	createPerson,
 	createIntroduction as buildIntroduction,
 	createMatchDecision,
+	createFeedback,
 	type Decision,
+	type Feedback,
 	type Introduction,
 	type MatchDecision,
 	type Person,
@@ -83,6 +85,25 @@ export let makeDecision = (overrides: MakeDecisionOverrides = {}): MatchDecision
 		candidateId: overrides.candidateId ?? 'p-b',
 		decision: overrides.decision ?? 'accepted',
 		declineReason: overrides.declineReason ?? null,
+		createdAt: overrides.createdAt ?? FIXED_NOW,
+	})
+
+export type MakeFeedbackOverrides = {
+	id?: string
+	introductionId?: string
+	fromPersonId?: string
+	content?: string
+	sentiment?: string | null
+	createdAt?: Date
+}
+
+export let makeFeedback = (overrides: MakeFeedbackOverrides = {}): Feedback =>
+	createFeedback({
+		id: overrides.id ?? 'feedback-1',
+		introductionId: overrides.introductionId ?? 'intro-1',
+		fromPersonId: overrides.fromPersonId ?? 'p-a',
+		content: overrides.content ?? 'They got along well.',
+		sentiment: 'sentiment' in overrides ? overrides.sentiment : 'positive',
 		createdAt: overrides.createdAt ?? FIXED_NOW,
 	})
 

@@ -1,4 +1,4 @@
-export type UseCaseErrorEntity = 'person' | 'introduction' | 'match_decision'
+export type UseCaseErrorEntity = 'person' | 'introduction' | 'match_decision' | 'feedback'
 
 export type UseCaseError =
 	| { code: 'not_found'; entity: UseCaseErrorEntity; message: string }

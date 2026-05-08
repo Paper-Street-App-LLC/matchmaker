@@ -57,3 +57,18 @@ export {
 	type ListMatchDecisionsInput,
 	type ListMatchDecisionsDeps,
 } from './list-match-decisions'
+export {
+	SubmitFeedback,
+	type SubmitFeedbackInput,
+	type SubmitFeedbackDeps,
+} from './submit-feedback'
+export {
+	ListFeedback,
+	type ListFeedbackInput,
+	type ListFeedbackDeps,
+} from './list-feedback'
+export {
+	GetFeedback,
+	type GetFeedbackInput,
+	type GetFeedbackDeps,
+} from './get-feedback'
