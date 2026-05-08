@@ -15,7 +15,7 @@ import {
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
 	SubmitFeedback,
-	UpdateIntroductionStatus,
+	UpdateIntroduction,
 	UpdatePerson,
 } from '../src/usecases'
 
@@ -44,7 +44,7 @@ describe('buildContainer', () => {
 		expect(usecases.listIntroductionsForMatchmaker).toBeInstanceOf(
 			ListIntroductionsForMatchmaker,
 		)
-		expect(usecases.updateIntroductionStatus).toBeInstanceOf(UpdateIntroductionStatus)
+		expect(usecases.updateIntroduction).toBeInstanceOf(UpdateIntroduction)
 		expect(usecases.recordMatchDecision).toBeInstanceOf(RecordMatchDecision)
 		expect(usecases.listMatchDecisions).toBeInstanceOf(ListMatchDecisions)
 		expect(usecases.submitFeedback).toBeInstanceOf(SubmitFeedback)

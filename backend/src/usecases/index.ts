@@ -43,10 +43,10 @@ export {
 	type ListIntroductionsForMatchmakerDeps,
 } from './list-introductions-for-matchmaker'
 export {
-	UpdateIntroductionStatus,
-	type UpdateIntroductionStatusInput,
-	type UpdateIntroductionStatusDeps,
-} from './update-introduction-status'
+	UpdateIntroduction,
+	type UpdateIntroductionInput,
+	type UpdateIntroductionDeps,
+} from './update-introduction'
 export {
 	RecordMatchDecision,
 	type RecordMatchDecisionInput,

@@ -8,24 +8,24 @@ import {
 } from '@matchmaker/shared'
 import type { UseCase, UseCaseResult } from './types'
 
-export type UpdateIntroductionStatusInput = {
+export type UpdateIntroductionInput = {
 	matchmakerId: string
 	introductionId: string
 	status?: IntroductionStatus
 	notes?: string | null
 }
 
-export type UpdateIntroductionStatusDeps = {
+export type UpdateIntroductionDeps = {
 	introductionRepo: IIntroductionRepository
 }
 
-export class UpdateIntroductionStatus
-	implements UseCase<UpdateIntroductionStatusInput, Introduction>
+export class UpdateIntroduction
+	implements UseCase<UpdateIntroductionInput, Introduction>
 {
-	constructor(private deps: UpdateIntroductionStatusDeps) {}
+	constructor(private deps: UpdateIntroductionDeps) {}
 
 	async execute(
-		input: UpdateIntroductionStatusInput,
+		input: UpdateIntroductionInput,
 	): Promise<UseCaseResult<Introduction>> {
 		let existing = await this.deps.introductionRepo.findById(input.introductionId)
 		if (!existing) {

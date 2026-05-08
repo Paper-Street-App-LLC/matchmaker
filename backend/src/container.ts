@@ -20,7 +20,7 @@ import {
 	ListPeopleForMatchmaker,
 	RecordMatchDecision,
 	SubmitFeedback,
-	UpdateIntroductionStatus,
+	UpdateIntroduction,
 	UpdatePerson,
 	systemClock,
 	uuidGenerator,
@@ -38,7 +38,7 @@ export interface UseCases {
 	createIntroduction: CreateIntroduction
 	getIntroductionById: GetIntroductionById
 	listIntroductionsForMatchmaker: ListIntroductionsForMatchmaker
-	updateIntroductionStatus: UpdateIntroductionStatus
+	updateIntroduction: UpdateIntroduction
 	recordMatchDecision: RecordMatchDecision
 	listMatchDecisions: ListMatchDecisions
 	submitFeedback: SubmitFeedback
@@ -84,7 +84,7 @@ export let buildContainer = (
 		listIntroductionsForMatchmaker: new ListIntroductionsForMatchmaker({
 			introductionRepo,
 		}),
-		updateIntroductionStatus: new UpdateIntroductionStatus({ introductionRepo }),
+		updateIntroduction: new UpdateIntroduction({ introductionRepo }),
 		recordMatchDecision: new RecordMatchDecision({
 			personRepo,
 			matchDecisionRepo,

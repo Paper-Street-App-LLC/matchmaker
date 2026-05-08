@@ -100,7 +100,7 @@ describe('fromCreateIntroductionRequestDTO', () => {
 })
 
 describe('fromUpdateIntroductionRequestDTO', () => {
-	test('maps a validated body + ids into UpdateIntroductionStatusInput', () => {
+	test('maps a validated body + ids into UpdateIntroductionInput', () => {
 		// Arrange
 		let body = { status: 'accepted' as const, notes: 'Both excited' }
 

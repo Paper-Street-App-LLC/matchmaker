@@ -12,7 +12,7 @@ import {
 	CreateIntroduction,
 	GetIntroductionById,
 	ListIntroductionsForMatchmaker,
-	UpdateIntroductionStatus,
+	UpdateIntroduction,
 } from '../../src/usecases'
 import { fixedClock, fixedIds, makeIntroduction, makePerson } from '../usecases/fixtures'
 import {
@@ -47,7 +47,7 @@ let buildDeps = (
 	listIntroductionsForMatchmaker: new ListIntroductionsForMatchmaker({
 		introductionRepo,
 	}),
-	updateIntroductionStatus: new UpdateIntroductionStatus({ introductionRepo }),
+	updateIntroduction: new UpdateIntroduction({ introductionRepo }),
 })
 
 let mountApp = (deps: IntroductionsRouteDeps, userId: string) => {
