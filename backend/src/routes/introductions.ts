@@ -14,7 +14,7 @@ import type {
 	CreateIntroduction,
 	GetIntroductionById,
 	ListIntroductionsForMatchmaker,
-	UpdateIntroductionStatus,
+	UpdateIntroduction,
 } from '../usecases'
 
 type Variables = {
@@ -25,7 +25,7 @@ export type IntroductionsRouteDeps = {
 	createIntroduction: CreateIntroduction
 	getIntroductionById: GetIntroductionById
 	listIntroductionsForMatchmaker: ListIntroductionsForMatchmaker
-	updateIntroductionStatus: UpdateIntroductionStatus
+	updateIntroduction: UpdateIntroduction
 }
 
 export let createIntroductionsRoutes = (
@@ -78,7 +78,7 @@ export let createIntroductionsRoutes = (
 		let introductionId = c.req.param('id')
 		let body = c.req.valid('json')
 		let input = fromUpdateIntroductionRequestDTO(body, userId, introductionId)
-		let result = await deps.updateIntroductionStatus.execute(input)
+		let result = await deps.updateIntroduction.execute(input)
 		if (!result.ok) {
 			let { status, body: errBody } = useCaseErrorToHttp(
 				result.error,

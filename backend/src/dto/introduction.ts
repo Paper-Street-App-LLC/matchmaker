@@ -1,7 +1,7 @@
 import type { Introduction, IntroductionStatus } from '@matchmaker/shared'
 import type {
 	CreateIntroductionInput,
-	UpdateIntroductionStatusInput,
+	UpdateIntroductionInput,
 } from '../usecases/index'
 
 export type IntroductionResponseDTO = {
@@ -55,8 +55,8 @@ export let fromUpdateIntroductionRequestDTO = (
 	body: UpdateIntroductionRequestBody,
 	matchmakerId: string,
 	introductionId: string,
-): UpdateIntroductionStatusInput => {
-	let result: UpdateIntroductionStatusInput = { matchmakerId, introductionId }
+): UpdateIntroductionInput => {
+	let result: UpdateIntroductionInput = { matchmakerId, introductionId }
 	if (body.status !== undefined) result.status = body.status
 	if (body.notes !== undefined) result.notes = body.notes
 	return result
