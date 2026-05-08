@@ -1,0 +1,59 @@
+export interface UserMappingDb {
+	findUserId(provider: string, senderId: string): Promise<string | null>
+	createUser(seed: { provider: string; senderId: string }): Promise<string>
+	insertMapping(provider: string, senderId: string, userId: string): Promise<void>
+}
+
+export class DuplicateMappingError extends Error {
+	constructor(
+		public readonly provider: string,
+		public readonly senderId: string,
+	) {
+		super(`Mapping already exists for provider="${provider}" senderId="${senderId}"`)
+		this.name = 'DuplicateMappingError'
+	}
+}
+
+export interface UserMappingService {
+	resolveOrCreate(provider: string, senderId: string): Promise<string>
+}
+
+let PHONE_PROVIDERS = ['whatsapp', 'sms'] as const
+
+function phoneSiblingsOf(provider: string): string[] {
+	if (!PHONE_PROVIDERS.includes(provider as (typeof PHONE_PROVIDERS)[number])) {
+		return []
+	}
+	return PHONE_PROVIDERS.filter(p => p !== provider)
+}
+
+export function createUserMappingService(options: { db: UserMappingDb }): UserMappingService {
+	let { db } = options
+
+	return {
+		async resolveOrCreate(provider, senderId) {
+			let existing = await db.findUserId(provider, senderId)
+			if (existing) return existing
+
+			for (let sibling of phoneSiblingsOf(provider)) {
+				let viaSibling = await db.findUserId(sibling, senderId)
+				if (viaSibling) {
+					await db.insertMapping(provider, senderId, viaSibling)
+					return viaSibling
+				}
+			}
+
+			let userId = await db.createUser({ provider, senderId })
+			try {
+				await db.insertMapping(provider, senderId, userId)
+			} catch (err) {
+				if (err instanceof DuplicateMappingError) {
+					let winner = await db.findUserId(provider, senderId)
+					if (winner) return winner
+				}
+				throw err
+			}
+			return userId
+		},
+	}
+}
