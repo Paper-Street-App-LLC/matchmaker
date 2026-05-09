@@ -65,6 +65,48 @@ describe('createUserMappingService', () => {
 			expect(mappings.get('sms:+15551234567')).toBe('abc-123')
 		})
 
+		test('returns the existing sibling id when two phone-sibling backfills race', async () => {
+			let mappings = new Map<MappingKey, string>()
+			mappings.set('whatsapp:+15551234567', 'abc-123')
+			let insertCount = 0
+			let releaseFirstInsert: (() => void) | undefined
+			let firstInsertGate = new Promise<void>(resolve => {
+				releaseFirstInsert = resolve
+			})
+
+			let db: UserMappingDb = {
+				async findUserId(provider, senderId) {
+					return mappings.get(`${provider}:${senderId}`) ?? null
+				},
+				async createUser() {
+					throw new Error('createUser should not be called when a sibling exists')
+				},
+				async insertMapping(provider, senderId, userId) {
+					insertCount++
+					let order = insertCount
+					let key: MappingKey = `${provider}:${senderId}`
+					if (order === 1) await firstInsertGate
+					if (mappings.has(key)) {
+						throw new DuplicateMappingError(provider, senderId)
+					}
+					mappings.set(key, userId)
+					if (order === 2) releaseFirstInsert!()
+				},
+			}
+
+			let service = createUserMappingService({ db })
+
+			let [firstId, secondId] = await Promise.all([
+				service.resolveOrCreate('sms', '+15551234567'),
+				service.resolveOrCreate('sms', '+15551234567'),
+			])
+
+			expect(firstId).toBe('abc-123')
+			expect(secondId).toBe('abc-123')
+			expect(mappings.size).toBe(2)
+			expect(mappings.get('sms:+15551234567')).toBe('abc-123')
+		})
+
 		test('returns the winner id when both calls pass findUserId before either inserts', async () => {
 			let mappings = new Map<MappingKey, string>()
 			let created: string[] = []
