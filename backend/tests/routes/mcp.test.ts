@@ -592,32 +592,23 @@ describe('MCP Routes', () => {
 			expect(res.status).toBe(400)
 		})
 
-		test('update_introduction returns not found for non-existent introduction', async () => {
-			let notFoundMockClient = createMockSupabaseClient({
+		// Tool-call tests below seed the in-memory use-case bundle directly
+		// instead of mocking Supabase per query. createMcpRoutes only uses
+		// the SupabaseClient for auth.getUser; the dispatch table runs
+		// against the seeded use cases.
+		let authedSupabase = () =>
+			createMockSupabaseClient({
 				auth: {
 					getUser: mock(async () => ({
 						data: { user: { id: 'user-123' } },
 						error: null,
 					})),
 				},
-				from: mock(() => ({
-					update: mock(() => ({
-						eq: mock(() => ({
-							or: mock(() => ({
-								select: mock(() => ({
-									maybeSingle: mock(async () => ({
-										data: null,
-										error: null,
-									})),
-								})),
-							})),
-						})),
-					})),
-				})),
 			})
 
+		test('update_introduction returns not found for non-existent introduction', async () => {
 			let notFoundApp = new Hono()
-			notFoundApp.route('/mcp', createMcpRoutes(notFoundMockClient, buildTestUseCases().usecases))
+			notFoundApp.route('/mcp', createMcpRoutes(authedSupabase(), buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -646,34 +637,14 @@ describe('MCP Routes', () => {
 		})
 
 		test('get_person reads people across matchmakers (find_matches surfaces them)', async () => {
-			let liam = {
+			let liam = makePerson({
 				id: 'liam-id',
+				matchmakerId: 'other-matchmaker',
 				name: 'Liam',
-				matchmaker_id: 'other-matchmaker',
-				active: true,
-			}
-			let crossMatchmakerClient = createMockSupabaseClient({
-				auth: {
-					getUser: mock(async () => ({
-						data: { user: { id: 'user-123' } },
-						error: null,
-					})),
-				},
-				from: mock(() => ({
-					select: mock(() => ({
-						eq: mock(() => ({
-							eq: mock(() => ({
-								maybeSingle: mock(async () => ({ data: liam, error: null })),
-							})),
-						})),
-					})),
-				})),
 			})
-
+			let { usecases } = buildTestUseCases({ people: [liam] })
 			let crossApp = new Hono()
-			let liamPerson = makePerson({ id: liam.id, matchmakerId: liam.matchmaker_id, name: liam.name })
-			let crossUsecases = buildTestUseCases({ people: [liamPerson] }).usecases
-			crossApp.route('/mcp', createMcpRoutes(crossMatchmakerClient, crossUsecases))
+			crossApp.route('/mcp', createMcpRoutes(authedSupabase(), usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -703,37 +674,10 @@ describe('MCP Routes', () => {
 		})
 
 		test('get_person treats inactive (soft-deleted) people as not found', async () => {
-			let inactiveClient = createMockSupabaseClient({
-				auth: {
-					getUser: mock(async () => ({
-						data: { user: { id: 'user-123' } },
-						error: null,
-					})),
-				},
-				from: mock(() => ({
-					select: mock(() => ({
-						eq: mock((column: string) => {
-							// Second .eq is the active filter — return no row when active=true
-							// is required, simulating an inactive match.
-							if (column === 'active') {
-								return {
-									maybeSingle: mock(async () => ({ data: null, error: null })),
-								}
-							}
-							return {
-								eq: mock(() => ({
-									maybeSingle: mock(async () => ({ data: null, error: null })),
-								})),
-							}
-						}),
-					})),
-				})),
-			})
-
-			let inactiveApp = new Hono()
 			let inactivePerson = makePerson({ id: 'inactive-id', active: false })
-			let inactiveUsecases = buildTestUseCases({ people: [inactivePerson] }).usecases
-			inactiveApp.route('/mcp', createMcpRoutes(inactiveClient, inactiveUsecases))
+			let { usecases } = buildTestUseCases({ people: [inactivePerson] })
+			let inactiveApp = new Hono()
+			inactiveApp.route('/mcp', createMcpRoutes(authedSupabase(), usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -759,26 +703,8 @@ describe('MCP Routes', () => {
 		})
 
 		test('get_person returns clean not-found error when id is unknown', async () => {
-			let notFoundClient = createMockSupabaseClient({
-				auth: {
-					getUser: mock(async () => ({
-						data: { user: { id: 'user-123' } },
-						error: null,
-					})),
-				},
-				from: mock(() => ({
-					select: mock(() => ({
-						eq: mock(() => ({
-							eq: mock(() => ({
-								maybeSingle: mock(async () => ({ data: null, error: null })),
-							})),
-						})),
-					})),
-				})),
-			})
-
 			let notFoundApp = new Hono()
-			notFoundApp.route('/mcp', createMcpRoutes(notFoundClient, buildTestUseCases().usecases))
+			notFoundApp.route('/mcp', createMcpRoutes(authedSupabase(), buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -804,38 +730,10 @@ describe('MCP Routes', () => {
 		})
 
 		test('MCP tool error responses follow specification format', async () => {
-			// Mock Supabase to return an error for a tool call
-			let errorMockSupabaseClient = createMockSupabaseClient({
-				auth: {
-					getUser: mock(async () => ({
-						data: { user: { id: 'user-123' } },
-						error: null,
-					})),
-				},
-				from: mock(() => ({
-					select: mock(() => ({
-						eq: mock(() => ({
-							eq: mock(() => ({
-								maybeSingle: mock(async () => ({
-									data: null,
-									error: { message: 'Database error', code: 'DB001' },
-								})),
-							})),
-						})),
-					})),
-					insert: mock(() => ({
-						select: mock(() => ({
-							single: mock(async () => ({
-								data: null,
-								error: { message: 'Database error', code: 'DB001' },
-							})),
-						})),
-					})),
-				})),
-			})
-
+			// get_person against an empty repo produces the not_found tool error,
+			// which is enough to exercise the spec-shaped error envelope.
 			let errorApp = new Hono()
-			errorApp.route('/mcp', createMcpRoutes(errorMockSupabaseClient, buildTestUseCases().usecases))
+			errorApp.route('/mcp', createMcpRoutes(authedSupabase(), buildTestUseCases().usecases))
 
 			// Now call a tool that will fail (with bad arguments to trigger error)
 			let toolReq = new Request('http://localhost/mcp', {
