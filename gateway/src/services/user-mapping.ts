@@ -19,12 +19,16 @@ export interface UserMappingService {
 	resolveOrCreate(provider: string, senderId: string): Promise<string>
 }
 
-const PHONE_PROVIDERS = ['whatsapp', 'sms'] as const
+export const PHONE_PROVIDERS = ['whatsapp', 'sms'] as const
+
+export type PhoneProvider = (typeof PHONE_PROVIDERS)[number]
+
+export function isPhoneProvider(provider: string): provider is PhoneProvider {
+	return PHONE_PROVIDERS.includes(provider as PhoneProvider)
+}
 
 function phoneSiblingsOf(provider: string): string[] {
-	if (!PHONE_PROVIDERS.includes(provider as (typeof PHONE_PROVIDERS)[number])) {
-		return []
-	}
+	if (!isPhoneProvider(provider)) return []
 	return PHONE_PROVIDERS.filter(p => p !== provider)
 }
 
