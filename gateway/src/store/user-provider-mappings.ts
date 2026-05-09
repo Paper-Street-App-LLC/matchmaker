@@ -11,6 +11,8 @@ export let dbRowSchema = z.object({
 
 export type DbRow = z.infer<typeof dbRowSchema>
 
+const userIdRowSchema = dbRowSchema.pick({ user_id: true })
+
 const POSTGRES_UNIQUE_VIOLATION = '23505'
 
 export function createSupabaseUserMappingDb(
@@ -26,7 +28,8 @@ export function createSupabaseUserMappingDb(
 				.eq('sender_id', senderId)
 				.maybeSingle()
 			if (error) throw new Error(error.message, { cause: error })
-			return (data as { user_id: string } | null)?.user_id ?? null
+			if (data === null) return null
+			return userIdRowSchema.parse(data).user_id
 		},
 
 		async createUser(seed) {
