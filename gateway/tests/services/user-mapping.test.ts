@@ -65,6 +65,51 @@ describe('createUserMappingService', () => {
 			expect(mappings.get('sms:+15551234567')).toBe('abc-123')
 		})
 
+		test('returns the winner id when both calls pass findUserId before either inserts', async () => {
+			let mappings = new Map<MappingKey, string>()
+			let created: string[] = []
+			let nextUserId = 1
+			let insertCount = 0
+			let releaseFirstInsert: (() => void) | undefined
+			let firstInsertGate = new Promise<void>(resolve => {
+				releaseFirstInsert = resolve
+			})
+
+			let db: UserMappingDb = {
+				async findUserId(provider, senderId) {
+					return mappings.get(`${provider}:${senderId}`) ?? null
+				},
+				async createUser() {
+					let id = `user-${nextUserId++}`
+					created.push(id)
+					return id
+				},
+				async insertMapping(provider, senderId, userId) {
+					insertCount++
+					let order = insertCount
+					let key: MappingKey = `${provider}:${senderId}`
+					if (order === 1) await firstInsertGate
+					if (mappings.has(key)) {
+						throw new DuplicateMappingError(provider, senderId)
+					}
+					mappings.set(key, userId)
+					if (order === 2) releaseFirstInsert!()
+				},
+			}
+
+			let service = createUserMappingService({ db })
+
+			let [firstId, secondId] = await Promise.all([
+				service.resolveOrCreate('telegram', '99999'),
+				service.resolveOrCreate('telegram', '99999'),
+			])
+
+			expect(firstId).toBe(secondId)
+			expect(created).toHaveLength(2)
+			expect(mappings.size).toBe(1)
+			expect(mappings.get('telegram:99999')).toBe(firstId)
+		})
+
 		test('does not create duplicates when two first-contact calls race', async () => {
 			let mappings = new Map<MappingKey, string>()
 			let created: string[] = []
