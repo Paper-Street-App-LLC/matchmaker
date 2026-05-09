@@ -2,6 +2,9 @@ import { describe, test, expect, beforeEach, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { createMcpRoutes } from '../../src/routes/mcp'
 import { createMockSupabaseClient } from '../mocks/supabase'
+import { buildTestUseCases } from '../fakes/test-usecases'
+import { makePerson } from '../usecases/fixtures'
+import type { InMemoryPersonRepository } from '../fakes/in-memory-repositories'
 
 /**
  * Helper: send a tools/call JSON-RPC request to the MCP endpoint
@@ -39,11 +42,11 @@ async function callTool(
 
 describe('update_person preferences validation', () => {
 	let app: Hono
-	let lastUpdate: unknown
+	let personRepo: InMemoryPersonRepository
+
+	let PERSON_ID = 'person-1'
 
 	beforeEach(() => {
-		lastUpdate = undefined
-
 		let mockClient = createMockSupabaseClient({
 			auth: {
 				getUser: mock(async () => ({
@@ -51,46 +54,21 @@ describe('update_person preferences validation', () => {
 					error: null,
 				})),
 			},
-			from: mock(() => ({
-				update: mock((data: unknown) => {
-					lastUpdate = data
-					return {
-						eq: mock(() => ({
-							eq: mock(() => ({
-								select: mock(() => ({
-									single: mock(async () => ({
-										data: { id: 'person-1', ...(data as object) },
-										error: null,
-									})),
-								})),
-							})),
-						})),
-					}
-				}),
-				select: mock(() => ({
-					eq: mock(() => ({
-						eq: mock(() => ({
-							single: mock(async () => ({
-								data: { id: 'person-1', name: 'Test' },
-								error: null,
-							})),
-						})),
-					})),
-				})),
-				insert: mock(() => ({
-					select: mock(() => ({
-						single: mock(async () => ({
-							data: { id: 'person-1' },
-							error: null,
-						})),
-					})),
-				})),
-			})),
 		})
 
+		let bundle = buildTestUseCases({
+			people: [makePerson({ id: PERSON_ID, matchmakerId: 'user-123', name: 'Test' })],
+		})
+		personRepo = bundle.personRepo
+
 		app = new Hono()
-		app.route('/mcp', createMcpRoutes(mockClient))
+		app.route('/mcp', createMcpRoutes(mockClient, bundle.usecases))
 	})
+
+	let lastPersistedPreferences = async (): Promise<unknown> => {
+		let person = await personRepo.findById(PERSON_ID)
+		return person?.preferences ?? null
+	}
 
 	test('valid structured preferences pass through and get cleaned', async () => {
 		let prefs = {
@@ -99,13 +77,12 @@ describe('update_person preferences validation', () => {
 		}
 
 		let result = await callTool(app, 'update_person', {
-			id: 'person-1',
+			id: PERSON_ID,
 			preferences: prefs,
 		})
 
 		expect(result.isError).toBeFalsy()
-		let updated = lastUpdate as Record<string, unknown>
-		expect(updated.preferences).toEqual(prefs)
+		expect(await lastPersistedPreferences()).toEqual(prefs)
 	})
 
 	test('extra unknown keys in preferences get stripped', async () => {
@@ -116,13 +93,12 @@ describe('update_person preferences validation', () => {
 		}
 
 		let result = await callTool(app, 'update_person', {
-			id: 'person-1',
+			id: PERSON_ID,
 			preferences: prefs,
 		})
 
 		expect(result.isError).toBeFalsy()
-		let updated = lastUpdate as Record<string, unknown>
-		let parsed = updated.preferences as Record<string, unknown>
+		let parsed = (await lastPersistedPreferences()) as Record<string, unknown>
 		// unknownField and totallyFake should be stripped
 		expect((parsed.aboutMe as Record<string, unknown>).unknownField).toBeUndefined()
 		expect(parsed.totallyFake).toBeUndefined()
@@ -137,13 +113,14 @@ describe('update_person preferences validation', () => {
 		}
 
 		let result = await callTool(app, 'update_person', {
-			id: 'person-1',
+			id: PERSON_ID,
 			preferences: prefs,
 		})
 
 		expect(result.isError).toBe(true)
 		expect(result.content[0]?.text).toMatch(/aboutMe.*build/i)
-		expect(lastUpdate).toBeUndefined()
+		// Persisted preferences remain at their seeded value (null).
+		expect(await lastPersistedPreferences()).toBeNull()
 	})
 
 	test('invalid preferences type (religionRequired boolean) rejects with a tool error', async () => {
@@ -152,36 +129,35 @@ describe('update_person preferences validation', () => {
 		}
 
 		let result = await callTool(app, 'update_person', {
-			id: 'person-1',
+			id: PERSON_ID,
 			preferences: prefs,
 		})
 
 		expect(result.isError).toBe(true)
 		expect(result.content[0]?.text).toMatch(/religionRequired/)
-		expect(lastUpdate).toBeUndefined()
+		expect(await lastPersistedPreferences()).toBeNull()
 	})
 
-	test('null preferences skip validation', async () => {
+	test('null preferences clear preferences', async () => {
 		let result = await callTool(app, 'update_person', {
-			id: 'person-1',
+			id: PERSON_ID,
 			preferences: null,
 			name: 'Updated Name',
 		})
 
 		expect(result.isError).toBeFalsy()
-		let updated = lastUpdate as Record<string, unknown>
-		// null should pass through without being parsed
-		expect(updated.preferences).toBeNull()
+		// null clears preferences explicitly
+		expect(await lastPersistedPreferences()).toBeNull()
 	})
 
-	test('undefined preferences (omitted) skip validation', async () => {
+	test('undefined preferences (omitted) skip validation and leave preferences alone', async () => {
 		let result = await callTool(app, 'update_person', {
-			id: 'person-1',
+			id: PERSON_ID,
 			name: 'Updated Name',
 		})
 
 		expect(result.isError).toBeFalsy()
-		let updated = lastUpdate as Record<string, unknown>
-		expect(updated.preferences).toBeUndefined()
+		// Seeded preferences default is null and stays null when omitted from the patch.
+		expect(await lastPersistedPreferences()).toBeNull()
 	})
 })

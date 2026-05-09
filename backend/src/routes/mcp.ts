@@ -11,15 +11,26 @@ import {
 	GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { SupabaseClient } from '../lib/supabase'
-import { prompts, getPrompt, buildMcpToolList, getToolDefinition } from '@matchmaker/shared'
+import {
+	prompts,
+	getPrompt,
+	buildMcpToolList,
+	getToolDefinition,
+	type ToolName,
+	type Decision,
+	type IntroductionStatus,
+	type PersonUpdate,
+} from '@matchmaker/shared'
 import { parsePreferences } from '../schemas/preferences'
 import {
-	SupabaseIntroductionRepository,
-	SupabaseMatchDecisionRepository,
-	SupabasePersonRepository,
-} from '../adapters/supabase'
-import { matchFinder } from '../services/matchFinder'
-import { CreateIntroduction, systemClock, uuidGenerator } from '../usecases'
+	toFeedbackResponseDTO,
+	toIntroductionResponseDTO,
+	toMatchDecisionResponseDTO,
+	toMatchSuggestionResponseDTO,
+	toPersonResponseDTO,
+} from '../dto'
+import type { UseCases } from '../container'
+import type { UseCaseError, UseCaseResult } from '../usecases'
 
 type Env = {
 	Variables: {
@@ -48,8 +59,151 @@ export let logError = (entry: ErrorLogEntry) => {
 	)
 }
 
-export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
+type ToolErrorOverrides = Partial<Record<UseCaseError['code'], string>>
+
+let unwrap = <T>(result: UseCaseResult<T>, overrides: ToolErrorOverrides = {}): T => {
+	if (result.ok) return result.data
+	throw new Error(overrides[result.error.code] ?? result.error.message)
+}
+
+let notFoundPerson: ToolErrorOverrides = { not_found: 'Person not found' }
+let notFoundIntroduction: ToolErrorOverrides = { not_found: 'Introduction not found' }
+let notFoundFeedback: ToolErrorOverrides = { not_found: 'Feedback not found' }
+
+type ToolHandler = (args: Record<string, unknown>, userId: string) => Promise<unknown>
+
+let buildDispatchTable = (usecases: UseCases): Record<ToolName, ToolHandler> => ({
+	add_person: async (args, userId) => {
+		let result = await usecases.createPerson.execute({
+			matchmakerId: userId,
+			name: args.name as string,
+		})
+		return toPersonResponseDTO(unwrap(result))
+	},
+
+	list_people: async (_args, userId) => {
+		let result = await usecases.listPeopleForMatchmaker.execute({ matchmakerId: userId })
+		return unwrap(result).map(toPersonResponseDTO)
+	},
+
+	get_person: async args => {
+		let result = await usecases.getPersonById.execute({ personId: args.id as string })
+		return toPersonResponseDTO(unwrap(result, notFoundPerson))
+	},
+
+	update_person: async (args, userId) => {
+		let { id, preferences, ...rest } = args as Record<string, unknown>
+		let patch: PersonUpdate = { ...(rest as Partial<PersonUpdate>) }
+		if (preferences === null) {
+			patch.preferences = null
+		} else if (preferences !== undefined) {
+			patch.preferences = parsePreferences(preferences as Record<string, unknown>)
+		}
+		let result = await usecases.updatePerson.execute({
+			matchmakerId: userId,
+			personId: id as string,
+			patch,
+		})
+		return toPersonResponseDTO(unwrap(result, notFoundPerson))
+	},
+
+	delete_person: async (args, userId) => {
+		let result = await usecases.deletePerson.execute({
+			matchmakerId: userId,
+			personId: args.id as string,
+		})
+		return toPersonResponseDTO(unwrap(result, notFoundPerson))
+	},
+
+	create_introduction: async (args, userId) => {
+		let result = await usecases.createIntroduction.execute({
+			matchmakerId: userId,
+			personAId: args.person_a_id as string,
+			personBId: args.person_b_id as string,
+			notes: (args.notes as string | undefined) ?? null,
+		})
+		return toIntroductionResponseDTO(unwrap(result))
+	},
+
+	list_introductions: async (_args, userId) => {
+		let result = await usecases.listIntroductionsForMatchmaker.execute({
+			matchmakerId: userId,
+		})
+		return unwrap(result).map(toIntroductionResponseDTO)
+	},
+
+	update_introduction: async (args, userId) => {
+		let result = await usecases.updateIntroduction.execute({
+			matchmakerId: userId,
+			introductionId: args.id as string,
+			status: args.status as IntroductionStatus | undefined,
+			notes: args.notes as string | undefined,
+		})
+		return toIntroductionResponseDTO(unwrap(result, notFoundIntroduction))
+	},
+
+	get_introduction: async (args, userId) => {
+		let result = await usecases.getIntroductionById.execute({
+			matchmakerId: userId,
+			introductionId: args.id as string,
+		})
+		return toIntroductionResponseDTO(unwrap(result, notFoundIntroduction))
+	},
+
+	find_matches: async (args, userId) => {
+		let result = await usecases.findMatchesForPerson.execute({
+			matchmakerId: userId,
+			personId: args.person_id as string,
+		})
+		return unwrap(result, notFoundPerson).map(toMatchSuggestionResponseDTO)
+	},
+
+	record_decision: async (args, userId) => {
+		let result = await usecases.recordMatchDecision.execute({
+			matchmakerId: userId,
+			personId: args.person_id as string,
+			candidateId: args.candidate_id as string,
+			decision: args.decision as Decision,
+			declineReason: (args.decline_reason as string | undefined) ?? null,
+		})
+		return toMatchDecisionResponseDTO(unwrap(result, notFoundPerson))
+	},
+
+	list_decisions: async (args, userId) => {
+		let result = await usecases.listMatchDecisions.execute({
+			matchmakerId: userId,
+			personId: args.person_id as string,
+		})
+		return unwrap(result, notFoundPerson).map(toMatchDecisionResponseDTO)
+	},
+
+	submit_feedback: async args => {
+		let result = await usecases.submitFeedback.execute({
+			introductionId: args.introduction_id as string,
+			fromPersonId: args.from_person_id as string,
+			content: args.content as string,
+			sentiment: args.sentiment as string | undefined,
+		})
+		return toFeedbackResponseDTO(unwrap(result))
+	},
+
+	list_feedback: async args => {
+		let result = await usecases.listFeedback.execute({
+			introductionId: args.introduction_id as string,
+		})
+		return unwrap(result).map(toFeedbackResponseDTO)
+	},
+
+	get_feedback: async args => {
+		let result = await usecases.getFeedback.execute({ feedbackId: args.id as string })
+		return toFeedbackResponseDTO(unwrap(result, notFoundFeedback))
+	},
+})
+
+export let createMcpRoutes = (supabaseClient: SupabaseClient, usecases: UseCases) => {
 	let app = new Hono<Env>()
+
+	let dispatchTable = buildDispatchTable(usecases)
 
 	// CORS middleware specifically for claude.ai
 	app.use(
@@ -203,385 +357,29 @@ export let createMcpRoutes = (supabaseClient: SupabaseClient) => {
 			return getPrompt(name)
 		})
 
-		// Handle tool calls by making direct database calls
+		// Handle tool calls by dispatching to the corresponding use case.
 		server.setRequestHandler(CallToolRequestSchema, async request => {
 			let { name, arguments: rawArgs } = request.params
 
 			try {
 				let toolDef = getToolDefinition(name)
-				let args: Record<string, unknown> | undefined = rawArgs
-				if (toolDef) {
-					let parsed = toolDef.inputSchema.safeParse(rawArgs ?? {})
-					if (!parsed.success) {
-						let detail = parsed.error.issues
-							.map(i => `${i.path.join('.') || '<root>'}: ${i.message}`)
-							.join('; ')
-						throw new Error(`Invalid arguments for ${name}: ${detail}`)
-					}
-					args = parsed.data
+				if (!toolDef) throw new Error(`Unknown tool: ${name}`)
+
+				let parsed = toolDef.inputSchema.safeParse(rawArgs ?? {})
+				if (!parsed.success) {
+					let detail = parsed.error.issues
+						.map(i => `${i.path.join('.') || '<root>'}: ${i.message}`)
+						.join('; ')
+					throw new Error(`Invalid arguments for ${name}: ${detail}`)
 				}
 
-				if (name === 'add_person') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('name' in args) ||
-						typeof args.name !== 'string'
-					) {
-						throw new Error('Invalid arguments: name is required and must be a string')
-					}
-					let { data, error } = await supabaseClient
-						.from('people')
-						.insert({ name: args.name, matchmaker_id: userId })
-						.select()
-						.single()
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
+				let handler = dispatchTable[name as ToolName]
+				if (!handler) throw new Error(`Unknown tool: ${name}`)
+
+				let data = await handler(parsed.data as Record<string, unknown>, userId)
+				return {
+					content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
 				}
-
-				if (name === 'list_people') {
-					let { data, error } = await supabaseClient
-						.from('people')
-						.select('*')
-						.eq('matchmaker_id', userId)
-						.eq('active', true)
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'get_person') {
-					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
-						throw new Error('Invalid arguments: id is required and must be a string')
-					}
-					// Mirrors find_matches' cross-matchmaker pool (active people only):
-					// any active candidate that can surface as a match must also be
-					// inspectable by id.
-					let { data, error } = await supabaseClient
-						.from('people')
-						.select('*')
-						.eq('id', args.id)
-						.eq('active', true)
-						.maybeSingle()
-					if (error) throw new Error(error.message)
-					if (!data) throw new Error('Person not found')
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'update_person') {
-					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
-						throw new Error('Invalid arguments: id is required and must be a string')
-					}
-					let { id, ...updates } = args as Record<string, unknown>
-					if (updates.preferences != null) {
-						updates.preferences = parsePreferences(updates.preferences as Record<string, unknown>)
-					}
-					let { data, error } = await supabaseClient
-						.from('people')
-						.update(updates)
-						.eq('id', id)
-						.eq('matchmaker_id', userId)
-						.select()
-						.single()
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'create_introduction') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('person_a_id' in args) ||
-						typeof args.person_a_id !== 'string' ||
-						!('person_b_id' in args) ||
-						typeof args.person_b_id !== 'string'
-					) {
-						throw new Error(
-							'Invalid arguments: person_a_id and person_b_id are required and must be strings'
-						)
-					}
-					let { person_a_id, person_b_id, notes } = args as {
-						person_a_id: string
-						person_b_id: string
-						notes?: string
-					}
-
-					let personRepo = new SupabasePersonRepository(supabaseClient)
-					let introductionRepo = new SupabaseIntroductionRepository(supabaseClient)
-					let usecase = new CreateIntroduction({
-						personRepo,
-						introductionRepo,
-						clock: systemClock,
-						ids: uuidGenerator,
-					})
-					let result = await usecase.execute({
-						matchmakerId: userId,
-						personAId: person_a_id,
-						personBId: person_b_id,
-						notes: notes ?? null,
-					})
-					if (!result.ok) throw new Error(result.error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
-					}
-				}
-
-				if (name === 'list_introductions') {
-					let { data, error } = await supabaseClient
-						.from('introductions')
-						.select('*')
-						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'update_introduction') {
-					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
-						throw new Error('Invalid arguments: id is required and must be a string')
-					}
-					let { id, ...updates } = args as Record<string, unknown>
-					let { data, error } = await supabaseClient
-						.from('introductions')
-						.update(updates)
-						.eq('id', id)
-						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
-						.select()
-						.maybeSingle()
-					if (error) throw new Error(error.message)
-					if (!data) throw new Error('Introduction not found')
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'find_matches') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('person_id' in args) ||
-						typeof args.person_id !== 'string'
-					) {
-						throw new Error('Invalid arguments: person_id is required and must be a string')
-					}
-					// Verify person belongs to this matchmaker
-					let { data: person, error: personError } = await supabaseClient
-						.from('people')
-						.select('id')
-						.eq('id', args.person_id)
-						.eq('matchmaker_id', userId)
-						.maybeSingle()
-					if (personError) throw new Error(personError.message)
-					if (!person) throw new Error('Person not found')
-
-					let personRepo = new SupabasePersonRepository(supabaseClient)
-					let matchDecisionRepo = new SupabaseMatchDecisionRepository(supabaseClient)
-					let matches = await matchFinder(
-						args.person_id,
-						userId,
-						personRepo,
-						matchDecisionRepo,
-					)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(matches, null, 2) }],
-					}
-				}
-
-				if (name === 'record_decision') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('person_id' in args) ||
-						typeof args.person_id !== 'string' ||
-						!('candidate_id' in args) ||
-						typeof args.candidate_id !== 'string' ||
-						!('decision' in args) ||
-						typeof args.decision !== 'string'
-					) {
-						throw new Error(
-							'Invalid arguments: person_id, candidate_id, and decision are required'
-						)
-					}
-					let { person_id, candidate_id, decision, decline_reason } = args as {
-						person_id: string
-						candidate_id: string
-						decision: string
-						decline_reason?: string
-					}
-					if (decision !== 'accepted' && decision !== 'declined') {
-						throw new Error("decision must be 'accepted' or 'declined'")
-					}
-					// Verify person belongs to this matchmaker
-					let { data: person, error: personError } = await supabaseClient
-						.from('people')
-						.select('id')
-						.eq('id', person_id)
-						.eq('matchmaker_id', userId)
-						.maybeSingle()
-					if (personError) throw new Error(personError.message)
-					if (!person) throw new Error('Person not found')
-
-					let { data, error } = await supabaseClient
-						.from('match_decisions')
-						.insert({
-							matchmaker_id: userId,
-							person_id,
-							candidate_id,
-							decision,
-							decline_reason: decline_reason || null,
-						})
-						.select()
-						.single()
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'list_decisions') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('person_id' in args) ||
-						typeof args.person_id !== 'string'
-					) {
-						throw new Error('Invalid arguments: person_id is required and must be a string')
-					}
-					// Verify person belongs to this matchmaker
-					let { data: person, error: personError } = await supabaseClient
-						.from('people')
-						.select('id')
-						.eq('id', args.person_id)
-						.eq('matchmaker_id', userId)
-						.maybeSingle()
-					if (personError) throw new Error(personError.message)
-					if (!person) throw new Error('Person not found')
-
-					let { data, error } = await supabaseClient
-						.from('match_decisions')
-						.select('*')
-						.eq('person_id', args.person_id)
-						.eq('matchmaker_id', userId)
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'delete_person') {
-					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
-						throw new Error('Invalid arguments: id is required and must be a string')
-					}
-					let { data, error } = await supabaseClient
-						.from('people')
-						.update({ active: false })
-						.eq('id', args.id)
-						.eq('matchmaker_id', userId)
-						.select()
-						.single()
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'get_introduction') {
-					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
-						throw new Error('Invalid arguments: id is required and must be a string')
-					}
-					let { data, error } = await supabaseClient
-						.from('introductions')
-						.select('*')
-						.eq('id', args.id)
-						.or(`matchmaker_a_id.eq.${userId},matchmaker_b_id.eq.${userId}`)
-						.maybeSingle()
-					if (error) throw new Error(error.message)
-					if (!data) throw new Error('Introduction not found')
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'submit_feedback') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('introduction_id' in args) ||
-						typeof args.introduction_id !== 'string' ||
-						!('from_person_id' in args) ||
-						typeof args.from_person_id !== 'string' ||
-						!('content' in args) ||
-						typeof args.content !== 'string'
-					) {
-						throw new Error(
-							'Invalid arguments: introduction_id, from_person_id, and content are required and must be strings'
-						)
-					}
-					let { introduction_id, from_person_id, content, sentiment } = args as {
-						introduction_id: string
-						from_person_id: string
-						content: string
-						sentiment?: string
-					}
-					let { data, error } = await supabaseClient
-						.from('feedback')
-						.insert({
-							introduction_id,
-							from_person_id,
-							content,
-							sentiment: sentiment || null,
-						})
-						.select()
-						.single()
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'list_feedback') {
-					if (
-						!args ||
-						typeof args !== 'object' ||
-						!('introduction_id' in args) ||
-						typeof args.introduction_id !== 'string'
-					) {
-						throw new Error('Invalid arguments: introduction_id is required and must be a string')
-					}
-					let { data, error } = await supabaseClient
-						.from('feedback')
-						.select('*')
-						.eq('introduction_id', args.introduction_id)
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				if (name === 'get_feedback') {
-					if (!args || typeof args !== 'object' || !('id' in args) || typeof args.id !== 'string') {
-						throw new Error('Invalid arguments: id is required and must be a string')
-					}
-					let { data, error } = await supabaseClient
-						.from('feedback')
-						.select('*')
-						.eq('id', args.id)
-						.single()
-					if (error) throw new Error(error.message)
-					return {
-						content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-					}
-				}
-
-				throw new Error(`Unknown tool: ${name}`)
 			} catch (error) {
 				let errorMessage = 'Unknown error'
 				if (error instanceof Error) {

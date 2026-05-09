@@ -69,7 +69,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 	app.route('/api/match-decisions', createMatchDecisionsRoutes(usecases))
 
 	// MCP Streamable HTTP endpoint (protected via route-level auth)
-	app.route('/mcp', createMcpRoutes(supabaseClient))
+	app.route('/mcp', createMcpRoutes(supabaseClient, usecases))
 }
 
 // Export for Bun server
