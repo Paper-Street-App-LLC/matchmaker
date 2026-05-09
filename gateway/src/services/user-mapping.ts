@@ -38,7 +38,15 @@ export function createUserMappingService(options: { db: UserMappingDb }): UserMa
 			for (let sibling of phoneSiblingsOf(provider)) {
 				let viaSibling = await db.findUserId(sibling, senderId)
 				if (viaSibling) {
-					await db.insertMapping(provider, senderId, viaSibling)
+					try {
+						await db.insertMapping(provider, senderId, viaSibling)
+					} catch (err) {
+						if (err instanceof DuplicateMappingError) {
+							let winner = await db.findUserId(provider, senderId)
+							if (winner) return winner
+						}
+						throw err
+					}
 					return viaSibling
 				}
 			}
