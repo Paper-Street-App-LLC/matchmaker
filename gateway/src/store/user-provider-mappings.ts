@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { DuplicateMappingError, type UserMappingDb } from '../services/user-mapping'
 
-export let dbRowSchema = z.object({
+export const dbRowSchema = z.object({
 	provider: z.string(),
 	sender_id: z.string(),
 	user_id: z.string(),
