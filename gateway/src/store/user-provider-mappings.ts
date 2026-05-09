@@ -29,7 +29,7 @@ function buildAuthCredentials(
 	}
 }
 
-export const dbRowSchema = z.object({
+export let dbRowSchema = z.object({
 	provider: z.string(),
 	sender_id: z.string(),
 	user_id: z.string(),
@@ -38,7 +38,7 @@ export const dbRowSchema = z.object({
 
 export type DbRow = z.infer<typeof dbRowSchema>
 
-const userIdRowSchema = dbRowSchema.pick({ user_id: true })
+let userIdRowSchema = dbRowSchema.pick({ user_id: true })
 
 const POSTGRES_UNIQUE_VIOLATION = '23505'
 

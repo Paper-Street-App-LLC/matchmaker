@@ -19,7 +19,7 @@ export interface UserMappingService {
 	resolveOrCreate(provider: string, senderId: string): Promise<string>
 }
 
-export const PHONE_PROVIDERS = ['whatsapp', 'sms'] as const
+export let PHONE_PROVIDERS = ['whatsapp', 'sms'] as const
 
 export type PhoneProvider = (typeof PHONE_PROVIDERS)[number]
 
