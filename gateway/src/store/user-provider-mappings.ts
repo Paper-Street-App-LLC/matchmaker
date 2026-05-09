@@ -1,6 +1,33 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { DuplicateMappingError, type UserMappingDb } from '../services/user-mapping'
+import {
+	DuplicateMappingError,
+	isPhoneProvider,
+	type UserMappingDb,
+} from '../services/user-mapping'
+
+const SYNTHETIC_EMAIL_DOMAIN = 'gateway.matchmaker.invalid'
+
+type AuthAdminCreateUserArgs = {
+	email?: string
+	email_confirm?: boolean
+	phone?: string
+	phone_confirm?: boolean
+	user_metadata?: Record<string, unknown>
+}
+
+function buildAuthCredentials(
+	provider: string,
+	senderId: string,
+): Pick<AuthAdminCreateUserArgs, 'email' | 'email_confirm' | 'phone' | 'phone_confirm'> {
+	if (isPhoneProvider(provider)) {
+		return { phone: senderId, phone_confirm: true }
+	}
+	return {
+		email: `${provider}-${senderId}@${SYNTHETIC_EMAIL_DOMAIN}`,
+		email_confirm: true,
+	}
+}
 
 export const dbRowSchema = z.object({
 	provider: z.string(),
@@ -34,6 +61,7 @@ export function createSupabaseUserMappingDb(
 
 		async createUser(seed) {
 			let { data, error } = await client.auth.admin.createUser({
+				...buildAuthCredentials(seed.provider, seed.senderId),
 				user_metadata: { provider: seed.provider, sender_id: seed.senderId },
 			})
 			if (error) throw new Error(error.message, { cause: error })

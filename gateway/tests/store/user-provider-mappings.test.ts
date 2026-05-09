@@ -238,6 +238,75 @@ describe('createSupabaseUserMappingDb', () => {
 			})
 		})
 
+		test('passes a phone credential with phone_confirm:true for whatsapp', async () => {
+			let createUserMock = mock(async (_args: AuthAdminCreateUserArg) => ({
+				data: { user: { id: 'new-user-id' } },
+				error: null as { message: string } | null,
+			}))
+			client = createMockClient({
+				auth: {
+					admin: {
+						createUser: createUserMock,
+						deleteUser: async () => ({ data: {}, error: null }),
+					},
+				},
+			})
+			let db = createSupabaseUserMappingDb(asSupabase(client))
+
+			await db.createUser({ provider: 'whatsapp', senderId: '+15551234567' })
+
+			let arg = createUserMock.mock.calls[0]?.[0] as AuthAdminCreateUserArg
+			expect(arg.phone).toBe('+15551234567')
+			expect(arg.phone_confirm).toBe(true)
+			expect(arg.email).toBeUndefined()
+		})
+
+		test('passes a phone credential with phone_confirm:true for sms', async () => {
+			let createUserMock = mock(async (_args: AuthAdminCreateUserArg) => ({
+				data: { user: { id: 'new-user-id' } },
+				error: null as { message: string } | null,
+			}))
+			client = createMockClient({
+				auth: {
+					admin: {
+						createUser: createUserMock,
+						deleteUser: async () => ({ data: {}, error: null }),
+					},
+				},
+			})
+			let db = createSupabaseUserMappingDb(asSupabase(client))
+
+			await db.createUser({ provider: 'sms', senderId: '+15551234567' })
+
+			let arg = createUserMock.mock.calls[0]?.[0] as AuthAdminCreateUserArg
+			expect(arg.phone).toBe('+15551234567')
+			expect(arg.phone_confirm).toBe(true)
+			expect(arg.email).toBeUndefined()
+		})
+
+		test('passes a synthesized invalid-TLD email with email_confirm:true for non-phone providers', async () => {
+			let createUserMock = mock(async (_args: AuthAdminCreateUserArg) => ({
+				data: { user: { id: 'new-user-id' } },
+				error: null as { message: string } | null,
+			}))
+			client = createMockClient({
+				auth: {
+					admin: {
+						createUser: createUserMock,
+						deleteUser: async () => ({ data: {}, error: null }),
+					},
+				},
+			})
+			let db = createSupabaseUserMappingDb(asSupabase(client))
+
+			await db.createUser({ provider: 'telegram', senderId: '12345' })
+
+			let arg = createUserMock.mock.calls[0]?.[0] as AuthAdminCreateUserArg
+			expect(arg.email).toBe('telegram-12345@gateway.matchmaker.invalid')
+			expect(arg.email_confirm).toBe(true)
+			expect(arg.phone).toBeUndefined()
+		})
+
 		test('throws preserving the Supabase auth error as cause', async () => {
 			let originalError = { message: 'auth admin down' }
 			client = createMockClient({
