@@ -159,6 +159,28 @@ describe('createSupabaseUserMappingDb', () => {
 			expect(result).toBeNull()
 		})
 
+		test('throws when Supabase returns a row missing user_id', async () => {
+			client = createMockClient({
+				from: () => ({
+					insert: () => Promise.resolve({ error: null }),
+					select: () => ({
+						eq: () => ({
+							eq: () => ({
+								maybeSingle: () =>
+									Promise.resolve({
+										data: { wrong_field: 'oops' } as unknown as { user_id: string },
+										error: null,
+									}),
+							}),
+						}),
+					}),
+				}),
+			})
+			let db = createSupabaseUserMappingDb(asSupabase(client))
+
+			await expect(db.findUserId('telegram', '12345')).rejects.toThrow()
+		})
+
 		test('throws preserving the Supabase error as cause', async () => {
 			let originalError = { message: 'lookup failed', code: '42501' }
 			client = createMockClient({
