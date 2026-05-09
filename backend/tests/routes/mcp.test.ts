@@ -2,6 +2,8 @@ import { describe, test, expect, beforeEach, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { createMcpRoutes } from '../../src/routes/mcp'
 import { createMockSupabaseClient } from '../mocks/supabase'
+import { buildTestUseCases } from '../fakes/test-usecases'
+import { makeIntroduction, makePerson } from '../usecases/fixtures'
 
 type JsonRpcResponse = {
 	result?: {
@@ -35,8 +37,9 @@ describe('MCP Routes', () => {
 			},
 		})
 
+		let { usecases } = buildTestUseCases()
 		app = new Hono()
-		app.route('/mcp', createMcpRoutes(mockSupabaseClient))
+		app.route('/mcp', createMcpRoutes(mockSupabaseClient, usecases))
 	})
 
 	describe('POST /mcp', () => {
@@ -77,7 +80,7 @@ describe('MCP Routes', () => {
 			})
 
 			app = new Hono()
-			app.route('/mcp', createMcpRoutes(mockSupabaseClient))
+			app.route('/mcp', createMcpRoutes(mockSupabaseClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -301,7 +304,7 @@ describe('MCP Routes', () => {
 			})
 
 			app = new Hono()
-			app.route('/mcp', createMcpRoutes(mockSupabaseClient))
+			app.route('/mcp', createMcpRoutes(mockSupabaseClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -343,7 +346,7 @@ describe('MCP Routes', () => {
 			})
 
 			app = new Hono()
-			app.route('/mcp', createMcpRoutes(mockSupabaseClient))
+			app.route('/mcp', createMcpRoutes(mockSupabaseClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -385,7 +388,7 @@ describe('MCP Routes', () => {
 			})
 
 			app = new Hono()
-			app.route('/mcp', createMcpRoutes(mockSupabaseClient))
+			app.route('/mcp', createMcpRoutes(mockSupabaseClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -614,7 +617,7 @@ describe('MCP Routes', () => {
 			})
 
 			let notFoundApp = new Hono()
-			notFoundApp.route('/mcp', createMcpRoutes(notFoundMockClient))
+			notFoundApp.route('/mcp', createMcpRoutes(notFoundMockClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -668,7 +671,9 @@ describe('MCP Routes', () => {
 			})
 
 			let crossApp = new Hono()
-			crossApp.route('/mcp', createMcpRoutes(crossMatchmakerClient))
+			let liamPerson = makePerson({ id: liam.id, matchmakerId: liam.matchmaker_id, name: liam.name })
+			let crossUsecases = buildTestUseCases({ people: [liamPerson] }).usecases
+			crossApp.route('/mcp', createMcpRoutes(crossMatchmakerClient, crossUsecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -726,7 +731,9 @@ describe('MCP Routes', () => {
 			})
 
 			let inactiveApp = new Hono()
-			inactiveApp.route('/mcp', createMcpRoutes(inactiveClient))
+			let inactivePerson = makePerson({ id: 'inactive-id', active: false })
+			let inactiveUsecases = buildTestUseCases({ people: [inactivePerson] }).usecases
+			inactiveApp.route('/mcp', createMcpRoutes(inactiveClient, inactiveUsecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -771,7 +778,7 @@ describe('MCP Routes', () => {
 			})
 
 			let notFoundApp = new Hono()
-			notFoundApp.route('/mcp', createMcpRoutes(notFoundClient))
+			notFoundApp.route('/mcp', createMcpRoutes(notFoundClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
@@ -828,7 +835,7 @@ describe('MCP Routes', () => {
 			})
 
 			let errorApp = new Hono()
-			errorApp.route('/mcp', createMcpRoutes(errorMockSupabaseClient))
+			errorApp.route('/mcp', createMcpRoutes(errorMockSupabaseClient, buildTestUseCases().usecases))
 
 			// Now call a tool that will fail (with bad arguments to trigger error)
 			let toolReq = new Request('http://localhost/mcp', {
@@ -872,7 +879,7 @@ describe('MCP Routes', () => {
 			})
 
 			let authErrorApp = new Hono()
-			authErrorApp.route('/mcp', createMcpRoutes(authErrorMockSupabaseClient))
+			authErrorApp.route('/mcp', createMcpRoutes(authErrorMockSupabaseClient, buildTestUseCases().usecases))
 
 			let req = new Request('http://localhost/mcp', {
 				method: 'POST',
