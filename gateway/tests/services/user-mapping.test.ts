@@ -21,6 +21,7 @@ function makeInMemoryDb(): { db: UserMappingDb; created: string[]; mappings: Map
 			created.push(id)
 			return id
 		},
+		async deleteUser() {},
 		async insertMapping(provider, senderId, userId) {
 			mappings.set(`${provider}:${senderId}`, userId)
 		},
@@ -81,6 +82,7 @@ describe('createUserMappingService', () => {
 				async createUser() {
 					throw new Error('createUser should not be called when a sibling exists')
 				},
+				async deleteUser() {},
 				async insertMapping(provider, senderId, userId) {
 					insertCount++
 					let order = insertCount
@@ -107,9 +109,10 @@ describe('createUserMappingService', () => {
 			expect(mappings.get('sms:+15551234567')).toBe('abc-123')
 		})
 
-		test('returns the winner id when both calls pass findUserId before either inserts', async () => {
+		test('returns the winner id and deletes the orphaned auth user on lost createUser race', async () => {
 			let mappings = new Map<MappingKey, string>()
 			let created: string[] = []
+			let deleted: string[] = []
 			let nextUserId = 1
 			let insertCount = 0
 			let releaseFirstInsert: (() => void) | undefined
@@ -125,6 +128,9 @@ describe('createUserMappingService', () => {
 					let id = `user-${nextUserId++}`
 					created.push(id)
 					return id
+				},
+				async deleteUser(userId) {
+					deleted.push(userId)
 				},
 				async insertMapping(provider, senderId, userId) {
 					insertCount++
@@ -150,6 +156,8 @@ describe('createUserMappingService', () => {
 			expect(created).toHaveLength(2)
 			expect(mappings.size).toBe(1)
 			expect(mappings.get('telegram:99999')).toBe(firstId)
+			let loser = created.find(id => id !== firstId)
+			expect(deleted).toEqual([loser!])
 		})
 
 		test('does not create duplicates when two first-contact calls race', async () => {
@@ -173,6 +181,7 @@ describe('createUserMappingService', () => {
 					created.push(id)
 					return id
 				},
+				async deleteUser() {},
 				async insertMapping(provider, senderId, userId) {
 					let key: MappingKey = `${provider}:${senderId}`
 					if (mappings.has(key)) {

@@ -1,6 +1,7 @@
 export interface UserMappingDb {
 	findUserId(provider: string, senderId: string): Promise<string | null>
 	createUser(seed: { provider: string; senderId: string }): Promise<string>
+	deleteUser(userId: string): Promise<void>
 	insertMapping(provider: string, senderId: string, userId: string): Promise<void>
 }
 
@@ -57,7 +58,12 @@ export function createUserMappingService(options: { db: UserMappingDb }): UserMa
 			} catch (err) {
 				if (err instanceof DuplicateMappingError) {
 					let winner = await db.findUserId(provider, senderId)
-					if (winner) return winner
+					if (winner) {
+						try {
+							await db.deleteUser(userId)
+						} catch {}
+						return winner
+					}
 				}
 				throw err
 			}
