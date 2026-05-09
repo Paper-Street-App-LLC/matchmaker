@@ -1,4 +1,4 @@
-providers = ["node", "bun"]
+providers = ["node"]
 
 [phases.install]
 cmds = ["bun install --production --frozen-lockfile"]
