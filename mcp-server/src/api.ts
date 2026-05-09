@@ -26,8 +26,8 @@ let updatePersonInputSchema = z.object({
 	age: z.number().int().positive().optional(),
 	location: z.string().optional(),
 	gender: z.string().optional(),
-	preferences: z.record(z.unknown()).optional(),
-	personality: z.record(z.unknown()).optional(),
+	preferences: z.record(z.string(), z.unknown()).optional(),
+	personality: z.record(z.string(), z.unknown()).optional(),
 	notes: z.string().optional(),
 })
 
@@ -214,7 +214,7 @@ export class ApiClient implements IApiClient {
 			return schema.parse(data)
 		} catch (e) {
 			if (e instanceof z.ZodError) {
-				throw new Error(`API response validation failed: ${e.errors[0]?.message}`)
+				throw new Error(`API response validation failed: ${e.issues[0]?.message}`)
 			}
 			throw e
 		}
