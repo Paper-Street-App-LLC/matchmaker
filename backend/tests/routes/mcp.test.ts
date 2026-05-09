@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { createMcpRoutes } from '../../src/routes/mcp'
 import { createMockSupabaseClient } from '../mocks/supabase'
 import { buildTestUseCases } from '../fakes/test-usecases'
-import { makeIntroduction, makePerson } from '../usecases/fixtures'
+import { makePerson } from '../usecases/fixtures'
 
 type JsonRpcResponse = {
 	result?: {

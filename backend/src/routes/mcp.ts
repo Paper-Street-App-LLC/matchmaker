@@ -93,11 +93,15 @@ let buildDispatchTable = (usecases: UseCases): Record<ToolName, ToolHandler> => 
 
 	update_person: async (args, userId) => {
 		let { id, preferences, ...rest } = args as Record<string, unknown>
-		let patch: PersonUpdate = { ...(rest as Partial<PersonUpdate>) }
+		let normalizedPreferences: PersonUpdate['preferences'] | undefined
 		if (preferences === null) {
-			patch.preferences = null
+			normalizedPreferences = null
 		} else if (preferences !== undefined) {
-			patch.preferences = parsePreferences(preferences as Record<string, unknown>)
+			normalizedPreferences = parsePreferences(preferences as Record<string, unknown>)
+		}
+		let patch: PersonUpdate = {
+			...(rest as Partial<PersonUpdate>),
+			...(normalizedPreferences !== undefined && { preferences: normalizedPreferences }),
 		}
 		let result = await usecases.updatePerson.execute({
 			matchmakerId: userId,
