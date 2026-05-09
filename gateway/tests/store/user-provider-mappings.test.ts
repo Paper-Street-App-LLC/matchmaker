@@ -37,6 +37,10 @@ type AuthAdmin = {
 		data: { user: { id: string } | null }
 		error: { message: string } | null
 	}>
+	deleteUser: (userId: string) => Promise<{
+		data: Record<string, unknown> | null
+		error: { message: string } | null
+	}>
 }
 
 type MockClient = {
@@ -70,6 +74,7 @@ function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 					data: { user: { id: 'auth-user-1' } },
 					error: null,
 				}),
+				deleteUser: async () => ({ data: {}, error: null }),
 			},
 		},
 	}
@@ -181,7 +186,12 @@ describe('createSupabaseUserMappingDb', () => {
 				error: null as { message: string } | null,
 			}))
 			client = createMockClient({
-				auth: { admin: { createUser: createUserMock } },
+				auth: {
+					admin: {
+						createUser: createUserMock,
+						deleteUser: async () => ({ data: {}, error: null }),
+					},
+				},
 			})
 			let db = createSupabaseUserMappingDb(asSupabase(client))
 
@@ -204,6 +214,7 @@ describe('createSupabaseUserMappingDb', () => {
 							data: { user: null },
 							error: { message: 'auth admin down' },
 						}),
+						deleteUser: async () => ({ data: {}, error: null }),
 					},
 				},
 			})
@@ -212,6 +223,52 @@ describe('createSupabaseUserMappingDb', () => {
 			await expect(
 				db.createUser({ provider: 'telegram', senderId: '12345' }),
 			).rejects.toThrow('auth admin down')
+		})
+	})
+
+	describe('deleteUser', () => {
+		test('calls auth.admin.deleteUser with the given user id', async () => {
+			let deleteUserMock = mock(async (_userId: string) => ({
+				data: {} as Record<string, unknown> | null,
+				error: null as { message: string } | null,
+			}))
+			client = createMockClient({
+				auth: {
+					admin: {
+						createUser: async () => ({
+							data: { user: { id: 'auth-user-1' } },
+							error: null,
+						}),
+						deleteUser: deleteUserMock,
+					},
+				},
+			})
+			let db = createSupabaseUserMappingDb(asSupabase(client))
+
+			await db.deleteUser('abc-123')
+
+			expect(deleteUserMock).toHaveBeenCalledTimes(1)
+			expect(deleteUserMock.mock.calls[0]?.[0]).toBe('abc-123')
+		})
+
+		test('throws when Supabase auth returns an error', async () => {
+			client = createMockClient({
+				auth: {
+					admin: {
+						createUser: async () => ({
+							data: { user: { id: 'auth-user-1' } },
+							error: null,
+						}),
+						deleteUser: async () => ({
+							data: null,
+							error: { message: 'delete failed' },
+						}),
+					},
+				},
+			})
+			let db = createSupabaseUserMappingDb(asSupabase(client))
+
+			await expect(db.deleteUser('abc-123')).rejects.toThrow('delete failed')
 		})
 	})
 

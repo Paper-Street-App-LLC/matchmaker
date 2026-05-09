@@ -39,6 +39,11 @@ export function createSupabaseUserMappingDb(
 			return user.id
 		},
 
+		async deleteUser(userId) {
+			let { error } = await client.auth.admin.deleteUser(userId)
+			if (error) throw new Error(error.message)
+		},
+
 		async insertMapping(provider, senderId, userId) {
 			let { error } = await client.from(table).insert({
 				provider,
