@@ -159,7 +159,8 @@ describe('createSupabaseUserMappingDb', () => {
 			expect(result).toBeNull()
 		})
 
-		test('throws when Supabase returns an error', async () => {
+		test('throws preserving the Supabase error as cause', async () => {
+			let originalError = { message: 'lookup failed', code: '42501' }
 			client = createMockClient({
 				from: () => ({
 					insert: () => Promise.resolve({ error: null }),
@@ -167,7 +168,7 @@ describe('createSupabaseUserMappingDb', () => {
 						eq: () => ({
 							eq: () => ({
 								maybeSingle: () =>
-									Promise.resolve({ data: null, error: { message: 'lookup failed' } }),
+									Promise.resolve({ data: null, error: originalError }),
 							}),
 						}),
 					}),
@@ -175,7 +176,16 @@ describe('createSupabaseUserMappingDb', () => {
 			})
 			let db = createSupabaseUserMappingDb(asSupabase(client))
 
-			await expect(db.findUserId('telegram', '12345')).rejects.toThrow('lookup failed')
+			let caught: unknown = null
+			try {
+				await db.findUserId('telegram', '12345')
+			} catch (err) {
+				caught = err
+			}
+
+			expect(caught).toBeInstanceOf(Error)
+			expect((caught as Error).message).toBe('lookup failed')
+			expect((caught as Error).cause).toBe(originalError)
 		})
 	})
 
@@ -206,13 +216,14 @@ describe('createSupabaseUserMappingDb', () => {
 			})
 		})
 
-		test('throws when Supabase auth returns an error', async () => {
+		test('throws preserving the Supabase auth error as cause', async () => {
+			let originalError = { message: 'auth admin down' }
 			client = createMockClient({
 				auth: {
 					admin: {
 						createUser: async () => ({
 							data: { user: null },
-							error: { message: 'auth admin down' },
+							error: originalError,
 						}),
 						deleteUser: async () => ({ data: {}, error: null }),
 					},
@@ -220,9 +231,16 @@ describe('createSupabaseUserMappingDb', () => {
 			})
 			let db = createSupabaseUserMappingDb(asSupabase(client))
 
-			await expect(
-				db.createUser({ provider: 'telegram', senderId: '12345' }),
-			).rejects.toThrow('auth admin down')
+			let caught: unknown = null
+			try {
+				await db.createUser({ provider: 'telegram', senderId: '12345' })
+			} catch (err) {
+				caught = err
+			}
+
+			expect(caught).toBeInstanceOf(Error)
+			expect((caught as Error).message).toBe('auth admin down')
+			expect((caught as Error).cause).toBe(originalError)
 		})
 	})
 
@@ -251,7 +269,8 @@ describe('createSupabaseUserMappingDb', () => {
 			expect(deleteUserMock.mock.calls[0]?.[0]).toBe('abc-123')
 		})
 
-		test('throws when Supabase auth returns an error', async () => {
+		test('throws preserving the Supabase auth error as cause', async () => {
+			let originalError = { message: 'delete failed' }
 			client = createMockClient({
 				auth: {
 					admin: {
@@ -261,14 +280,23 @@ describe('createSupabaseUserMappingDb', () => {
 						}),
 						deleteUser: async () => ({
 							data: null,
-							error: { message: 'delete failed' },
+							error: originalError,
 						}),
 					},
 				},
 			})
 			let db = createSupabaseUserMappingDb(asSupabase(client))
 
-			await expect(db.deleteUser('abc-123')).rejects.toThrow('delete failed')
+			let caught: unknown = null
+			try {
+				await db.deleteUser('abc-123')
+			} catch (err) {
+				caught = err
+			}
+
+			expect(caught).toBeInstanceOf(Error)
+			expect((caught as Error).message).toBe('delete failed')
+			expect((caught as Error).cause).toBe(originalError)
 		})
 	})
 
@@ -324,12 +352,13 @@ describe('createSupabaseUserMappingDb', () => {
 			).rejects.toBeInstanceOf(DuplicateMappingError)
 		})
 
-		test('throws plain Error for non-unique-violation errors', async () => {
+		test('throws plain Error preserving the Supabase error as cause for non-unique-violation errors', async () => {
+			let originalError = { message: 'permission denied', code: '42501' }
 			client = createMockClient({
 				from: () => ({
 					insert: () =>
 						Promise.resolve({
-							error: { message: 'permission denied', code: '42501' },
+							error: originalError,
 						}),
 					select: () => ({
 						eq: () => ({
@@ -352,6 +381,7 @@ describe('createSupabaseUserMappingDb', () => {
 			expect(caught).toBeInstanceOf(Error)
 			expect(caught).not.toBeInstanceOf(DuplicateMappingError)
 			expect((caught as Error).message).toBe('permission denied')
+			expect((caught as Error).cause).toBe(originalError)
 		})
 	})
 })
