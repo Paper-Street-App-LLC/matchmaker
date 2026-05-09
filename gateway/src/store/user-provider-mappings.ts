@@ -25,7 +25,7 @@ export function createSupabaseUserMappingDb(
 				.eq('provider', provider)
 				.eq('sender_id', senderId)
 				.maybeSingle()
-			if (error) throw new Error(error.message)
+			if (error) throw new Error(error.message, { cause: error })
 			return (data as { user_id: string } | null)?.user_id ?? null
 		},
 
@@ -33,7 +33,7 @@ export function createSupabaseUserMappingDb(
 			let { data, error } = await client.auth.admin.createUser({
 				user_metadata: { provider: seed.provider, sender_id: seed.senderId },
 			})
-			if (error) throw new Error(error.message)
+			if (error) throw new Error(error.message, { cause: error })
 			let user = data?.user
 			if (!user) throw new Error('Supabase auth.admin.createUser returned no user')
 			return user.id
@@ -41,7 +41,7 @@ export function createSupabaseUserMappingDb(
 
 		async deleteUser(userId) {
 			let { error } = await client.auth.admin.deleteUser(userId)
-			if (error) throw new Error(error.message)
+			if (error) throw new Error(error.message, { cause: error })
 		},
 
 		async insertMapping(provider, senderId, userId) {
@@ -56,7 +56,7 @@ export function createSupabaseUserMappingDb(
 			if (code === POSTGRES_UNIQUE_VIOLATION) {
 				throw new DuplicateMappingError(provider, senderId)
 			}
-			throw new Error(error.message)
+			throw new Error(error.message, { cause: error })
 		},
 	}
 }
