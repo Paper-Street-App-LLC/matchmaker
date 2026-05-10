@@ -98,7 +98,7 @@ describe('createTelegramAdapter', () => {
 				},
 			}
 
-			expect(adapter.parseInbound(raw)).rejects.toThrow()
+			await expect(adapter.parseInbound(raw)).rejects.toThrow()
 		})
 
 		test('rejects edited_message updates', async () => {
@@ -115,21 +115,21 @@ describe('createTelegramAdapter', () => {
 				},
 			}
 
-			expect(adapter.parseInbound(raw)).rejects.toThrow()
+			await expect(adapter.parseInbound(raw)).rejects.toThrow()
 		})
 
 		test('rejects non-text messages (e.g. status/photo only)', async () => {
 			let adapter = buildAdapter()
 			let raw = validUpdate({ text: undefined, photo: [{ file_id: 'abc', file_unique_id: 'u', width: 1, height: 1 }] })
 
-			expect(adapter.parseInbound(raw)).rejects.toThrow()
+			await expect(adapter.parseInbound(raw)).rejects.toThrow()
 		})
 
 		test('rejects malformed payloads', async () => {
 			let adapter = buildAdapter()
 
-			expect(adapter.parseInbound({ totally: 'bogus' })).rejects.toThrow()
-			expect(adapter.parseInbound(null)).rejects.toThrow()
+			await expect(adapter.parseInbound({ totally: 'bogus' })).rejects.toThrow()
+			await expect(adapter.parseInbound(null)).rejects.toThrow()
 		})
 	})
 
@@ -223,7 +223,7 @@ describe('createTelegramAdapter', () => {
 			)
 			let adapter = buildAdapter({ fetch: fakeFetch })
 
-			expect(
+			await expect(
 				adapter.sendReply({
 					provider: 'telegram',
 					senderId: '123',
