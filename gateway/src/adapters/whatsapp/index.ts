@@ -1,2 +1,2 @@
 export { createWhatsappAdapter } from './adapter'
-export type { WhatsappAdapterOptions } from './adapter'
+export type { FetchLike, WhatsappAdapterOptions } from './adapter'

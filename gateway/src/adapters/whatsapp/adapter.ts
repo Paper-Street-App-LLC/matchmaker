@@ -31,13 +31,15 @@ let webhookEnvelopeSchema = z.object({
 		.min(1),
 })
 
+export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+
 export type WhatsappAdapterOptions = {
 	phoneNumberId: string
 	accessToken: string
 	appSecret: string
 	verifyToken: string
 	userMapping: UserMappingService
-	fetch?: typeof fetch
+	fetch?: FetchLike
 }
 
 let GRAPH_API_BASE = 'https://graph.facebook.com/v20.0'

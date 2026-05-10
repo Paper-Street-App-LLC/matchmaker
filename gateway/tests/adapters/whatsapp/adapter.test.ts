@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createHmac } from 'node:crypto'
-import { createWhatsappAdapter } from '../../../src/adapters/whatsapp'
+import { createWhatsappAdapter, type FetchLike } from '../../../src/adapters/whatsapp'
 import type { UserMappingService } from '../../../src/services/user-mapping'
 
 let PHONE_NUMBER_ID = '111222333'
@@ -18,7 +18,7 @@ function makeUserMapping(overrides: Partial<UserMappingService> = {}): UserMappi
 
 function buildAdapter(overrides: {
 	userMapping?: UserMappingService
-	fetch?: typeof fetch
+	fetch?: FetchLike
 } = {}) {
 	return createWhatsappAdapter({
 		phoneNumberId: PHONE_NUMBER_ID,
@@ -221,7 +221,7 @@ describe('createWhatsappAdapter', () => {
 	describe('sendReply', () => {
 		test('POSTs to the Meta Graph API with bearer auth and the right body', async () => {
 			let captured: { url: string; init: RequestInit } | null = null
-			let fakeFetch: typeof fetch = async (input, init) => {
+			let fakeFetch: FetchLike = async (input, init) => {
 				captured = { url: String(input), init: init ?? {} }
 				return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
 			}
@@ -237,7 +237,7 @@ describe('createWhatsappAdapter', () => {
 			expect(captured).not.toBeNull()
 			expect(captured!.url).toBe(`https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`)
 			expect(captured!.init.method).toBe('POST')
-			let headers = new Headers(captured!.init.headers as HeadersInit)
+			let headers = new Headers(captured!.init.headers as Record<string, string>)
 			expect(headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`)
 			expect(headers.get('content-type')).toBe('application/json')
 			let body = JSON.parse(String(captured!.init.body))
@@ -250,7 +250,7 @@ describe('createWhatsappAdapter', () => {
 		})
 
 		test('throws on non-2xx response', async () => {
-			let fakeFetch: typeof fetch = async () =>
+			let fakeFetch: FetchLike = async () =>
 				new Response('{"error":{"message":"bad"}}', { status: 400 })
 			let adapter = buildAdapter({ fetch: fakeFetch })
 
