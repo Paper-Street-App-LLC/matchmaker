@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createApp } from './app'
+import { createWhatsappAdapter } from './adapters/whatsapp'
 import { processMessage as runAiCore } from './core/ai'
 import { createMcpClient } from './core/mcp-client'
 import { createMatchmakerTools } from './core/tools'
@@ -8,6 +9,8 @@ import {
 	HandleInboundMessage,
 	type ProcessMessage,
 } from './services/handle-inbound-message'
+import { createUserMappingService } from './services/user-mapping'
+import { createSupabaseUserMappingDb } from './store/user-provider-mappings'
 import type { ChatAdapter } from './types/adapter'
 
 function requireEnv(name: string): string {
@@ -18,6 +21,11 @@ function requireEnv(name: string): string {
 	return value
 }
 
+function optionalEnv(name: string): string | undefined {
+	let value = process.env[name]
+	return value && value.length > 0 ? value : undefined
+}
+
 let SUPABASE_URL = requireEnv('SUPABASE_URL')
 let SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 let MCP_BASE_URL = requireEnv('MCP_BASE_URL')
@@ -25,6 +33,7 @@ let SUPABASE_JWT_SECRET = requireEnv('SUPABASE_JWT_SECRET')
 
 let supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 let store = createConversationStore(createSupabaseConversationDb(supabase))
+let userMapping = createUserMappingService({ db: createSupabaseUserMappingDb(supabase) })
 
 let processMessage: ProcessMessage = async ({ inbound }) => {
 	let caller = createMcpClient({
@@ -38,6 +47,29 @@ let processMessage: ProcessMessage = async ({ inbound }) => {
 
 let service = new HandleInboundMessage({ processMessage })
 let adapters = new Map<string, ChatAdapter>()
+
+let WHATSAPP_PHONE_NUMBER_ID = optionalEnv('WHATSAPP_PHONE_NUMBER_ID')
+let WHATSAPP_ACCESS_TOKEN = optionalEnv('WHATSAPP_ACCESS_TOKEN')
+let WHATSAPP_APP_SECRET = optionalEnv('WHATSAPP_APP_SECRET')
+let WHATSAPP_VERIFY_TOKEN = optionalEnv('WHATSAPP_VERIFY_TOKEN')
+
+if (
+	WHATSAPP_PHONE_NUMBER_ID &&
+	WHATSAPP_ACCESS_TOKEN &&
+	WHATSAPP_APP_SECRET &&
+	WHATSAPP_VERIFY_TOKEN
+) {
+	adapters.set(
+		'whatsapp',
+		createWhatsappAdapter({
+			phoneNumberId: WHATSAPP_PHONE_NUMBER_ID,
+			accessToken: WHATSAPP_ACCESS_TOKEN,
+			appSecret: WHATSAPP_APP_SECRET,
+			verifyToken: WHATSAPP_VERIFY_TOKEN,
+			userMapping,
+		}),
+	)
+}
 
 let app = createApp({ adapters, service })
 
