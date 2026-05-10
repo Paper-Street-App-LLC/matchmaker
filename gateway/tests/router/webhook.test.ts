@@ -181,4 +181,72 @@ describe('webhook router', () => {
 
 		expect(res.status).toBe(500)
 	})
+
+	test('GET /webhook/:provider returns 200 + plain-text challenge when verifyChallenge succeeds', async () => {
+		let captured: URLSearchParams | null = null
+		let adapter = createMockAdapter({
+			verifyChallenge: (query) => {
+				captured = query
+				return 'CHALLENGE_TOKEN'
+			},
+		})
+		let adapters = new Map([['test', adapter]])
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
+		let app = buildApp(adapters, service)
+
+		let res = await app.fetch(
+			new Request(
+				'http://localhost/webhook/test?hub.mode=subscribe&hub.verify_token=t&hub.challenge=CHALLENGE_TOKEN',
+				{ method: 'GET' },
+			),
+		)
+
+		expect(res.status).toBe(200)
+		expect(await res.text()).toBe('CHALLENGE_TOKEN')
+		expect(captured).not.toBeNull()
+		expect(captured!.get('hub.challenge')).toBe('CHALLENGE_TOKEN')
+	})
+
+	test('GET /webhook/:provider returns 403 when verifyChallenge returns null', async () => {
+		let adapter = createMockAdapter({
+			verifyChallenge: () => null,
+		})
+		let adapters = new Map([['test', adapter]])
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
+		let app = buildApp(adapters, service)
+
+		let res = await app.fetch(
+			new Request(
+				'http://localhost/webhook/test?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=X',
+				{ method: 'GET' },
+			),
+		)
+
+		expect(res.status).toBe(403)
+	})
+
+	test('GET /webhook/:provider returns 404 when adapter has no verifyChallenge', async () => {
+		let adapter = createMockAdapter()
+		let adapters = new Map([['test', adapter]])
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
+		let app = buildApp(adapters, service)
+
+		let res = await app.fetch(
+			new Request('http://localhost/webhook/test?hub.mode=subscribe', { method: 'GET' }),
+		)
+
+		expect(res.status).toBe(404)
+	})
+
+	test('GET /webhook/:provider returns 404 for unknown provider', async () => {
+		let adapters = new Map<string, ChatAdapter>()
+		let service = new HandleInboundMessage({ processMessage: async () => 'ack' })
+		let app = buildApp(adapters, service)
+
+		let res = await app.fetch(
+			new Request('http://localhost/webhook/unknown?hub.mode=subscribe', { method: 'GET' }),
+		)
+
+		expect(res.status).toBe(404)
+	})
 })
