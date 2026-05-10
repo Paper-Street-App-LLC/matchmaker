@@ -12,6 +12,7 @@ export interface WebhookVerificationInput {
 
 export interface ChatAdapter {
 	readonly provider: string
+	readonly systemPromptSuffix?: string
 	parseInbound(raw: unknown): Promise<RawInboundMessage>
 	sendReply(message: OutboundMessage): Promise<void>
 	resolveUser(senderId: string): Promise<{ userId: string }>

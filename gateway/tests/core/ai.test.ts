@@ -170,6 +170,34 @@ describe('processMessage', () => {
 		expect(params.system).toBe(MATCHMAKER_INTERVIEW_TEXT)
 	})
 
+	test('appends systemPromptSuffix to the base system prompt when provided', async () => {
+		let { MATCHMAKER_INTERVIEW_TEXT } = await import('@matchmaker/shared')
+		let { store } = createStoreMock()
+		let { generateText, calls } = createGenerateText('ok')
+
+		let suffix = '## Response Style\nKeep replies short. Plain text only.'
+		await processMessage(
+			{ inbound: baseInbound, systemPromptSuffix: suffix },
+			{ store, tools: {}, generateText },
+		)
+
+		let params = calls[0] as { system: string }
+		expect(params.system.startsWith(MATCHMAKER_INTERVIEW_TEXT)).toBe(true)
+		expect(params.system.endsWith(suffix)).toBe(true)
+		expect(params.system).not.toBe(MATCHMAKER_INTERVIEW_TEXT)
+	})
+
+	test('does not append anything when systemPromptSuffix is omitted', async () => {
+		let { MATCHMAKER_INTERVIEW_TEXT } = await import('@matchmaker/shared')
+		let { store } = createStoreMock()
+		let { generateText, calls } = createGenerateText('ok')
+
+		await processMessage({ inbound: baseInbound }, { store, tools: {}, generateText })
+
+		let params = calls[0] as { system: string }
+		expect(params.system).toBe(MATCHMAKER_INTERVIEW_TEXT)
+	})
+
 	test('skips system-role rows from history (only user/assistant flow into the model)', async () => {
 		let priorMessages: ConversationMessage[] = [
 			{

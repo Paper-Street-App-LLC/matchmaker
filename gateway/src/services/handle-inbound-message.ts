@@ -2,7 +2,10 @@ import type { ChatAdapter } from '../types/adapter'
 import type { InboundMessage, RawInboundMessage } from '../types/messages'
 import { InboundParseError } from './errors'
 
-export type ProcessMessage = (input: { inbound: InboundMessage }) => Promise<string>
+export type ProcessMessage = (input: {
+	inbound: InboundMessage
+	systemPromptSuffix?: string
+}) => Promise<string>
 
 export type HandleInboundMessageOptions = {
 	processMessage: ProcessMessage
@@ -27,7 +30,10 @@ export class HandleInboundMessage {
 
 		let message: InboundMessage = { ...rawMessage, userId }
 
-		let replyText = await this.processMessage({ inbound: message })
+		let replyText = await this.processMessage({
+			inbound: message,
+			systemPromptSuffix: adapter.systemPromptSuffix,
+		})
 
 		await adapter.sendReply({
 			provider: message.provider,

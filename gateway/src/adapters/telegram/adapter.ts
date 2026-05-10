@@ -16,6 +16,19 @@ const TELEGRAM_TEXT_LIMIT = 4096
 const SECRET_HEADER = 'x-telegram-bot-api-secret-token'
 const API_BASE = 'https://api.telegram.org'
 
+export const TELEGRAM_CHAT_STYLE_PROMPT = `## Response Style
+
+You are speaking with the matchmaker over a real-time chat (Telegram). Write like you are texting a colleague, not writing a document.
+
+- Keep replies short. Aim for 1–3 sentences per turn. Multi-paragraph replies are rarely appropriate.
+- Ask one question at a time. Don't enumerate every phase you might cover.
+- Use plain text only. Do not use markdown — no \`#\` headers, no \`**bold**\` or \`*italic*\`, no bullet points, no numbered lists, no fenced code blocks, no \`> blockquotes\`, no horizontal rules.
+- If you must enumerate items, use natural prose ("first… then…") or simple line breaks.
+- Avoid emojis unless the matchmaker uses them first.
+- When presenting matches or summaries, keep each one to a single short paragraph and confirm interest before continuing.
+- Don't echo back everything they said. Acknowledge briefly and move the conversation forward.
+`
+
 export class TelegramParseError extends Error {
 	constructor(message: string, public readonly cause?: unknown) {
 		super(message)
@@ -47,6 +60,26 @@ function chunkText(text: string, limit: number): string[] {
 	return chunks
 }
 
+export function stripMarkdown(text: string): string {
+	let out = text
+	out = out.replace(/```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g, '$1')
+	out = out.replace(/`([^`\n]+)`/g, '$1')
+	out = out.replace(/^\s{0,3}#{1,6}\s+/gm, '')
+	out = out.replace(/\*\*([^\n*]+)\*\*/g, '$1')
+	out = out.replace(/__([^\n_]+)__/g, '$1')
+	out = out.replace(/(^|[^\w*])\*([^\n*]+)\*(?!\w)/g, '$1$2')
+	out = out.replace(/(^|[^\w_])_([^\n_]+)_(?!\w)/g, '$1$2')
+	out = out.replace(/~~([^~\n]+)~~/g, '$1')
+	out = out.replace(/!\[([^\]\n]*)\]\([^)\n]*\)/g, '$1')
+	out = out.replace(/\[([^\]\n]+)\]\([^)\n]+\)/g, '$1')
+	out = out.replace(/^\s{0,3}>\s?/gm, '')
+	out = out.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '')
+	out = out.replace(/^(\s*)[-*+]\s+/gm, '$1')
+	out = out.replace(/^(\s*)\d+\.\s+/gm, '$1')
+	out = out.replace(/\n{3,}/g, '\n\n')
+	return out.trim()
+}
+
 function constantTimeEquals(a: string, b: string): boolean {
 	let aBuf = Buffer.from(a, 'utf8')
 	let bBuf = Buffer.from(b, 'utf8')
@@ -61,6 +94,7 @@ export function createTelegramAdapter(options: TelegramAdapterOptions): ChatAdap
 
 	return {
 		provider: PROVIDER,
+		systemPromptSuffix: TELEGRAM_CHAT_STYLE_PROMPT,
 
 		async parseInbound(raw: unknown): Promise<RawInboundMessage> {
 			let result = textUpdateSchema.safeParse(raw)
@@ -88,7 +122,8 @@ export function createTelegramAdapter(options: TelegramAdapterOptions): ChatAdap
 
 		async sendReply(message: OutboundMessage): Promise<void> {
 			let chatId = Number(message.threadId)
-			let chunks = chunkText(message.text, TELEGRAM_TEXT_LIMIT)
+			let cleanText = stripMarkdown(message.text)
+			let chunks = chunkText(cleanText, TELEGRAM_TEXT_LIMIT)
 			for (let chunk of chunks) {
 				let response = await fetchImpl(sendMessageUrl, {
 					method: 'POST',

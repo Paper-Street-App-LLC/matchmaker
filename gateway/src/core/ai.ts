@@ -23,6 +23,7 @@ export type ProcessMessageDeps = {
 
 export type ProcessMessageInput = {
 	inbound: InboundMessage
+	systemPromptSuffix?: string
 }
 
 let DEFAULT_HISTORY_LIMIT = 50
@@ -36,7 +37,10 @@ export async function processMessage(
 	let { inbound } = input
 	let runGenerate = deps.generateText ?? generateText
 	let model = deps.model ?? anthropic(DEFAULT_MODEL_ID)
-	let systemPrompt = deps.systemPrompt ?? MATCHMAKER_INTERVIEW_TEXT
+	let baseSystemPrompt = deps.systemPrompt ?? MATCHMAKER_INTERVIEW_TEXT
+	let systemPrompt = input.systemPromptSuffix
+		? `${baseSystemPrompt}\n\n${input.systemPromptSuffix}`
+		: baseSystemPrompt
 	let historyLimit = deps.historyLimit ?? DEFAULT_HISTORY_LIMIT
 	let maxSteps = deps.maxSteps ?? DEFAULT_MAX_STEPS
 

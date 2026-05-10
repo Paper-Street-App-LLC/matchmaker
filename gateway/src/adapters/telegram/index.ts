@@ -1,1 +1,6 @@
-export { createTelegramAdapter, type TelegramAdapterOptions } from './adapter'
+export {
+	createTelegramAdapter,
+	stripMarkdown,
+	TELEGRAM_CHAT_STYLE_PROMPT,
+	type TelegramAdapterOptions,
+} from './adapter'

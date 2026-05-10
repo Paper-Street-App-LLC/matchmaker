@@ -45,13 +45,16 @@ function createMockAdapter(overrides: Partial<ChatAdapter> = {}) {
 function stubProcessMessage(reply = 'AI response'): {
 	processMessage: ProcessMessage
 	calls: InboundMessage[]
+	rawCalls: Parameters<ProcessMessage>[0][]
 } {
 	let calls: InboundMessage[] = []
+	let rawCalls: Parameters<ProcessMessage>[0][] = []
 	let processMessage: ProcessMessage = async input => {
 		calls.push(input.inbound)
+		rawCalls.push(input)
 		return reply
 	}
-	return { processMessage, calls }
+	return { processMessage, calls, rawCalls }
 }
 
 describe('HandleInboundMessage', () => {
@@ -174,6 +177,29 @@ describe('HandleInboundMessage', () => {
 
 		expect(caught).toBeInstanceOf(Error)
 		expect(caught).not.toBeInstanceOf(InboundParseError)
+	})
+
+	test('forwards adapter.systemPromptSuffix to processMessage when present', async () => {
+		let suffix = '## Response Style\nKeep replies short. Plain text only.'
+		let { adapter } = createMockAdapter({ systemPromptSuffix: suffix })
+		let { processMessage, rawCalls } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
+
+		await service.execute(adapter, {})
+
+		expect(rawCalls).toHaveLength(1)
+		expect(rawCalls[0]!.systemPromptSuffix).toBe(suffix)
+	})
+
+	test('omits systemPromptSuffix when the adapter does not declare one', async () => {
+		let { adapter } = createMockAdapter()
+		let { processMessage, rawCalls } = stubProcessMessage()
+		let service = new HandleInboundMessage({ processMessage })
+
+		await service.execute(adapter, {})
+
+		expect(rawCalls).toHaveLength(1)
+		expect(rawCalls[0]!.systemPromptSuffix).toBeUndefined()
 	})
 
 	test('propagates processMessage failures untouched (not as InboundParseError)', async () => {

@@ -34,14 +34,14 @@ let userMapping = createUserMappingService({
 	db: createSupabaseUserMappingDb(supabase),
 })
 
-let processMessage: ProcessMessage = async ({ inbound }) => {
+let processMessage: ProcessMessage = async ({ inbound, systemPromptSuffix }) => {
 	let caller = createMcpClient({
 		baseUrl: MCP_BASE_URL,
 		jwtSecret: SUPABASE_JWT_SECRET,
 		userId: inbound.userId,
 	})
 	let tools = createMatchmakerTools(caller)
-	return runAiCore({ inbound }, { store, tools })
+	return runAiCore({ inbound, systemPromptSuffix }, { store, tools })
 }
 
 let service = new HandleInboundMessage({ processMessage })

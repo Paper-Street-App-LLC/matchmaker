@@ -1,5 +1,8 @@
 import { describe, test, expect } from 'bun:test'
-import { createTelegramAdapter } from '../../../src/adapters/telegram'
+import {
+	createTelegramAdapter,
+	TELEGRAM_CHAT_STYLE_PROMPT,
+} from '../../../src/adapters/telegram'
 import type { UserMappingService } from '../../../src/services/user-mapping'
 
 const BOT_TOKEN = 'test-bot-token'
@@ -69,6 +72,35 @@ describe('createTelegramAdapter', () => {
 	test('exposes provider="telegram"', () => {
 		let adapter = buildAdapter()
 		expect(adapter.provider).toBe('telegram')
+	})
+
+	describe('systemPromptSuffix (chat-style guidance)', () => {
+		test('adapter exposes a non-empty systemPromptSuffix', () => {
+			let adapter = buildAdapter()
+			expect(typeof adapter.systemPromptSuffix).toBe('string')
+			expect((adapter.systemPromptSuffix ?? '').length).toBeGreaterThan(0)
+		})
+
+		test('suffix instructs the model to use plain text (no markdown)', () => {
+			let suffix = (TELEGRAM_CHAT_STYLE_PROMPT ?? '').toLowerCase()
+			expect(suffix).toContain('plain text')
+			expect(suffix).toContain('markdown')
+		})
+
+		test('suffix instructs the model to keep replies short / chat-sized', () => {
+			let suffix = (TELEGRAM_CHAT_STYLE_PROMPT ?? '').toLowerCase()
+			let mentionsBrevity =
+				suffix.includes('short') ||
+				suffix.includes('concise') ||
+				suffix.includes('1-3 sentences') ||
+				suffix.includes('1–3 sentences')
+			expect(mentionsBrevity).toBe(true)
+		})
+
+		test('adapter exposes the same constant as TELEGRAM_CHAT_STYLE_PROMPT', () => {
+			let adapter = buildAdapter()
+			expect(adapter.systemPromptSuffix).toBe(TELEGRAM_CHAT_STYLE_PROMPT)
+		})
 	})
 
 	describe('parseInbound', () => {
@@ -231,6 +263,154 @@ describe('createTelegramAdapter', () => {
 					text: 'Hi',
 				}),
 			).rejects.toThrow()
+		})
+
+		test('strips markdown headings before sending', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: '# Phase 1\n## Opening\n### Sub\nLet\'s start.',
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).not.toContain('#')
+			expect(body.text).toContain('Phase 1')
+			expect(body.text).toContain('Opening')
+			expect(body.text).toContain('Sub')
+			expect(body.text).toContain("Let's start.")
+		})
+
+		test('strips bold and italic emphasis markers', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: 'This is **really important** and *also* __bold__ plus _italic_.',
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).not.toMatch(/\*\*/)
+			expect(body.text).not.toMatch(/__/)
+			expect(body.text).toContain('really important')
+			expect(body.text).toContain('also')
+			expect(body.text).toContain('bold')
+			expect(body.text).toContain('italic')
+		})
+
+		test('strips bullet and numbered list markers but keeps the content', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: '- Age\n- Location\n* Occupation\n1. First\n2. Second',
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).not.toMatch(/^[-*+]\s/m)
+			expect(body.text).not.toMatch(/^\d+\.\s/m)
+			expect(body.text).toContain('Age')
+			expect(body.text).toContain('Location')
+			expect(body.text).toContain('Occupation')
+			expect(body.text).toContain('First')
+			expect(body.text).toContain('Second')
+		})
+
+		test('strips inline code and fenced code blocks but keeps the content', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: 'Use `list_people` and then:\n```\nadd_person(...)\n```\nDone.',
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).not.toContain('`')
+			expect(body.text).toContain('list_people')
+			expect(body.text).toContain('add_person(...)')
+			expect(body.text).toContain('Done.')
+		})
+
+		test('rewrites markdown links to their visible label', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: 'See [The Introduction](https://example.com/intro) for details.',
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).toContain('The Introduction')
+			expect(body.text).not.toContain('[')
+			expect(body.text).not.toContain('](')
+		})
+
+		test('strips blockquote markers and horizontal rules', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: '> A quoted line\n> Another quoted line\n---\nAfter the rule.',
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).not.toMatch(/^>\s/m)
+			expect(body.text).not.toMatch(/^---$/m)
+			expect(body.text).toContain('A quoted line')
+			expect(body.text).toContain('Another quoted line')
+			expect(body.text).toContain('After the rule.')
+		})
+
+		test('leaves plain prose untouched', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			let plain = 'Hi Alex, tell me a bit more about the person you have in mind.'
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: plain,
+			})
+
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).toBe(plain)
+		})
+
+		test('chunking applies to the stripped text, not the raw markdown', async () => {
+			let { fetch: fakeFetch, calls } = makeRecordingFetch()
+			let adapter = buildAdapter({ fetch: fakeFetch })
+
+			// Raw markdown is short once stripped; ensure no spurious chunking.
+			let raw = '**' + 'a'.repeat(4000) + '**'
+			await adapter.sendReply({
+				provider: 'telegram',
+				senderId: '123',
+				threadId: '456',
+				text: raw,
+			})
+
+			expect(calls).toHaveLength(1)
+			let body = JSON.parse(calls[0]!.init!.body as string) as { text: string }
+			expect(body.text).toBe('a'.repeat(4000))
 		})
 
 		test('sends chunks sequentially (not in parallel)', async () => {
