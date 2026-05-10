@@ -9,6 +9,22 @@ export function createWebhookRouter(
 ) {
 	let router = new Hono()
 
+	router.get('/:provider', (c) => {
+		let provider = c.req.param('provider')
+		let adapter = adapters.get(provider)
+		if (!adapter || !adapter.verifyChallenge) {
+			return c.json({ error: 'Not found' }, 404)
+		}
+
+		let url = new URL(c.req.url)
+		let challenge = adapter.verifyChallenge(url.searchParams)
+		if (challenge === null) {
+			return c.json({ error: 'Forbidden' }, 403)
+		}
+
+		return c.text(challenge, 200)
+	})
+
 	router.post('/:provider', async (c) => {
 		let provider = c.req.param('provider')
 		let adapter = adapters.get(provider)
