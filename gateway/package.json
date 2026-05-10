@@ -19,7 +19,6 @@
 		"@modelcontextprotocol/sdk": "^1.0.0",
 		"@supabase/supabase-js": "^2.39.0",
 		"ai": "^5.0.0",
-		"grammy": "^1.42.0",
 		"hono": "^4.0.0",
 		"jose": "^5.9.0",
 		"zod": "^4.4.3"
