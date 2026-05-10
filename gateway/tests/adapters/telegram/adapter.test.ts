@@ -25,12 +25,17 @@ function makeRecordingFetch(
 	respond: (call: FetchCall) => Response = () => new Response('{"ok":true}', { status: 200 }),
 ): { fetch: typeof fetch; calls: FetchCall[] } {
 	let calls: FetchCall[] = []
-	let fakeFetch: typeof fetch = async (input, init) => {
-		let url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url
+	let fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+		let url =
+			typeof input === 'string'
+				? input
+				: input instanceof URL
+					? input.toString()
+					: input.url
 		let call: FetchCall = { url, init }
 		calls.push(call)
 		return respond(call)
-	}
+	}) as unknown as typeof fetch
 	return { fetch: fakeFetch, calls }
 }
 
@@ -231,13 +236,13 @@ describe('createTelegramAdapter', () => {
 		test('sends chunks sequentially (not in parallel)', async () => {
 			let inflight = 0
 			let maxInflight = 0
-			let fakeFetch: typeof fetch = async () => {
+			let fakeFetch = (async () => {
 				inflight++
 				maxInflight = Math.max(maxInflight, inflight)
 				await new Promise(resolve => setTimeout(resolve, 5))
 				inflight--
 				return new Response('{"ok":true}', { status: 200 })
-			}
+			}) as unknown as typeof fetch
 			let adapter = buildAdapter({ fetch: fakeFetch })
 
 			await adapter.sendReply({
