@@ -6,5 +6,6 @@ export function createAdapterRegistry(): AdapterRegistry {
 	return new Map()
 }
 
+export { createTelegramAdapter, type TelegramAdapterOptions } from './telegram'
 export { createWhatsappAdapter } from './whatsapp'
 export type { WhatsappAdapterOptions } from './whatsapp'
