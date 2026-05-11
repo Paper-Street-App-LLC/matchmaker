@@ -19,7 +19,7 @@
 		"hono": "^4.0.0",
 		"@supabase/supabase-js": "^2.39.0",
 		"zod": "^4.4.3",
-		"@hono/zod-validator": "^0.7.6"
+		"@hono/zod-validator": "^0.8.0"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.0.0",
