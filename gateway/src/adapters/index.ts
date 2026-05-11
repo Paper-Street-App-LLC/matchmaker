@@ -7,3 +7,5 @@ export function createAdapterRegistry(): AdapterRegistry {
 }
 
 export { createTelegramAdapter, type TelegramAdapterOptions } from './telegram'
+export { createWhatsappAdapter } from './whatsapp'
+export type { WhatsappAdapterOptions } from './whatsapp'

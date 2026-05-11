@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createApp } from './app'
 import { createTelegramAdapter } from './adapters/telegram'
+import { createWhatsappAdapter } from './adapters/whatsapp'
 import { processMessage as runAiCore } from './core/ai'
 import { createMcpClient } from './core/mcp-client'
 import { createMatchmakerTools } from './core/tools'
@@ -19,6 +20,11 @@ function requireEnv(name: string): string {
 		throw new Error(`Missing required env var: ${name}`)
 	}
 	return value
+}
+
+function optionalEnv(name: string): string | undefined {
+	let value = process.env[name]
+	return value && value.length > 0 ? value : undefined
 }
 
 let SUPABASE_URL = requireEnv('SUPABASE_URL')
@@ -59,6 +65,29 @@ if (TELEGRAM_BOT_TOKEN && TELEGRAM_WEBHOOK_SECRET) {
 } else {
 	console.warn(
 		'Telegram adapter not registered: set TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET to enable it.',
+	)
+}
+
+let WHATSAPP_PHONE_NUMBER_ID = optionalEnv('WHATSAPP_PHONE_NUMBER_ID')
+let WHATSAPP_ACCESS_TOKEN = optionalEnv('WHATSAPP_ACCESS_TOKEN')
+let WHATSAPP_APP_SECRET = optionalEnv('WHATSAPP_APP_SECRET')
+let WHATSAPP_VERIFY_TOKEN = optionalEnv('WHATSAPP_VERIFY_TOKEN')
+
+if (
+	WHATSAPP_PHONE_NUMBER_ID &&
+	WHATSAPP_ACCESS_TOKEN &&
+	WHATSAPP_APP_SECRET &&
+	WHATSAPP_VERIFY_TOKEN
+) {
+	adapters.set(
+		'whatsapp',
+		createWhatsappAdapter({
+			phoneNumberId: WHATSAPP_PHONE_NUMBER_ID,
+			accessToken: WHATSAPP_ACCESS_TOKEN,
+			appSecret: WHATSAPP_APP_SECRET,
+			verifyToken: WHATSAPP_VERIFY_TOKEN,
+			userMapping,
+		}),
 	)
 }
 
